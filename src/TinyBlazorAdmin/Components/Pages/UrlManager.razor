@@ -65,9 +65,9 @@
 
     IQueryable<ShortUrlEntity>? urlList;
     PaginationState pagination = new PaginationState { ItemsPerPage = 20 };
-    ShortUrlRequest shortUrlRequest;
-    ShortUrlEntity editedUrl;
-    public List<ShortUrlEntity> gridData { get; set; }
+    ShortUrlRequest shortUrlRequest = new ShortUrlRequest();
+    ShortUrlEntity editedUrl = new ShortUrlEntity();
+    public List<ShortUrlEntity> gridData { get; set; } = new List<ShortUrlEntity>();
 
     GridSort<ShortUrlEntity> sortByClicks = GridSort<ShortUrlEntity>.ByDescending(p => p.Clicks);
     GridSort<ShortUrlEntity> sortBySchedules = GridSort<ShortUrlEntity>.ByDescending(p => p.Schedules.Count);
@@ -137,9 +137,13 @@
         }
     }
 
-    [Inject] public IJSRuntime JsRuntime { get; set; }
+    [Inject] public IJSRuntime? JsRuntime { get; set; }
     public async Task CopyToClipboardAsync(string url)
     {
+        if (JsRuntime == null)
+        {
+            return;
+        }
         await JSRuntime.InvokeVoidAsync("clipboardCopy.copyText", url);
     }
 

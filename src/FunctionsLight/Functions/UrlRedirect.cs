@@ -1,13 +1,10 @@
+using Azure.Data.Tables;
+using Cloud5mins.ShortenerTools.Core.Service;
 using Cloud5mins.ShortenerTools.Core.Services;
-using Cloud5mins.ShortenerTools.Core.Domain;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
-using Cloud5mins.ShortenerTools.Core.Service;
-using Azure.Data.Tables;
 
 namespace Cloud5mins.ShortenerTools.Functions
 {
@@ -31,16 +28,18 @@ namespace Cloud5mins.ShortenerTools.Functions
             ExecutionContext context)
         {
             _logger.LogDebug("Function reached");
-            UrlServices UrlServices = new UrlServices(_logger, new AzStrorageTablesService(_tblClient));
+            UrlServices UrlServices = new UrlServices(_logger, new AzStorageTableService(_tblClient));
             _logger.LogDebug("Services created");
-            _logger.LogDebug($"Redirecting {shortUrl}");
+
+            _logger.LogDebug($"Redirecting {shortUrl}...");
             string redirectUrl = await UrlServices.Redirect(shortUrl);
             _logger.LogDebug("got the redirect url");
+
+            _logger.LogDebug($"Creating response...");
             var res = req.CreateResponse(HttpStatusCode.Redirect);
             res.Headers.Add("Location", redirectUrl);
             _logger.LogDebug("response created");
             return res;
-
         }
     }
 }

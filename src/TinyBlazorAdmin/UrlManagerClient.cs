@@ -1,4 +1,3 @@
-using System;
 using Cloud5mins.ShortenerTools.Core.Domain;
 using Cloud5mins.ShortenerTools.Core.Messages;
 
@@ -9,7 +8,7 @@ public class UrlManagerClient(HttpClient httpClient)
 
 	public async Task<IQueryable<ShortUrlEntity>?> GetUrls()
     {
-		IQueryable<ShortUrlEntity> urlList = null;
+		IQueryable<ShortUrlEntity> urlList = new List<ShortUrlEntity>().AsQueryable();
 		try{
 			using var response = await httpClient.GetAsync("/api/UrlList");
 			if(response.IsSuccessStatusCode){
@@ -19,14 +18,14 @@ public class UrlManagerClient(HttpClient httpClient)
 		}
 		catch(Exception ex){
 			Console.WriteLine(ex.Message);
-		}
+        }
         
 		return urlList;
     }
 
 	public async Task<(bool , string)> UrlCreate(ShortRequest url)
 	{
-		(bool , string) result = (false, "Failed");
+		(bool, string) result = (false, "Failed");
 		try{
 			using var response = await httpClient.PostAsJsonAsync<ShortRequest>("/api/UrlCreate", url);
 			if(response.IsSuccessStatusCode){

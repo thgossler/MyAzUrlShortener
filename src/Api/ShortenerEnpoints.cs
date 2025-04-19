@@ -61,7 +61,7 @@ public static class ShortenerEnpoints
     {
         try
         {
-            var urlServices = new UrlServices(logger, new AzStrorageTablesService(tblClient));
+            var urlServices = new UrlServices(logger, new AzStorageTableService(tblClient));
             var host = GetHost(context);
             ShortResponse result = await urlServices.Create(request, host);
             return TypedResults.Created($"/api/UrlCreate/{result.ShortUrl}", result);
@@ -96,7 +96,7 @@ public static class ShortenerEnpoints
     {
         try
         {
-            var urlServices = new UrlServices(logger, new AzStrorageTablesService(tblClient));
+            var urlServices = new UrlServices(logger, new AzStorageTableService(tblClient));
             var result = await urlServices.Archive(shortUrl);
             return TypedResults.Ok();
         }
@@ -117,7 +117,7 @@ public static class ShortenerEnpoints
     {
         try
         {
-            var urlServices = new UrlServices(logger, new AzStrorageTablesService(tblClient));
+            var urlServices = new UrlServices(logger, new AzStorageTableService(tblClient));
             var host = GetHost(context);
             var result = await urlServices.Update(shortUrl, host);
             return TypedResults.Ok(result);
@@ -141,7 +141,7 @@ public static class ShortenerEnpoints
     {
         try
         {
-            var urlServices = new UrlServices(logger, new AzStrorageTablesService(tblClient));
+            var urlServices = new UrlServices(logger, new AzStorageTableService(tblClient));
             var host = GetHost(context);
             var result = await urlServices.ClickStatsByDay(statsRequest, host);
             return TypedResults.Ok(result);
@@ -163,7 +163,7 @@ public static class ShortenerEnpoints
     {
         try
         {
-            var urlServices = new UrlServices(logger, new AzStrorageTablesService(tblClient));
+            var urlServices = new UrlServices(logger, new AzStorageTableService(tblClient));
             var host = GetHost(context);
             ListResponse Urls = await urlServices.List(host);
             return TypedResults.Ok(Urls);

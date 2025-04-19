@@ -2,7 +2,7 @@ using Cloud5mins.ShortenerTools.Core.Domain;
 
 namespace Cloud5mins.ShortenerTools.Core.Service;
 
-public interface IAzStrorageTablesService
+public interface IAzStorageTableService
 {
     Task<int> GetNextTableId();
     Task<List<ShortUrlEntity>> GetAllShortUrlEntities();

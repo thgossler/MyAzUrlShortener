@@ -5,9 +5,9 @@ namespace Cloud5mins.ShortenerTools.Core.Domain;
 
 public class ClickStatsEntity : ITableEntity
 {
-    public string Datetime { get; set; }
-    public string PartitionKey { get; set; }
-    public string RowKey { get; set; }
+    public string Datetime { get; set; } = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+    public string PartitionKey { get; set; } = string.Empty;
+    public string RowKey { get; set; } = Guid.NewGuid().ToString();
     public DateTimeOffset? Timestamp { get; set; }
     public ETag ETag { get; set; }
 
@@ -15,8 +15,6 @@ public class ClickStatsEntity : ITableEntity
 
     public ClickStatsEntity(string vanity)
     {
-        PartitionKey = vanity;
-        RowKey = Guid.NewGuid().ToString();
-        Datetime = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+        PartitionKey = vanity.ToLowerInvariant();
     }
 }

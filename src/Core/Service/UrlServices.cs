@@ -9,9 +9,9 @@ namespace Cloud5mins.ShortenerTools.Core.Services;
 public class UrlServices
 {
     private readonly ILogger _logger;
-    private readonly IAzStrorageTablesService _stgHelper;
+    private readonly IAzStorageTableService _stgHelper;
 
-    public UrlServices(ILogger logger, IAzStrorageTablesService stgHelper)
+    public UrlServices(ILogger logger, IAzStorageTableService stgHelper)
     {
         _logger = logger;
         _stgHelper = stgHelper;
@@ -68,7 +68,7 @@ public class UrlServices
             result.UrlList = result.UrlList.Where(p => !(p.IsArchived ?? false)).ToList();
             foreach (ShortUrlEntity url in result.UrlList)
             {
-                url.ShortUrl = Utility.GetShortUrl(host, url.RowKey);
+                url.ShortUrl = Utility.GetShortUrl(host, url.Vanity);
             }
         }
         catch (Exception ex)
@@ -154,7 +154,7 @@ public class UrlServices
             }
 
             result = await _stgHelper.UpdateShortUrlEntity(input);
-            result.ShortUrl = Utility.GetShortUrl(host, result.RowKey);
+            result.ShortUrl = Utility.GetShortUrl(host, result.Vanity);
 
         }
         catch (Exception ex)
@@ -165,7 +165,6 @@ public class UrlServices
 
         return result;
     }
-
 
     public async Task<ClickDateList> ClickStatsByDay(UrlClickStatsRequest input, string host)
     {

@@ -22,7 +22,7 @@
             <FluentTextField Name="Cron" Label="Cron expression" Placeholder="* * * * * " @bind-Value="schedule.Cron" />
             <span>Tool: <a href="https://crontab.guru/" target="blank">https://crontab.guru/</a> </span>
         </FluentStack>
-        
+
     </div>  
     <div>
         <FluentNumberField Name="DurationMinutes" Label="Duration (in minutes)" @bind-Value="schedule.DurationMinutes" Min="0" Step="5" />
@@ -32,8 +32,10 @@
 
 @code {
 
+
+
     [Parameter]
-    public Schedule? schedule { get; set; }
+    public Schedule schedule { get; set; } = new Schedule();
 
     private DateTime startDate;
     private DateTime startTime;
@@ -50,7 +52,7 @@
     {
         startDate = schedule.Start;
         startTime = schedule.Start;
-        
+
         endDate = schedule.End;
         endTime = schedule.End;
     }

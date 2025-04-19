@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace Cloud5mins.ShortenerTools.Core.Service;
 
-public class AzStrorageTablesService(TableServiceClient client) : IAzStrorageTablesService
+public class AzStorageTableService(TableServiceClient client) : IAzStorageTableService
 {
 
     private TableClient GetUrlsTable()
@@ -105,7 +105,7 @@ public class AzStrorageTablesService(TableServiceClient client) : IAzStrorageTab
     public async Task<ShortUrlEntity?> GetShortUrlEntityByVanity(string vanity)
     {
         var tblUrls = GetUrlsTable();
-        ShortUrlEntity shortUrlEntity = null;
+        ShortUrlEntity? shortUrlEntity = null;
 
         var result = tblUrls.QueryAsync<ShortUrlEntity>(e => e.RowKey == vanity);
         await foreach (var entity in result)
@@ -127,7 +127,7 @@ public class AzStrorageTablesService(TableServiceClient client) : IAzStrorageTab
 
     public async Task<bool> IfShortUrlEntityExistByVanity(string vanity)
     {
-        ShortUrlEntity shortUrlEntity = await GetShortUrlEntityByVanity(vanity);
+        ShortUrlEntity? shortUrlEntity = await GetShortUrlEntityByVanity(vanity);
         return (shortUrlEntity != null);
     }
 
@@ -161,7 +161,7 @@ public class AzStrorageTablesService(TableServiceClient client) : IAzStrorageTab
         }
         else
         {
-            queryResult = tblStats.QueryAsync<ClickStatsEntity>(e => e.PartitionKey == vanity);
+            queryResult = tblStats.QueryAsync<ClickStatsEntity>(e => e.PartitionKey == vanity.ToLowerInvariant());
         }
 
         await foreach (var emp in queryResult.AsPages())
