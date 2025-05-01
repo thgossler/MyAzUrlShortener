@@ -1,12 +1,13 @@
-namespace Cloud5mins.ShortenerTools.Core.Domain
+namespace AzUrlShortener.Core.Domain
 {
     public class ClickDateList
     {
-        public List<ClickDate> Items { get; set; } = new List<ClickDate>();
-        public string Url { get; set; } = string.Empty;
+        public List<ClickDate> Items { get; set; }
+        public string Url { get; set; }
 
         public ClickDateList()
         {
+            Items = new List<ClickDate>();
             Url = string.Empty;
         }
 

@@ -1,6 +1,12 @@
 ﻿@page "/settings"
 
+@using AzUrlShortener.TinyBlazorAdmin
+@using AzUrlShortener.TinyBlazorAdmin.Components
+@using AzUrlShortener.TinyBlazorAdmin.Services
+@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.FluentUI.AspNetCore.Components.Extensions
+@inject NavigationManager NavigationManager
+@inject UserService userService
 @inject ILogger<Settings> Logger
 
 @rendermode InteractiveServer
@@ -9,7 +15,7 @@
 				   @bind-OfficeColor="@OfficeColor"
 				   StorageName="theme" />
 
-<h3>Settings</h3>
+<h1>Settings</h1>
 
 <div>
 	<FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Vertical">
@@ -27,12 +33,28 @@
 				</FluentStack>
 			</OptionTemplate>
 		</FluentSelect>
+		@if (isAdmin)
+		{
+			<FluentButton OnClick="@(ManageUsers)" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.Person())">Manage Users</FluentButton>
+		}
 	</FluentStack>
 </div>
 
 @code {
     public DesignThemeModes Mode { get; set; }
     public OfficeColor? OfficeColor { get; set; }
+
+	private bool isAdmin = false;
+
+	protected override async Task OnInitializedAsync()
+	{
+		isAdmin = await userService.IsAdminAsync();
+	}
+
+	private void ManageUsers()
+	{
+		NavigationManager.NavigateTo("/admin/users");
+	}
 
 	void OnLoaded(Microsoft.FluentUI.AspNetCore.Components.LoadedEventArgs e)
     {

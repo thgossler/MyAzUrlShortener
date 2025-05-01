@@ -1,36 +1,48 @@
-
 using Microsoft.Extensions.Hosting;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-var urlStorage = builder.AddAzureStorage("url-data");
+var isDevelopmentEnvironment = builder.Environment.IsDevelopment();
 
-if (builder.Environment.IsDevelopment())
+var storage = builder.AddAzureStorage("url-data");
+if (isDevelopmentEnvironment)
 {
-    urlStorage.RunAsEmulator();
-    builder.Configuration["Parameters:CustomDomain"] = builder.Configuration["Parameters:CustomDomain"] ?? "localhost";
-    builder.Configuration["Parameters:DefaultRedirectUrl"] = builder.Configuration["Parameters:DefaultRedirectUrl"] ?? "https://github.com/microsoft/AzUrlShortener";
+    storage.RunAsEmulator();
 }
 
-var customDomain = builder.AddParameter("CustomDomain");
+var azTableClient = storage.AddTables("table-client");
+
+if (string.IsNullOrWhiteSpace(builder.Configuration["Parameters:DefaultRedirectUrl"]))
+{
+    builder.Configuration["Parameters:DefaultRedirectUrl"] = "https://github.com/thgossler/MyAzUrlShortener";
+}
 var defaultRedirectUrl = builder.AddParameter("DefaultRedirectUrl");
 
-var strTables = urlStorage.AddTables("strTables");
+var azFuncLight = builder.AddAzureFunctionsProject<Projects.AzUrlShortener_FunctionsLight>("azfunc-light")
+                            .WithReference(azTableClient)
+                            .WaitFor(azTableClient)
+                            .WithEnvironment("DefaultRedirectUrl", defaultRedirectUrl)
+                            .WithExternalHttpEndpoints();
 
-var azFuncLight = builder.AddAzureFunctionsProject<Projects.Cloud5mins_ShortenerTools_FunctionsLight>("azfunc-light")
-							.WithReference(strTables)
-							.WaitFor(strTables)
-							.WithEnvironment("DefaultRedirectUrl",defaultRedirectUrl)
-							.WithExternalHttpEndpoints();
-
-var manAPI = builder.AddProject<Projects.Cloud5mins_ShortenerTools_Api>("api")
-						.WithReference(strTables)
-						.WaitFor(strTables)
-						.WithEnvironment("CustomDomain", customDomain)
-						.WithEnvironment("DefaultRedirectUrl", defaultRedirectUrl);
+var manAPI = builder.AddProject<Projects.AzUrlShortener_Api>("api")
+						.WithReference(azTableClient)
+                        .WithReference(azFuncLight)
+						.WaitFor(azTableClient)
+                        .WaitFor(azFuncLight)
+                        .WithEnvironment("DefaultRedirectUrl", defaultRedirectUrl)
+                        .WithEnvironment(env =>
+                            {
+                                if (isDevelopmentEnvironment)
+                                {
+                                    // Locally, we only get an http for the Azure function, in Azure it can be configured to redirect to https
+                                    var azFuncLightEndpoint = azFuncLight.GetEndpoint("http");
+                                    var url = azFuncLightEndpoint.Url;
+                                    env.EnvironmentVariables["CustomDomain"] = url;
+                                }
+                            });
 						//.WithExternalHttpEndpoints(); // If you want to access the API directly
 
-builder.AddProject<Projects.Cloud5mins_ShortenerTools_TinyBlazorAdmin>("admin")
+builder.AddProject<Projects.AzUrlShortener_TinyBlazorAdmin>("admin")
 		.WithExternalHttpEndpoints()
 		.WithReference(manAPI);
 

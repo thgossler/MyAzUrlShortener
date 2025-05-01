@@ -1,8 +1,8 @@
-namespace Cloud5mins.ShortenerTools.Core.Domain
+namespace AzUrlShortener.Core.Domain
 {
     public class ClickDate
     {
-        public DateTime DateClicked { get; set; }
+        public DateTimeOffset DateClicked { get; set; }
         public int Count { get; set; }
     }
 }

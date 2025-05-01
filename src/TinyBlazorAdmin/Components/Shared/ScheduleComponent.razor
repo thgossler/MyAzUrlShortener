@@ -1,17 +1,20 @@
 @inherits LayoutComponentBase
-@using Cloud5mins.ShortenerTools.Core.Domain
+@using AzUrlShortener.Core.Domain
+@using AzUrlShortener.TinyBlazorAdmin
+@using AzUrlShortener.TinyBlazorAdmin.Components
+@using AzUrlShortener.TinyBlazorAdmin.Services
 
 @rendermode InteractiveServer
 
 <FluentStack Orientation="Orientation.Vertical" VerticalGapGap="10" Width="100%">
     <FluentStack Orientation="Orientation.Horizontal" HorizontalGapGapGap="10" Width="100%">
         <div Width="50%">
-            <FluentDatePicker Label="Starting From" Value="@startDate" ValueChanged="@( e => StartDateTimeReconcile(DateTimeSection.Date, e!.Value) )" />
-            <FluentTimePicker Value="@startTime" ValueChanged="@( e => StartDateTimeReconcile(DateTimeSection.Time, e!.Value) )" />
+            <FluentDatePicker Label="Starting From" Value="@startDateTime.LocalDateTime" ValueChanged="@( e => StartDateTimeReconcile(e!.Value) )" />
+            <FluentTimePicker Value="@startDateTime.LocalDateTime" ValueChanged="@( e => StartDateTimeReconcile(e!.Value) )" />
         </div>
         <div Width="50%">
-            <FluentDatePicker Label="Ending at" Value="@endDate" ValueChanged="@( e => EndDateTimeReconcile(DateTimeSection.Date, e!.Value) )" />
-            <FluentTimePicker Value="@endTime" ValueChanged="@( e => EndDateTimeReconcile(DateTimeSection.Time, e!.Value) )" />
+            <FluentDatePicker Label="Ending at" Value="@endDateTime.LocalDateTime" ValueChanged="@( e => EndDateTimeReconcile(e!.Value) )" />
+            <FluentTimePicker Value="@endDateTime.LocalDateTime" ValueChanged="@( e => EndDateTimeReconcile(e!.Value) )" />
         </div>
     </FluentStack>  
     <div style="width: 100%;">
@@ -19,7 +22,7 @@
     </div>
     <div>
         <FluentStack Orientation="Orientation.Horizontal" HorizontalGapGapGap="10" >
-            <FluentTextField Name="Cron" Label="Cron expression" Placeholder="* * * * * " @bind-Value="schedule.Cron" />
+            <FluentTextField Name="Cron" Label="Cron expression" Placeholder="* * * * *" @bind-Value="schedule.Cron" />
             <span>Tool: <a href="https://crontab.guru/" target="blank">https://crontab.guru/</a> </span>
         </FluentStack>
 
@@ -31,16 +34,11 @@
 
 
 @code {
-
-
-
     [Parameter]
     public Schedule schedule { get; set; } = new Schedule();
 
-    private DateTime startDate;
-    private DateTime startTime;
-    private DateTime endDate;
-    private DateTime endTime;
+    private DateTimeOffset startDateTime;
+    private DateTimeOffset endDateTime;
 
     private enum DateTimeSection
     {
@@ -50,40 +48,21 @@
 
     protected override void OnInitialized()
     {
-        startDate = schedule.Start;
-        startTime = schedule.Start;
-
-        endDate = schedule.End;
-        endTime = schedule.End;
+        startDateTime = schedule.Start;
+        endDateTime = schedule.End;
     }
  
-    private void StartDateTimeReconcile(DateTimeSection section, DateTime value)
+    private void StartDateTimeReconcile(DateTime value)
     {
-        if (section == DateTimeSection.Date)
-        {
-            startDate = value;
-        }
-        else
-        {
-            startTime = value;
-        }
-
-        var dateReconciled = new DateTime(startDate.Year, startDate.Month, startDate.Day, startTime.Hour, startTime.Minute, 0);
-        schedule.Start = dateReconciled;
+        var valueOffset = new DateTimeOffset(value);
+        startDateTime = valueOffset;
+        schedule.Start = startDateTime;
     }
 
-    private void EndDateTimeReconcile(DateTimeSection section, DateTime value)
+    private void EndDateTimeReconcile(DateTime value)
     {
-        if (section == DateTimeSection.Date)
-        {
-            endDate = value;
-        }
-        else
-        {
-            endTime = value;
-        }
-
-        var dateReconciled = new DateTime(endDate.Year, endDate.Month, endDate.Day, endTime.Hour, endTime.Minute, 0);
-        schedule.End = dateReconciled;
+        var valueOffset = new DateTimeOffset(value);
+        endDateTime = valueOffset;
+        schedule.End = startDateTime;
     }
 }

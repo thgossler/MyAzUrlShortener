@@ -1,13 +1,16 @@
 @page "/statistics"
 @page "/statistics/{vanity}"
 
-@using BlazorBootstrap
-@using Cloud5mins.ShortenerTools.Core.Messages;
-@using Cloud5mins.ShortenerTools.Core.Domain
-@using Microsoft.AspNetCore.Authorization
 @using System.Collections.ObjectModel
-@using System.Text.Json
 @using System.Net
+@using System.Text.Json
+@using AzUrlShortener.Core.Domain
+@using AzUrlShortener.Core.Messages
+@using AzUrlShortener.TinyBlazorAdmin
+@using AzUrlShortener.TinyBlazorAdmin.Components
+@using AzUrlShortener.TinyBlazorAdmin.Services
+@using BlazorBootstrap
+@using Microsoft.AspNetCore.Authorization
 @inject IJSRuntime JSRuntime
 @inject UrlManagerClient urlManager
 
@@ -18,7 +21,7 @@
 <a href="/UrlManager/"> &lt;&lt; Back</a>
 
 <div id="stats" >
-    <BarChart @ref="barChart" Width="800" Height="400" />
+    <BarChart @ref="barChart" />
 </div>
 <div>
     <h3>@dayCount</h3>
@@ -49,7 +52,7 @@
                     {
                         new BarChartDataset
                         {
-                            Label = "Click(s) by Day",
+                            Label = "Clicks by Day",
                             Data = response.Items.Select(x => (double?)x.Count).ToList(),
                             BackgroundColor = new List<string>{ "rgb(150, 91, 227)" },
                         }
@@ -78,7 +81,7 @@
         chartData = await UpdateUIList();
         
         if (chartData != null && chartData.Datasets != null){
-            dayCount = "Day(s): " + chartData.Datasets.Count.ToString();
+            dayCount = "Days: " + chartData.Datasets.Count.ToString();
         }
 
         var options = new BarChartOptions();
@@ -96,11 +99,11 @@
         await barChart.InitializeAsync(chartData, options);
     }
 
-    private List<string> GetDateRange(DateTime startDate)
+    private List<string> GetDateRange(DateTimeOffset startDate)
     {
-        DateTime endDate = DateTime.Now;
+        var endDate = DateTimeOffset.Now;
         List<string> dateRange = new List<string>();
-        for (DateTime date = startDate; date <= endDate; date = date.AddDays(1))
+        for (var date = startDate; date <= endDate; date = date.AddDays(1))
         {
             dateRange.Add(date.ToString("yyyy-MM-dd"));
         }

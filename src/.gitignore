@@ -1,1 +1,7 @@
 .azure
+
+# Ignore local settings with secrets
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.json
+!appsettings.json

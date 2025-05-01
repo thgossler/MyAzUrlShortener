@@ -1,0 +1,63 @@
+﻿@page "/admin/users"
+@using AzUrlShortener.TinyBlazorAdmin
+@using AzUrlShortener.TinyBlazorAdmin.Components
+@using AzUrlShortener.TinyBlazorAdmin.Services
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Configuration
+@attribute [Authorize(Policy = "AdminOnly")]
+@inject IConfiguration Configuration
+@inject UserService userService
+@inject NavigationManager NavigationManager
+@inject IToastService toastService
+
+@rendermode InteractiveServer
+
+<PageTitle>User Management</PageTitle>
+
+<h1>User Management</h1>
+
+<p>Manage user roles in the Azure Portal under the Entra ID blade.</p>
+
+<FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10">
+    <FluentButton Appearance="Appearance.Outline" OnClick="@(() => NavigationManager.NavigateTo("/urlmanager"))">
+        <FluentIcon Value="@(new Icons.Regular.Size16.ArrowLeft())" />
+        Back to URL Manager
+    </FluentButton>
+
+    <FluentAnchor Href="@azPortalUrl" Target="_blank" Appearance="Appearance.Accent">
+        Open the Azure Portal
+    </FluentAnchor>
+</FluentStack>
+
+<h3 class="mt-4">Role Management Instructions</h3>
+
+<FluentCard Width="100%" Height="auto" class="mt-3">
+    <ol>
+        <li>Go to your Azure Portal</li>
+        <li>Navigate to the "Entra ID" blade</li>
+        <li>Navigate to the "App Registration" section</li>
+        <li>Find the application for this URL Shortener under "All applications"</li>
+        <li>Navigate to this application's page'</li>
+        <li>Navigate to the App Roles section'</li>
+        <li>Assign users or groups to the "User" or "Admin" roles</li>
+    </ol>
+    <p>Admin users can see and manage all short URL records.</p>
+    <p>Regular users can only see and manage their own short URL records.</p>
+</FluentCard>
+
+@code {
+    private string azPortalUrl;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var clientAppId = Configuration["Authentication:Entra:ClientId"];
+        azPortalUrl = "https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/~/AppRoles/appId/" + clientAppId + "/isMSAApp~/false";
+
+        var isAdmin = await userService.IsAdminAsync();
+        if (!isAdmin)
+        {
+            toastService.ShowError("You are not authorized to access this page");
+            NavigationManager.NavigateTo("/urlmanager");
+        }
+    }
+}

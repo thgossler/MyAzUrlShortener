@@ -1,7 +1,11 @@
-﻿@using Cloud5mins.ShortenerTools.Core.Domain;
-@using Cloud5mins.ShortenerTools.TinyBlazorAdmin.Components.Shared
+﻿@using AzUrlShortener.Core.Domain
+@using AzUrlShortener.TinyBlazorAdmin
+@using AzUrlShortener.TinyBlazorAdmin.Components
+@using AzUrlShortener.TinyBlazorAdmin.Components.Shared
+@using AzUrlShortener.TinyBlazorAdmin.Services
 @using Microsoft.FluentUI.AspNetCore.Components.Components.Tooltip
 @implements IDialogContentComponent<ShortUrlEntity>
+@inject UserService userService
 
 @rendermode InteractiveServer
 
@@ -15,78 +19,106 @@
 </FluentDialogHeader>
 
 <FluentDialogBody>
-	<EditForm Model="@_shortUrl" FormName="updateUrlForm">
+    <EditForm Model="@_shortUrl" FormName="updateUrlForm" onkeydown="@HandleKeyDown">
         <DataAnnotationsValidator />
-		
+
         <FluentStack Orientation="Orientation.Vertical" VerticalGapGap="10"  Width="100%">
 
             <div style="width: 100%;">
-                <FluentTextField Name="Title" Label="Title" @bind-Value="_shortUrl.Title" Required="false" style="width: 100%;" />
+                <FluentTextField @ref="_titleInput" Name="Title" Label="Title" @bind-Value="_shortUrl.Title" Immediate="true" ImmediateDelay="250" Required="true" style="width: 100%;" />
                 <FluentValidationMessage For="@(() => _shortUrl.Title)" />
             </div>
 
             <div style="width: 100%;">
-                <FluentTextField Name="Url" Label="Url" @bind-Value="_shortUrl.Url" Required="true" style="width: 100%;" />
+                <FluentTextField Name="Url" Label="Url" @bind-Value="_shortUrl.Url" Immediate="true" ImmediateDelay="250" Required="true" style="width: 100%;" />
                 <FluentValidationMessage For="@(() => _shortUrl.Url)" />
             </div>
 
-            <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
-                <FluentTextField Name="Vanity" Label="Vanity" @bind-Value="_shortUrl.RowKey" ReadOnly="true" style="width: 95%;" /><FluentIcon Id="vanityInfo" Icon="Icons.Regular.Size16.Info" />
-
-                <FluentTooltip Anchor="vanityInfo">
-                    The <b>vanity</b> cannot be updated it's The identifier for the short URL.
+            <div style="width: 100%;">
+                <FluentTextField Id="Vanity" Name="Vanity" Label="Vanity" @bind-Value="_shortUrl.Vanity" ReadOnly="true" Disabled="true" style="width: 100%;" />
+                <FluentTooltip Anchor="Vanity">
+                    The vanity is the ID of the short URL and cannot be changed.
                 </FluentTooltip>
-            </FluentStack>
+            </div>
+
+            @if (_isAdmin)
+            {
+                <div style="width: 100%;">
+                    <FluentTextField Id="OwnerUpn" Name="OwnerUpn" Label="Owner UPN" @bind-Value="_shortUrl.OwnerUpn" Immediate="true" ImmediateDelay="250" style="width: 100%;" />
+                    <FluentTooltip Anchor="OwnerUpn">
+                        User Principal Name of the URL owner. Only admins can change this.
+                    </FluentTooltip>
+                </div>
+            }
 
             <div>
                 <SchedulesComponent Schedules="_shortUrl.Schedules"></SchedulesComponent>
             </div>
 
         </FluentStack>
-	</EditForm>
-	
+    </EditForm>
+
 </FluentDialogBody>
 
-
-
 <FluentDialogFooter>
-    <FluentButton Appearance="Appearance.Accent"
-                  Disabled="@(!_shortUrl.Validate())" 
-                  OnClick="@SaveAsync">Save</FluentButton>
-    <FluentButton Appearance="Appearance.Neutral"
-                  OnClick="@CancelAsync">Cancel</FluentButton>
+    <FluentButton Appearance="Appearance.Accent" Disabled="@(!_shortUrl.Validate())" OnClick="@SaveAsync">Save</FluentButton>
+    <FluentButton Appearance="Appearance.Neutral" OnClick="@CancelAsync">Cancel</FluentButton>
 </FluentDialogFooter>
 
-
 @code {
-	[Parameter]
+    [Parameter]
     public ShortUrlEntity Content { get; set; } = default!;
 
     [CascadingParameter]
-    public FluentDialog? Dialog { get; set; } = default!;
+    public FluentDialog Dialog { get; set; } = default!;
 
-	private ShortUrlEntity _shortUrl = new ShortUrlEntity();
+    private ShortUrlEntity _shortUrl = new ShortUrlEntity();
+    private FluentTextField _titleInput = default!;
+    private bool hasFocused;
+    private bool _isAdmin = false;
 
-
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         _shortUrl = Content;
+        _isAdmin = await userService.IsAdminAsync();
     }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !hasFocused)
+        {
+            hasFocused = true;
+            _titleInput?.FocusAsync();
+        }
+    }
+
     private void ToggleDialogPrimaryActionButton(bool enable)
     {
         Dialog!.TogglePrimaryActionButton(enable);
     }
 
-	private async Task SaveAsync()
+    private async Task SaveAsync()
     {
-		if (_shortUrl.Validate())
-		{
-			await Dialog!.CloseAsync(_shortUrl);
-		}
+        if (_shortUrl.Validate())
+        {
+            await Dialog!.CloseAsync(_shortUrl);
+        }
     }
 
     private async Task CancelAsync()
     {
         await Dialog!.CancelAsync();
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && _shortUrl.Validate())
+        {
+            await SaveAsync();
+        }
+        if (e.Key == "Escape")
+        {
+            await CancelAsync();
+        }
     }
 }

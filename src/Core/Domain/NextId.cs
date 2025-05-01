@@ -1,7 +1,7 @@
 using Azure;
 using Azure.Data.Tables;
 
-namespace Cloud5mins.ShortenerTools.Core.Domain;
+namespace AzUrlShortener.Core.Domain;
 
 public class NextId : ITableEntity
 {

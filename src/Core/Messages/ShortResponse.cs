@@ -1,4 +1,4 @@
-namespace Cloud5mins.ShortenerTools.Core.Messages
+namespace AzUrlShortener.Core.Messages
 {
     public class ShortResponse
     {

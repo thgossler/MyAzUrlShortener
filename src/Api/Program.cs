@@ -1,3 +1,5 @@
+using Azure.Core.Diagnostics;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
@@ -6,14 +8,15 @@ builder.AddServiceDefaults();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-builder.AddAzureTableClient("strTables");
+builder.AddAzureTableClient("table-client");
+
+using var listener = AzureEventSourceListener.CreateConsoleLogger();
 
 builder.Services.AddTransient<ILogger>(sp =>
 {
     var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
-    return loggerFactory.CreateLogger("shortenerLogger");
+    return loggerFactory.CreateLogger("AzUrlShortenerLogger");
 });
-
 
 var app = builder.Build();
 

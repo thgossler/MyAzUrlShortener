@@ -1,16 +1,16 @@
 using Cronos;
 
-namespace Cloud5mins.ShortenerTools.Core.Domain
+namespace AzUrlShortener.Core.Domain
 {
     public class Schedule
     {
-        public DateTime Start { get; set; } = DateTime.Now;
-        public DateTime End { get; set; } = new DateTime(9999, 12, 31, 23, 59, 59);
+        public DateTimeOffset Start { get; set; } = DateTimeOffset.UtcNow;
+        public DateTimeOffset End { get; set; } = DateTimeOffset.MaxValue;
 
-        public string AlternativeUrl { get; set; } = "";
         public string Cron { get; set; } = "* * * * *";
-
         public int DurationMinutes { get; set; } = 0;
+
+        public string AlternativeUrl { get; set; } = string.Empty;
 
         public string GetDisplayableUrl(int max)
         {
@@ -22,23 +22,36 @@ namespace Cloud5mins.ShortenerTools.Core.Domain
             return AlternativeUrl;
         }
 
-        public bool IsActive(DateTime pointInTime)
+        public bool IsActive(DateTimeOffset pointInTime)
         {
-            var bufferStart = pointInTime.AddMinutes(-DurationMinutes);
-            var expires = pointInTime.AddMinutes(DurationMinutes);
-
-            CronExpression expression = CronExpression.Parse(Cron);
-            var occurences = expression.GetOccurrences(bufferStart, expires);
-
-            foreach (DateTime d in occurences)
+            // Check if pointInTime is between Start and End
+            if (pointInTime < Start || pointInTime > End)
             {
-                if (d < pointInTime && d < expires)
-                {
-                    return true;
-                }
+                return false;
             }
 
-            return false;
+            // Check if cron expression is unlimited (empty or just asterisks)
+            if (string.IsNullOrEmpty(Cron) || Cron.Trim() == "* * * * *")
+            {
+                return true;
+            }
+
+            if (DurationMinutes <= 0)
+            {
+                return false;
+            }
+
+            // For specific cron expressions, check if pointInTime is within a scheduled time window
+            var bufferStart = pointInTime.AddMinutes(-DurationMinutes).UtcDateTime;
+            var bufferEnd = pointInTime.AddMinutes(DurationMinutes).UtcDateTime;
+
+            CronExpression expression = CronExpression.Parse(Cron);
+            var potentialOccurrences = expression.GetOccurrences(bufferStart, bufferEnd);
+            var matchingOccurrences = potentialOccurrences.Where(o => o <= pointInTime && pointInTime < o.AddMinutes(DurationMinutes));
+            var isMatch = matchingOccurrences.Count() > 0;
+            
+            return isMatch;
         }
+
     }
 }

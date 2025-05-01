@@ -25,18 +25,14 @@ public static class Extensions
 
         builder.Services.ConfigureHttpClientDefaults(http =>
         {
-            // Turn on resilience by default
             http.AddStandardResilienceHandler();
-
-            // Turn on service discovery by default
             http.AddServiceDiscovery();
         });
 
-        // Uncomment the following to restrict the allowed schemes for service discovery.
-        // builder.Services.Configure<ServiceDiscoveryOptions>(options =>
-        // {
-        //     options.AllowedSchemes = ["https"];
-        // });
+        builder.Services.Configure<ServiceDiscoveryOptions>(options =>
+        {
+            options.AllowedSchemes = ["https"];
+        });
 
         return builder;
     }

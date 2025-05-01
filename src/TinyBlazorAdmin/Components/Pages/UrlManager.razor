@@ -1,10 +1,14 @@
 @page "/urlmanager"
 
 @using System.Net
-@using Cloud5mins.ShortenerTools.Core.Domain
-@using Cloud5mins.ShortenerTools.Core.Messages;
-@using Cloud5mins.ShortenerTools.TinyBlazorAdmin.Components.Dialogues
+@using AzUrlShortener.Core.Domain
+@using AzUrlShortener.Core.Messages
+@using AzUrlShortener.TinyBlazorAdmin
+@using AzUrlShortener.TinyBlazorAdmin.Components
+@using AzUrlShortener.TinyBlazorAdmin.Components.Dialogues
+@using AzUrlShortener.TinyBlazorAdmin.Services
 @inject UrlManagerClient urlManager
+@inject UserService userService
 @inject IJSRuntime JSRuntime
 @inject IDialogService DialogService
 @inject IToastService toastService
@@ -12,59 +16,160 @@
 
 @rendermode InteractiveServer
 
-<PageTitle>Url Manager</PageTitle>
+<PageTitle>Short URL Manager</PageTitle>
 
-<h1>Urls Manager</h1>
-<h3>Create, Edit, Archive your URLs</h3>
+<div class="page-container">
+    <div class="header-section">
+        <h1>Manage URLs</h1>
+        <h4>Add, edit and archive URL records</h4>
 
-<FluentButton OnClick="@(CreateShortUrl)" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.Add())">Add New Url</FluentButton>
+        <div class="actions-row">
+            <FluentButton OnClick="@(CreateShortUrl)" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.Add())">Add</FluentButton>
 
-<div style="height: 400px; overflow-x:auto; display:flex;">
-    <FluentDataGrid Id="grdUrls" 
-                    Items="@urlList"
-                    ResizableColumns=true
-                    AllowSorting=true
-                    Pagination="@pagination"
-                    RowSize="DataGridRowSize.Medium"
-                    ShowHover=true>
-        <ChildContent>
-            <TemplateColumn Width="70px" Sortable="false">
-                <FluentButton OnClick="@(async () => await CopyToClipboardAsync(context!.ShortUrl))" IconEnd="@(new Icons.Regular.Size16.Copy())" Title="Copy" />
-            </TemplateColumn>
-            <TemplateColumn Width="115px" Title="Schedule(s)" Sortable="true" SortBy="@sortBySchedules">
-                @(context!.Schedules?.Count ?? 0)
-            </TemplateColumn>
-            <TemplateColumn Title="Vanity" Width="150px" Sortable="true" SortBy="@sortByVanities">
-                <FluentAnchor Href="@context!.ShortUrl" Target="_blank" Appearance="Appearance.Hypertext">@context!.RowKey</FluentAnchor>
-            </TemplateColumn>
-            <PropertyColumn Title="Title" Property="@(c => c!.Title)" Sortable="true"/>
-            <PropertyColumn Title="Url" Property="@(c => c!.Url)" Sortable="true"/>
-            <TemplateColumn Title="Clicks" Width="110px" Align="Align.End" Sortable="true" SortBy="@sortByClicks">
-                <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
-                    @context.Clicks
-                    <FluentButton OnClick="@(() => NavigateToStats(context.RowKey))" IconEnd="@(new Icons.Regular.Size16.ChartMultiple())" />
-                </FluentStack>
-            </TemplateColumn>
-            <TemplateColumn Width="100px" Sortable="false">
-                <FluentButton OnClick="@(() => EditShortUrl(context))" IconEnd="@(new Icons.Regular.Size16.Edit())" Title="Edit" />
-                <FluentButton OnClick="@(async () => await ArchiveShortUrl(context))" IconEnd="@(new Icons.Regular.Size16.Archive())" Title="Archive" />
-            </TemplateColumn>
-        </ChildContent>
-        <EmptyContent>
-            <FluentIcon Value="@(new Icons.Filled.Size16.Crown())" Color="@Color.Accent" />&nbsp; Nothing to see here. Carry on!
-        </EmptyContent>
-    </FluentDataGrid>
+            <div class="search-container">
+                <FluentSearch Placeholder="Filter..."
+                @bind-Value="searchText"
+                @bind-Value:after="OnSearchInput"
+                Immediate="true"
+                ImmediateDelay="500"
+                Icon="@(new Icons.Regular.Size16.Search())" />
+            </div>
+        </div>
+    </div>
+
+    @if (!isAdmin)
+    {
+        <div class="info-banner">
+            <FluentIcon Value="@(new Icons.Regular.Size16.Info())" Color="@Color.Accent" />
+            You are viewing only URLs you have created.
+        </div>
+    }
+
+    <div class="grid-container">
+        <FluentDataGrid Id="grdUrls"
+        Items="@filteredUrlList"
+        ResizableColumns=true
+        GridTemplateColumns="60px auto auto auto auto 120px 120px 120px"
+        AutoFitColumns=true
+        AllowSorting=true
+        Pagination="@pagination"
+        RowSize="DataGridRowSize.Medium"
+        ShowHover=true>
+            <ChildContent>
+                <TemplateColumn Sortable="false">
+                    <FluentButton OnClick="@(async () => await CopyToClipboardAsync(context!.ShortUrl))" IconEnd="@(new Icons.Regular.Size16.Copy())" Title="Copy" />
+                </TemplateColumn>
+                <TemplateColumn Title="Vanity" Sortable="true" SortBy="@sortByVanities" Style="min-width: 100px">
+                    <FluentAnchor Href="@context!.ShortUrl" Target="_blank" Appearance="Appearance.Hypertext">@context!.Vanity</FluentAnchor>
+                </TemplateColumn>
+                <PropertyColumn Title="Title" Property="@(c => c!.Title)" Sortable="true" Style="min-width: 130px" />
+                <PropertyColumn Title="Url" Property="@(c => c!.Url)" Sortable="true" Style="min-width: 150px" />
+                @if (isAdmin)
+                {
+                    <PropertyColumn Title="Owner" Property="@(c => c!.OwnerUpn)" Sortable="true" Style="min-width: 130px" />
+                }
+                <TemplateColumn Title="Schedule(s)" Sortable="true" SortBy="@sortBySchedules">
+                    @(context!.Schedules?.Count ?? 0)
+                </TemplateColumn>
+                <TemplateColumn Title="Clicks" Align="Align.End" Sortable="true" SortBy="@sortByClicks">
+                    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                        @context.Clicks
+                        <FluentButton OnClick="@(() => NavigateToStats(context.RowKey))" IconEnd="@(new Icons.Regular.Size16.ChartMultiple())" />
+                    </FluentStack>
+                </TemplateColumn>
+                <TemplateColumn Sortable="false">
+                    <FluentButton OnClick="@(() => EditShortUrl(context))" IconEnd="@(new Icons.Regular.Size16.Edit())" Title="Edit" />
+                    <FluentButton OnClick="@(async () => await ArchiveShortUrl(context))" IconEnd="@(new Icons.Regular.Size16.Archive())" Title="Archive" />
+                </TemplateColumn>
+            </ChildContent>
+            <EmptyContent>
+                <FluentIcon Value="@(new Icons.Filled.Size16.Info())" Color="@Color.Accent" />&nbsp; No short URLs found.
+            </EmptyContent>
+        </FluentDataGrid>
+    </div>
+
+    <div class="paginator-container">
+        <FluentPaginator State="@pagination" />
+    </div>
 </div>
-<FluentPaginator State="@pagination" />
 
+<style>
+    .page-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 100px);
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    }
 
+    .header-section {
+    flex: 0 0 auto;
+    margin-bottom: 1rem;
+    }
+
+    .grid-container {
+    flex: 1 1 auto;
+    overflow: auto;
+    width: 100%;
+    position: relative;
+    min-height: 300px;
+    }
+
+    .paginator-container {
+    flex: 0 0 auto;
+    margin-top: 1rem;
+    }
+
+    .actions-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 12px;
+    }
+
+    .search-container {
+    min-width: 250px;
+    margin-left: auto;
+    }
+
+    /* Make FluentDataGrid use all available space */
+    ::deep .fluent-data-grid {
+    height: 100%;
+    width: 100%;
+    }
+
+    /* Ensure grid rows expand properly */
+    ::deep .fluent-data-grid-row {
+    width: 100%;
+    }
+
+    @@media (max-height: 600px) {
+    .page-container {
+    height: calc(100vh - 50px);
+    }
+    }
+
+    .info-banner {
+        background-color: #6699ff;
+        padding: 8px 16px;
+        border-radius: 4px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+</style>
 
 @code {
-
     private ListResponse urls = new ListResponse();
+    private bool isAdmin = false;
+    private string searchText = string.Empty;
 
-    IQueryable<ShortUrlEntity>? urlList;
-    PaginationState pagination = new PaginationState { ItemsPerPage = 20 };
+    IQueryable<ShortUrlEntity> urlList;
+    IQueryable<ShortUrlEntity> filteredUrlList;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
     ShortUrlRequest shortUrlRequest = new ShortUrlRequest();
     ShortUrlEntity editedUrl = new ShortUrlEntity();
     public List<ShortUrlEntity> gridData { get; set; } = new List<ShortUrlEntity>();
@@ -75,7 +180,13 @@
 
     protected override async Task OnInitializedAsync()
     {
+        isAdmin = await userService.IsAdminAsync();
         await RefreshGrid();
+    }
+
+    private void OnSearchInput()
+    {
+        FilterUrls();
     }
 
     private async Task RefreshGrid()
@@ -83,11 +194,41 @@
         try
         {
             urlList = await urlManager.GetUrls();
+            FilterUrls();
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex.ToString());
         }
+    }
+
+    private void FilterUrls()
+    {
+        if (urlList == null)
+        {
+            filteredUrlList = null;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            // If search is empty, show all URLs
+            filteredUrlList = urlList;
+        }
+        else
+        {
+            // Apply the filter based on searchText (case-insensitive)
+            var searchTerm = searchText.Trim().ToLowerInvariant();
+            filteredUrlList = urlList.Where(url =>
+                (url.Title != null && url.Title.ToLowerInvariant().Contains(searchTerm)) ||
+                (url.Vanity != null && url.Vanity.ToLowerInvariant().Contains(searchTerm)) ||
+                (url.Url != null && url.Url.ToLowerInvariant().Contains(searchTerm))
+            );
+        }
+
+        // Reset pagination to first page when filtering
+        pagination.SetCurrentPageIndexAsync(0);
+        StateHasChanged();
     }
 
     private async Task UpdateUIList()
@@ -106,19 +247,22 @@
                 PreventScroll = true,
                 Width = "600px"
             });
-        
+
         var result = await dialog.Result;
         if (!result.Cancelled && result.Data != null)
         {
             var dialogData = (ShortUrlRequest)result.Data;
+
             var urlRequest = new ShortRequest
+                {
+                    Title = dialogData.Title ?? string.Empty,
+                    Url = dialogData.Url,
+                    Vanity = dialogData.Vanity,
+                    Schedules = dialogData.Schedules.ToArray()
+                };
+
+            try
             {
-                Title = dialogData.Title ?? string.Empty,
-                Url = dialogData.Url,
-                Vanity = dialogData.Vanity,
-                Schedules = dialogData.Schedules.ToArray()
-            };
-            try{
                 var response = await urlManager.UrlCreate(urlRequest);
                 if (response.Item1)
                 {
@@ -137,7 +281,7 @@
         }
     }
 
-    [Inject] public IJSRuntime? JsRuntime { get; set; }
+    [Inject] public IJSRuntime JsRuntime { get; set; }
     public async Task CopyToClipboardAsync(string url)
     {
         if (JsRuntime == null)
@@ -146,7 +290,6 @@
         }
         await JSRuntime.InvokeVoidAsync("clipboardCopy.copyText", url);
     }
-
 
     private async Task EditShortUrl(ShortUrlEntity urlEntity)
     {
@@ -157,7 +300,7 @@
                 PreventScroll = true,
                 Width = "600px"
             });
-        
+
         var result = await dialog.Result;
         if (!result.Cancelled && result.Data != null)
         {
@@ -172,8 +315,8 @@
         }
     }
 
-
-    private void NavigateToStats(string vanity){
+    private void NavigateToStats(string vanity)
+    {
         NavigationManager.NavigateTo("/Statistics/" + vanity);
     }
 
@@ -185,6 +328,9 @@
             await UpdateUIList();
             toastService.ShowSuccess("Short URL archived successfully");
         }
+        else
+        {
+            toastService.ShowError("Not authorized to archive this URL");
+        }
     }
-
 }

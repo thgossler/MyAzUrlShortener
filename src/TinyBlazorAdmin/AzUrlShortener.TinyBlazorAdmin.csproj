@@ -2,18 +2,20 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
+	<PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="9.0.4" />
+	<PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="9.0.4" />
 	<PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.*-* " />
     <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="4.*-* " />
     <PackageReference Include="Blazor.Bootstrap" Version="3.3.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Core\Cloud5mins.ShortenerTools.Core.csproj" />
-    <ProjectReference Include="..\ServiceDefaults\Cloud5mins.ShortenerTools.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\Core\AzUrlShortener.Core.csproj" />
+    <ProjectReference Include="..\ServiceDefaults\AzUrlShortener.ServiceDefaults.csproj" />
   </ItemGroup>
 </Project>

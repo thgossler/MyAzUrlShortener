@@ -10,12 +10,15 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link href="_content/Blazor.Bootstrap/blazor.bootstrap.css" rel="stylesheet" />
     <link rel="stylesheet" href="app.css" />
-    <link rel="stylesheet" href="Cloud5mins.ShortenerTools.TinyBlazorAdmin.styles.css" />
+    <link rel="stylesheet" href="AzUrlShortener.TinyBlazorAdmin.styles.css" />
     <HeadOutlet />
 </head>
 
 <body>
-    <Routes />
+    <CascadingAuthenticationState>
+        <FluentDesignTheme Mode="DesignThemeModes.System" OfficeColor="@Microsoft.FluentUI.AspNetCore.Components.OfficeColor.PowerBI" />
+        <Routes />
+    </CascadingAuthenticationState>
     <script src="_framework/blazor.web.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.0.1/chart.umd.js" integrity="sha512-gQhCDsnnnUfaRzD8k1L5llCCV6O9HN09zClIzzeJ8OJ9MpGmIlCxm+pdCkqTwqJ4JcjbojFr79rl2F1mzcoLMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>

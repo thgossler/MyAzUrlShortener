@@ -1,10 +1,14 @@
-namespace Cloud5mins.ShortenerTools.Core.Domain
+namespace AzUrlShortener.Core.Domain
 {
     public class ClickStatsEntityList
     {
-        public List<ClickStatsEntity> ClickStatsList { get; set; } = new List<ClickStatsEntity>();
+        public List<ClickStatsEntity> ClickStatsList { get; set; }
 
-        public ClickStatsEntityList() { }
+        public ClickStatsEntityList() 
+        { 
+            ClickStatsList = new List<ClickStatsEntity>();
+        }
+
         public ClickStatsEntityList(List<ClickStatsEntity> list)
         {
             ClickStatsList = list;

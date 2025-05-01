@@ -1,8 +1,8 @@
 using Azure.Data.Tables;
-using Cloud5mins.ShortenerTools.Core.Domain;
-using Cloud5mins.ShortenerTools.Core.Messages;
-using Cloud5mins.ShortenerTools.Core.Service;
-using Cloud5mins.ShortenerTools.Core.Services;
+using AzUrlShortener.Core.Domain;
+using AzUrlShortener.Core.Messages;
+using AzUrlShortener.Core.Service;
+using AzUrlShortener.Core.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
 using System.Net;
 
@@ -16,7 +16,7 @@ public static class ShortenerEnpoints
         // GETS
 
         endpoints.MapGet("/", GetWelcomeMessage)
-            .WithDescription("Welcome to Cloud5mins URL Shortener API");
+            .WithDescription("Welcome to AzUrlShortener API");
 
         endpoints.MapGet("/UrlList", UrlList)
             .WithDescription("List all Urls")
@@ -43,12 +43,12 @@ public static class ShortenerEnpoints
 
     }
 
-    static private string GetWelcomeMessage()
+    private static string GetWelcomeMessage()
     {
-        return "Welcome to Cloud5mins URL Shortener API";
+        return "Welcome to AzUrlShortener API";
     }
 
-    static private async Task<Results<
+    private static async Task<Results<
                                 Created<ShortResponse>,
                                 BadRequest<DetailedBadRequest>,
                                 NotFound<DetailedBadRequest>,
@@ -62,11 +62,11 @@ public static class ShortenerEnpoints
         try
         {
             var urlServices = new UrlServices(logger, new AzStorageTableService(tblClient));
-            var host = GetHost(context);
+            var host = GetFullHostName(context);
             ShortResponse result = await urlServices.Create(request, host);
             return TypedResults.Created($"/api/UrlCreate/{result.ShortUrl}", result);
         }
-        catch (ShortenerToolException ex)
+        catch (AzUrlShortenerException ex)
         {
             switch (ex.StatusCode)
             {
@@ -87,7 +87,7 @@ public static class ShortenerEnpoints
         }
     }
 
-    static private async Task<Results<
+    private static async Task<Results<
                                     Ok,
                                     InternalServerError<DetailedBadRequest>>>
                                     UrlArchive(ShortUrlEntity shortUrl,
@@ -107,7 +107,7 @@ public static class ShortenerEnpoints
         }
     }
 
-    static private async Task<Results<
+    private static async Task<Results<
                                     Ok<ShortUrlEntity>,
                                     InternalServerError<DetailedBadRequest>>>
                                     UrlUpdate(ShortUrlEntity shortUrl,
@@ -118,7 +118,7 @@ public static class ShortenerEnpoints
         try
         {
             var urlServices = new UrlServices(logger, new AzStorageTableService(tblClient));
-            var host = GetHost(context);
+            var host = GetFullHostName(context);
             var result = await urlServices.Update(shortUrl, host);
             return TypedResults.Ok(result);
         }
@@ -131,7 +131,7 @@ public static class ShortenerEnpoints
 
 
 
-    static private async Task<Results<
+    private static async Task<Results<
                                     Ok<ClickDateList>,
                                     InternalServerError<DetailedBadRequest>>>
                                     UrlClickStatsByDay(UrlClickStatsRequest statsRequest,
@@ -142,8 +142,12 @@ public static class ShortenerEnpoints
         try
         {
             var urlServices = new UrlServices(logger, new AzStorageTableService(tblClient));
-            var host = GetHost(context);
-            var result = await urlServices.ClickStatsByDay(statsRequest, host);
+            var host = GetFullHostName(context);
+
+            // Get the ownerUpn query parameter if it exists
+            string ownerUpn = context.Request.Query["ownerUpn"];
+
+            var result = await urlServices.ClickStatsByDay(statsRequest, host, ownerUpn);
             return TypedResults.Ok(result);
         }
         catch (Exception ex)
@@ -154,18 +158,23 @@ public static class ShortenerEnpoints
     }
 
 
-    static private async Task<Results<
-                                Ok<ListResponse>,
-                                InternalServerError<DetailedBadRequest>>>
-                                UrlList(TableServiceClient tblClient,
-                                        HttpContext context,
-                                        ILogger logger)
+    private static async Task<Results<
+                            Ok<ListResponse>,
+                            InternalServerError<DetailedBadRequest>>>
+                            UrlList(TableServiceClient tblClient,
+                                    HttpContext context,
+                                    ILogger logger)
     {
         try
         {
             var urlServices = new UrlServices(logger, new AzStorageTableService(tblClient));
-            var host = GetHost(context);
-            ListResponse Urls = await urlServices.List(host);
+            var host = GetFullHostName(context);
+
+            // Get the ownerUpn query parameter if it exists
+            string ownerUpn = context.Request.Query["ownerUpn"];
+
+            // Pass the ownerUpn to the List method
+            ListResponse Urls = await urlServices.List(host, ownerUpn);
             return TypedResults.Ok(Urls);
         }
         catch (Exception ex)
@@ -175,12 +184,15 @@ public static class ShortenerEnpoints
         }
     }
 
-    private static string GetHost(HttpContext context)
+
+    private static string GetFullHostName(HttpContext context)
     {
-        string? customDomain = Environment.GetEnvironmentVariable("CustomDomain");
-        var host = string.IsNullOrEmpty(customDomain) ? context.Request.Host.Value : customDomain;
+        string customDomain = Environment.GetEnvironmentVariable("CustomDomain");
+        var host = string.IsNullOrEmpty(customDomain) ? $"{context.Request.Scheme}://{context.Request.Host.Value}" : customDomain;
+        if (!host.StartsWith("http"))
+        {
+            host = "https://" + host;
+        }
         return host ?? string.Empty;
     }
-
 }
-

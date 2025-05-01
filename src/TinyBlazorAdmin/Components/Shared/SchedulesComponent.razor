@@ -1,6 +1,9 @@
 @inherits LayoutComponentBase
-@using Cloud5mins.ShortenerTools
-@using Cloud5mins.ShortenerTools.Core.Domain
+@using AzUrlShortener
+@using AzUrlShortener.Core.Domain
+@using AzUrlShortener.TinyBlazorAdmin
+@using AzUrlShortener.TinyBlazorAdmin.Components
+@using AzUrlShortener.TinyBlazorAdmin.Services
 
 
 <FluentCard MinimalStyle="true" AreaRestricted="false">
@@ -9,7 +12,7 @@
         <FluentButton OnClick="@(async () => AddScheduleClick())" IconEnd="@(new Icons.Regular.Size16.AddSquare())" />
     </FluentStack>
     
-    <FluentAccordion ExpandMode="AccordionExpandMode.Single">
+    <FluentAccordion ExpandMode="AccordionExpandMode.Multi">
 
             @foreach(var s in schedules)
             {

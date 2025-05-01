@@ -1,9 +1,9 @@
-using Cloud5mins.ShortenerTools.Core.Service;
+using AzUrlShortener.Core.Service;
 using System.Security.Cryptography;
 
 
 
-namespace Cloud5mins.ShortenerTools
+namespace AzUrlShortener
 {
     public static class Utility
     {

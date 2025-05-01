@@ -1,18 +1,18 @@
-using Cloud5mins.ShortenerTools.Core.Domain;
+using AzUrlShortener.Core.Domain;
 
-namespace Cloud5mins.ShortenerTools.Core.Service;
+namespace AzUrlShortener.Core.Service;
 
 public interface IAzStorageTableService
 {
     Task<int> GetNextTableId();
-    Task<List<ShortUrlEntity>> GetAllShortUrlEntities();
+    Task<List<ShortUrlEntity>> GetAllShortUrlEntities(string ownerUpn = null);
     Task<ShortUrlEntity> SaveShortUrlEntity(ShortUrlEntity newRow2);
-    Task<ShortUrlEntity> GetShortUrlEntity(ShortUrlEntity row);
-    Task<bool> IfShortUrlEntityExist(ShortUrlEntity row);
+    Task<ShortUrlEntity> GetShortUrlEntity(ShortUrlEntity row, string ownerUpn = null);
+    Task<bool> IfShortUrlEntityExist(ShortUrlEntity row, string ownerUpn = null);
     Task<ShortUrlEntity> UpdateShortUrlEntity(ShortUrlEntity urlEntity);
-    Task<ShortUrlEntity?> GetShortUrlEntityByVanity(string vanity);
-    Task<bool> IfShortUrlEntityExistByVanity(string vanity);
-    Task<ShortUrlEntity> ArchiveShortUrlEntity(ShortUrlEntity urlEntity);
-    Task<List<ClickStatsEntity>> GetAllStatsByVanity(string vanity);
+    Task<ShortUrlEntity> GetShortUrlEntityByVanity(string vanity, string ownerUpn = null);
+    Task<bool> IfShortUrlEntityExistByVanity(string vanity, string ownerUpn = null);
+    Task<ShortUrlEntity> ArchiveShortUrlEntity(ShortUrlEntity urlEntity, string ownerUpn = null);
+    Task<List<ClickStatsEntity>> GetAllStatsByVanity(string vanity, string ownerUpn = null);
     Task SaveClickStatsEntity(ClickStatsEntity newStats);
 }

@@ -1,5 +1,8 @@
-﻿@using Cloud5mins.ShortenerTools.Core.Messages
-@using Cloud5mins.ShortenerTools.TinyBlazorAdmin.Components.Shared
+﻿@using AzUrlShortener.Core.Messages
+@using AzUrlShortener.TinyBlazorAdmin
+@using AzUrlShortener.TinyBlazorAdmin.Components
+@using AzUrlShortener.TinyBlazorAdmin.Components.Shared
+@using AzUrlShortener.TinyBlazorAdmin.Services
 @implements IDialogContentComponent<ShortUrlRequest>
 
 @rendermode InteractiveServer
@@ -14,23 +17,23 @@
 </FluentDialogHeader>
 
 <FluentDialogBody>
-	<EditForm Model="@_shortUrl" FormName="new_note">
+    <EditForm Model="@_shortUrl" FormName="new_note" onkeydown="@HandleKeyDown">
         <DataAnnotationsValidator />
-		
+
         <FluentStack Orientation="Orientation.Vertical" VerticalGapGap="10"  Width="100%">
 
             <div style="width: 100%;">
-                <FluentTextField Name="Title" Label="Title" @bind-Value="_shortUrl.Title" Required="false" style="width: 100%;" />
+                <FluentTextField @ref="_titleInput" Name="Title" Label="Title" @bind-Value="_shortUrl.Title" Immediate="true" ImmediateDelay="500" Required="true" style="width: 100%;" />
                 <FluentValidationMessage For="@(() => _shortUrl.Title)" />
             </div>
 
             <div style="width: 100%;">
-                <FluentTextField Name="Url" Label="Url" @bind-Value="_shortUrl.Url" Required="true" style="width: 100%;" />
+                <FluentTextField Name="Url" Label="Url" @bind-Value="_shortUrl.Url" Immediate="true" ImmediateDelay="500" Required="true" style="width: 100%;" />
                 <FluentValidationMessage For="@(() => _shortUrl.Url)" />
             </div>
 
             <div style="width: 100%;">
-                <FluentTextField Name="Vanity" Label="Vanity" @bind-Value="_shortUrl.Vanity" Required="false" style="width: 100%;" />
+                <FluentTextField Name="Vanity" Label="Vanity" @bind-Value="_shortUrl.Vanity" Immediate="true" ImmediateDelay="500" Required="true" style="width: 100%;" />
                 <FluentValidationMessage For="@(() => _shortUrl.Vanity)" />
             </div>
 
@@ -40,35 +43,41 @@
 
         </FluentStack>
 
-	</EditForm>
-	
+    </EditForm>
+
 </FluentDialogBody>
 
-
-
 <FluentDialogFooter>
-    <FluentButton Appearance="Appearance.Accent"
-                  Disabled="@(!_shortUrl.Validate())" 
-                  OnClick="@SaveAsync">Save</FluentButton>
-    <FluentButton Appearance="Appearance.Neutral"
-                  OnClick="@CancelAsync">Cancel</FluentButton>
+    <FluentButton Appearance="Appearance.Accent" Disabled="@(!_shortUrl.Validate())" OnClick="@SaveAsync">Save</FluentButton>
+    <FluentButton Appearance="Appearance.Neutral" OnClick="@CancelAsync">Cancel</FluentButton>
 </FluentDialogFooter>
 
 
 @code {
-	[Parameter]
+    [Parameter]
     public ShortUrlRequest Content { get; set; } = default!;
 
     [CascadingParameter]
-    public FluentDialog? Dialog { get; set; } = default!;
+    public FluentDialog Dialog { get; set; } = default!;
 
-	private ShortUrlRequest _shortUrl = new ShortUrlRequest();
-
+    private ShortUrlRequest _shortUrl = new ShortUrlRequest();
+    private FluentTextField _titleInput = default!;
+    private bool hasFocused;
 
     protected override void OnInitialized()
     {
         _shortUrl = Content;
     }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !hasFocused)
+        {
+            hasFocused = true;
+            _titleInput?.FocusAsync();
+        }
+    }
+
     private void ToggleDialogPrimaryActionButton(bool enable)
     {
         Dialog!.TogglePrimaryActionButton(enable);
@@ -76,7 +85,7 @@
 
 	private async Task SaveAsync()
     {
-		if (_shortUrl.Validate())
+        if (_shortUrl.Validate())
 		{
 			await Dialog!.CloseAsync(_shortUrl);
 		}
@@ -85,5 +94,17 @@
     private async Task CancelAsync()
     {
         await Dialog!.CancelAsync();
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && _shortUrl.Validate())
+        {
+            await SaveAsync();
+        }
+        if (e.Key == "Escape")
+        {
+            await CancelAsync();
+        }
     }
 }

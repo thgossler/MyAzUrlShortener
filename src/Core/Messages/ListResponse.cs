@@ -1,6 +1,6 @@
-using Cloud5mins.ShortenerTools.Core.Domain;
+using AzUrlShortener.Core.Domain;
 
-namespace Cloud5mins.ShortenerTools.Core.Messages
+namespace AzUrlShortener.Core.Messages
 {
     public class ListResponse
     {

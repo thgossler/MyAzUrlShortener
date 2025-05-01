@@ -1,13 +1,13 @@
-using Cloud5mins.ShortenerTools.Core.Domain;
+using AzUrlShortener.Core.Domain;
 using System.ComponentModel.DataAnnotations;
 
-namespace Cloud5mins.ShortenerTools.Core.Messages
+namespace AzUrlShortener.Core.Messages
 {
     public class ShortUrlRequest
     {
-        private string? _vanity;
+        private string _vanity;
 
-        public string? Title { get; set; }
+        public string Title { get; set; }
 
         public string Vanity
         {
@@ -24,7 +24,7 @@ namespace Cloud5mins.ShortenerTools.Core.Messages
         [Required]
         public string Url { get; set; } = string.Empty;
 
-        private List<Schedule>? _schedules;
+        private List<Schedule> _schedules;
 
         public List<Schedule> Schedules
         {
@@ -44,11 +44,7 @@ namespace Cloud5mins.ShortenerTools.Core.Messages
 
         public bool Validate()
         {
-            if (string.IsNullOrEmpty(Url))
-            {
-                return false;
-            }
-            return true;
+            return ShortUrlEntity.Validate(Url, Vanity, Title, null);
         }
     }
 }
