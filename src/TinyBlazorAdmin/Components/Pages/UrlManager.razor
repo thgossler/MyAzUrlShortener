@@ -28,11 +28,11 @@
 
             <div class="search-container">
                 <FluentSearch Placeholder="Filter..."
-                @bind-Value="searchText"
-                @bind-Value:after="OnSearchInput"
-                Immediate="true"
-                ImmediateDelay="500"
-                Icon="@(new Icons.Regular.Size16.Search())" />
+                              @bind-Value="searchText"
+                              @bind-Value:after="OnSearchInput"
+                              Immediate="true"
+                              ImmediateDelay="500"
+                              Icon="@(new Icons.Regular.Size16.Search())" />
             </div>
         </div>
     </div>
@@ -47,14 +47,14 @@
 
     <div class="grid-container">
         <FluentDataGrid Id="grdUrls"
-        Items="@filteredUrlList"
-        ResizableColumns=true
-        GridTemplateColumns="60px auto auto auto auto 120px 120px 120px"
-        AutoFitColumns=true
-        AllowSorting=true
-        Pagination="@pagination"
-        RowSize="DataGridRowSize.Medium"
-        ShowHover=true>
+                        Items="@filteredUrlList"
+                        ResizableColumns=true
+                        GridTemplateColumns="60px auto auto auto auto 120px 120px 120px"
+                        AutoFitColumns=true
+                        AllowSorting=true
+                        Pagination="@pagination"
+                        RowSize="DataGridRowSize.Medium"
+                        ShowHover=true>
             <ChildContent>
                 <TemplateColumn Sortable="false">
                     <FluentButton OnClick="@(async () => await CopyToClipboardAsync(context!.ShortUrl))" IconEnd="@(new Icons.Regular.Size16.Copy())" Title="Copy" />
@@ -95,60 +95,58 @@
 
 <style>
     .page-container {
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - 100px);
-    width: 100%;
-    margin: 0;
-    padding: 0;
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 100px);
+        width: 100%;
+        margin: 0;
+        padding: 0;
     }
 
     .header-section {
-    flex: 0 0 auto;
-    margin-bottom: 1rem;
+        flex: 0 0 auto;
+        margin-bottom: 1rem;
     }
 
     .grid-container {
-    flex: 1 1 auto;
-    overflow: auto;
-    width: 100%;
-    position: relative;
-    min-height: 300px;
+        flex: 1 1 auto;
+        overflow: auto;
+        width: 100%;
+        position: relative;
+        min-height: 300px;
     }
 
     .paginator-container {
-    flex: 0 0 auto;
-    margin-top: 1rem;
+        flex: 0 0 auto;
+        margin-top: 1rem;
     }
 
     .actions-row {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    align-items: center;
-    margin-bottom: 12px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 12px;
     }
 
     .search-container {
-    min-width: 250px;
-    margin-left: auto;
+        min-width: 250px;
+        margin-left: auto;
     }
 
-    /* Make FluentDataGrid use all available space */
     ::deep .fluent-data-grid {
-    height: 100%;
-    width: 100%;
+        height: 100%;
+        width: 100%;
     }
 
-    /* Ensure grid rows expand properly */
     ::deep .fluent-data-grid-row {
-    width: 100%;
+        width: 100%;
     }
 
     @@media (max-height: 600px) {
-    .page-container {
-    height: calc(100vh - 50px);
-    }
+        .page-container {
+            height: calc(100vh - 50px);
+        }
     }
 
     .info-banner {

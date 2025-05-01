@@ -1,0 +1,29 @@
+﻿@namespace AzUrlShortener.TinyBlazorAdmin.Components.Shared
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using Microsoft.AspNetCore.Authentication.OpenIdConnect
+@inject NavigationManager NavigationManager
+
+@rendermode InteractiveServer
+
+<FluentButton Appearance="Appearance.Stealth"
+              Type="ButtonType.Button"
+              @onclick="SwitchAccountAsync"
+              Style="padding: 0px 4px; min-width: auto; height: 28px; font-weight: normal; color: var(--accent-fill-rest);">
+    Switch account
+</FluentButton>
+
+@code {
+    private void SwitchAccountAsync()
+    {
+        try
+        {
+            NavigationManager.NavigateTo("/api/auth/switch-account", true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Account switch error: {ex.Message}");
+            NavigationManager.NavigateTo("/", true);
+        }
+    }
+}

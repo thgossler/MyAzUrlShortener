@@ -1,12 +1,18 @@
 ﻿@inherits LayoutComponentBase
 @using AzUrlShortener.TinyBlazorAdmin
 @using AzUrlShortener.TinyBlazorAdmin.Components
+@using AzUrlShortener.TinyBlazorAdmin.Components.Shared
 @using AzUrlShortener.TinyBlazorAdmin.Services
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using Microsoft.AspNetCore.Authentication.OpenIdConnect
+@using System.Timers
 @inject IHttpContextAccessor HttpContextAccessor
 @inject IConfiguration Configuration
 @inject NavigationManager NavigationManager
 @inject UserService UserService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <FluentLayout>
     <FluentHeader>
@@ -14,15 +20,16 @@
             <a href="/" style="text-decoration: none; color: inherit; cursor: pointer; font-size: larger;">URL Shortener</a>
             <div style="flex-grow: 1"></div>
             <FluentIcon Value="@(new Icons.Regular.Size20.Person())" Color="Color.Fill" />
-            <FluentLabel Color="Color.Fill">
+            <FluentLabel Color="Color.Fill" class="me-2">
                 @(username + (isAdmin ? " (Admin)" : ""))
             </FluentLabel>
+            <SwitchAccountButton />
         </FluentStack>
     </FluentHeader>
     <FluentStack Class="main" Orientation="Orientation.Horizontal" Width="100%">
         <NavMenu />
         <FluentBodyContent Class="body-content">
-            <div class="content">
+            <div class="content position-relative">
                 @Body
             </div>
         </FluentBodyContent>
@@ -44,11 +51,9 @@
     <a class="dismiss">🗙</a>
 </div>
 
-
 @code {
     private bool isAdmin;
     private string username = "Unknown";
-    private string logoutUrl;
 
     protected override async Task OnInitializedAsync()
     {

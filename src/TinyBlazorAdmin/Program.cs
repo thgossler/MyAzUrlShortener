@@ -2,10 +2,12 @@ using AzUrlShortener.TinyBlazorAdmin;
 using AzUrlShortener.TinyBlazorAdmin.Components;
 using AzUrlShortener.TinyBlazorAdmin.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.FluentUI.AspNetCore.Components;
 using Microsoft.FluentUI.AspNetCore.Components.Components.Tooltip;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,13 +24,11 @@ builder.Services.AddHttpClient<UrlManagerClient>(client =>
                 client.BaseAddress = new Uri("https+http://api");
             });
 
-// Add services to the container.
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = "Entra";
 })
-.AddCookie()
 .AddOpenIdConnect("Entra", options =>
 {
     var tenantId = builder.Configuration["Authentication:Entra:TenantId"];
@@ -38,34 +38,67 @@ builder.Services.AddAuthentication(options =>
     options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     options.Authority = $"https://login.microsoftonline.com/{tenantId}/v2.0";
     options.ClientId = clientId;
-    options.ClientSecret = clientSecret;  // Add this line
+    options.ClientSecret = clientSecret;
     options.ResponseType = "code";
     options.SaveTokens = true;
+    options.UseTokenLifetime = true; 
     options.GetClaimsFromUserInfoEndpoint = true;
     options.Scope.Add("email");
     options.Scope.Add("profile");
     options.Scope.Add("openid");
     options.CallbackPath = "/signin-oidc";
-});
+    options.Events = new OpenIdConnectEvents
+    {
+        OnRedirectToIdentityProvider = context =>
+        {
+            if (context.ProtocolMessage.RequestType == OpenIdConnectRequestType.Authentication)
+            {
+                context.ProtocolMessage.Prompt = "select_account";
+            }
+            return Task.CompletedTask;
+        },
+
+        OnTokenValidated = context =>
+        {
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("Token validated and saved to authentication properties");
+            return Task.CompletedTask;
+        },
+
+        OnAuthorizationCodeReceived = context =>
+        {
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("Authorization code received");
+            return Task.CompletedTask;
+        }
+    };
+
+    var applicationUrl = builder.Configuration["ApplicationUrl"] ?? "https://localhost:7203";
+    options.SignedOutCallbackPath = "/signout-callback-oidc";
+    options.SignedOutRedirectUri = applicationUrl;
+})
+.AddCookie(options =>
+ {
+     options.ExpireTimeSpan = TimeSpan.FromHours(1);
+     options.SlidingExpiration = true;
+     options.Cookie.Name = "AzUrlShortener.Auth";
+     options.Cookie.HttpOnly = true;
+     options.Cookie.SameSite = SameSiteMode.Lax;
+     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+ });
 
 builder.Services.AddAuthorization(options =>
 {
-    // By default users need authentication
     options.FallbackPolicy = new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
         .Build();
 
-    // Define policies for Admin and User roles
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
     options.AddPolicy("UserOrAdmin", policy => policy.RequireRole("User", "Admin"));
 });
 
-// Add the HttpContextAccessor for getting the current user
 builder.Services.AddHttpContextAccessor();
-
-// Add authorization state provider
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
-
 builder.Services.AddScoped<UserService>();
 
 builder.Services.AddRazorComponents()
@@ -73,14 +106,14 @@ builder.Services.AddRazorComponents()
 builder.Services.AddFluentUIComponents();
 builder.Services.AddScoped<ITooltipService, TooltipService>();
 
-//Blazor Bootstrap service
+builder.Services.AddControllers();
+
 builder.Services.AddBlazorBootstrap();
 
 var app = builder.Build();
 app.MapDefaultEndpoints();
+app.MapControllers();
 
-
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
@@ -93,7 +126,6 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
-// Add authentication middleware
 app.UseAuthentication();
 app.UseAuthorization();
 
