@@ -10,45 +10,108 @@
 @using AzUrlShortener.TinyBlazorAdmin.Components
 @using AzUrlShortener.TinyBlazorAdmin.Services
 @using BlazorBootstrap
+@using Microsoft.FluentUI.AspNetCore.Components.Extensions
 @using Microsoft.AspNetCore.Authorization
 @inject IJSRuntime JSRuntime
 @inject UrlManagerClient urlManager
+@inject NavigationManager NavigationManager
 
 @rendermode InteractiveServer
 
-<h1>Click Statistics</h1>
-<h3>@subTitle</h3>
-<a href="/UrlManager/"> &lt;&lt; Back</a>
+<PageTitle>Statistics</PageTitle>
 
-<div id="stats" >
-    <BarChart @ref="barChart" />
-</div>
-<div>
-    <h3>@dayCount</h3>
+<h1>Statistics</h1>
+
+<h4>@subTitle</h4>
+
+@if (!string.IsNullOrWhiteSpace(vanity))
+{
+    <div style="margin-top: 20px">
+        <FluentButton Appearance="Appearance.Outline" OnClick="@(() => NavigationManager.NavigateTo("/manageurls"))">
+            &nbsp;<FluentIcon Value="@(new Icons.Regular.Size16.ArrowLeft())" />
+            Back &nbsp;
+        </FluentButton>
+    </div>
+}
+
+<div class="stats-container">
+    <div class="total-clicks-container">
+        <h4>Total Clicks: @totalClicks</h4>
+        @if (showMismatchWarning && trackedClicks > 0)
+        {
+            <div class="warning-message">
+                <p>Note: The chart below only shows @trackedClicks clicks with known dates.</p>
+            </div>
+        }
+    </div>
+
+    <div id="stats">
+        <BarChart @ref="barChart" />
+    </div>
+
+    <div>
+        <h4>@dayCount</h4>
+    </div>
 </div>
 
 @code {
-
     [Parameter]
 #nullable enable
     public string? vanity { get; set; }
 #nullable disable
+
     private string subTitle = "";
     private ChartData chartData = new ChartData();
-    private readonly Random _random = new Random(); 
+    private readonly Random _random = new Random();
     private string dayCount = string.Empty;
     private BarChart barChart = default!;
+    private int totalClicks = 0;
+    private int trackedClicks = 0;
+    private bool showMismatchWarning = false;
 
     private async Task<ChartData> UpdateUIList()
     {
-        subTitle = (!String.IsNullOrEmpty(vanity))? $"Clicks for: {vanity}": "All clicks";
-        try{
+        subTitle = (!String.IsNullOrEmpty(vanity)) ? $"Clicks for vanity: {vanity}" : "Clicks for all vanities";
+        try
+        {
+            // For vanity URLs, we can get the total clicks either from url or from the UrlList
+            if (!String.IsNullOrEmpty(vanity))
+            {
+                var url = await urlManager.GetUrlByVanity(vanity);
+                if (url != null)
+                {
+                    totalClicks = url.Clicks;
+                }
+            }
+            else
+            {
+                // For all URLs, we can get the total clicks from the UrlList
+                var urlList = await urlManager.GetUrls();
+                totalClicks = urlList?.Sum(u => u.Clicks) ?? 0;
+            }
+            StateHasChanged();
 
-            var response = await urlManager.UrlClickStatsByDay( new UrlClickStatsRequest(vanity));
-            if(response != null){    
-                var data = new ChartData(){
-                    Labels =  GetDateRange(response.Items.Min(x => x.DateClicked)),
-                    Datasets = new List<IChartDataset>()
+            // Get the click stats response
+            var response = await urlManager.UrlClickStatsByDay(new UrlClickStatsRequest(vanity));
+            if (response != null)
+            {
+                // Calculate the total clicks from the items in the response
+                trackedClicks = response.Items.Sum(x => x.Count);
+
+                if (totalClicks > trackedClicks)
+                {
+                    showMismatchWarning = true;
+                }
+                else
+                {
+                    totalClicks = trackedClicks;
+                }
+                StateHasChanged();
+
+                var data = new ChartData()
+                    {
+                        Labels = GetDateRange(response.Items.Min(x => x.DateClicked)),
+                        Datasets = new List<IChartDataset>()
                     {
                         new BarChartDataset
                         {
@@ -57,16 +120,17 @@
                             BackgroundColor = new List<string>{ "rgb(150, 91, 227)" },
                         }
                     }
-                };
+                    };
                 return data;
             }
         }
         catch (System.Exception ex)
         {
-            Console.WriteLine(ex.ToString()); 
+            Console.WriteLine(ex.ToString());
         }
         return null;
     }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -79,15 +143,17 @@
     private async Task RenderChartAsync()
     {
         chartData = await UpdateUIList();
-        
-        if (chartData != null && chartData.Datasets != null){
-            dayCount = "Days: " + chartData.Datasets.Count.ToString();
+
+        if (chartData != null && chartData.Datasets != null)
+        {
+            dayCount = "Days: " + chartData.Labels.Count.ToString();
+            StateHasChanged();
         }
 
         var options = new BarChartOptions();
         options.Interaction.Mode = InteractionMode.Index;
 
-        options.Plugins.Title!.Text = "Click Stats";
+        options.Plugins.Title!.Text = "Click Stats By Day";
         options.Plugins.Title.Display = true;
         options.Plugins.Title.Font = new ChartFont { Size = 20 };
 

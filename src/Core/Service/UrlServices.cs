@@ -101,6 +101,49 @@ public class UrlServices
     }
 
 
+    public async Task<ShortUrlEntity> Get(string host, string vanity, string ownerUpn = null)
+    {
+        _logger.LogInformation($"Starting UrlByVanity...");
+
+        ShortUrlEntity result = null;
+
+        try
+        {
+            // Get URL from storage
+            var url = await _tableService.GetShortUrlEntityByVanity(vanity, ownerUpn);
+
+            if (url == null)
+            {
+                return null;
+            }
+
+            // Filter out archived URLs
+            if (url.IsArchived ?? false)
+            {
+                return null;
+            }
+
+            // If ownerUpn is provided, filter by owner
+            if (!string.IsNullOrWhiteSpace(ownerUpn) && !ownerUpn.Equals(url.OwnerUpn, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            result = url;
+
+            // Update ShortUrl property for each URL
+            url.ShortUrl = Utility.GetShortUrl(host, url.Vanity);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An unexpected error was encountered.");
+            throw;
+        }
+
+        return result;
+    }
+
+
     public async Task<ShortResponse> Create(ShortRequest input, string host)
     {
         ShortResponse result;
@@ -124,6 +167,7 @@ public class UrlServices
             string vanity = string.IsNullOrWhiteSpace(input.Vanity) ? "" : input.Vanity.Trim();
             string title = string.IsNullOrWhiteSpace(input.Title) ? "" : input.Title.Trim();
             string ownerUpn = string.IsNullOrWhiteSpace(input.OwnerUpn) ? "" : input.OwnerUpn.Trim();
+            int clicks = input.Clicks >= 0 ? input.Clicks : 0;
 
             ShortUrlEntity newRow;
 
@@ -141,6 +185,8 @@ public class UrlServices
                 var generatedVanity = await Utility.GetValidEndUrl(vanity, _tableService);
                 newRow = new ShortUrlEntity(longUrl, generatedVanity, title, input.Schedules);
             }
+
+            newRow.Clicks = clicks;
 
             await _tableService.SaveShortUrlEntity(newRow);
 

@@ -117,6 +117,8 @@ public class AzStorageTableService(TableServiceClient client) : IAzStorageTableS
 
         AsyncPageable<ShortUrlEntity> result;
 
+        vanity = vanity.Trim().ToLowerInvariant();
+
         if (string.IsNullOrEmpty(ownerUpn))
         {
             result = tblUrls.QueryAsync<ShortUrlEntity>(e => e.RowKey == vanity);

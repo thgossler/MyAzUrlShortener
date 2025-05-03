@@ -1,4 +1,4 @@
-@page "/urlmanager"
+@page "/manageurls"
 
 @using System.Net
 @using AzUrlShortener.Core.Domain
@@ -7,12 +7,14 @@
 @using AzUrlShortener.TinyBlazorAdmin.Components
 @using AzUrlShortener.TinyBlazorAdmin.Components.Dialogues
 @using AzUrlShortener.TinyBlazorAdmin.Services
+@using Azure.Data.Tables
 @inject UrlManagerClient urlManager
 @inject UserService userService
 @inject IJSRuntime JSRuntime
 @inject IDialogService DialogService
 @inject IToastService toastService
 @inject NavigationManager NavigationManager
+@inject IConfiguration Configuration
 
 @rendermode InteractiveServer
 
@@ -24,7 +26,21 @@
         <h4>Add, edit and archive URL records</h4>
 
         <div class="actions-row">
-            <FluentButton OnClick="@(CreateShortUrl)" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.Add())">Add</FluentButton>
+            <FluentButton OnClick="@(CreateShortUrl)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.Add())">Add</FluentButton>
+            <FluentButton OnClick="@(ManualRefresh)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.ArrowSync())">Refresh</FluentButton>
+
+            @if (!string.IsNullOrWhiteSpace(importConnectionString))
+            {
+                <FluentButton OnClick="@(ImportRecords)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.ArrowUpload())">Import records</FluentButton>
+            }
+
+            @if (isLoading)
+            {
+                <div class="loading-indicator">
+                    <FluentProgressRing />
+                    <span>Loading...</span>
+                </div>
+            }
 
             <div class="search-container">
                 <FluentSearch Placeholder="Filter..."
@@ -41,18 +57,24 @@
     {
         <div class="info-banner">
             <FluentIcon Value="@(new Icons.Regular.Size16.Info())" Color="@Color.Accent" />
-            You are viewing only URLs you have created.
+            @if (userService.CanNormalUsersViewAllRecords())
+            {
+                <span>You are viewing all URLs but can only modify your own.</span>
+            }
+            else
+            {
+                <span>You are viewing only URLs you have created.</span>
+            }
         </div>
     }
 
     <div class="grid-container">
-        <FluentDataGrid Id="grdUrls"
+        <FluentDataGrid Id="grdUrls" @ref="_dataGrid"
                         Items="@filteredUrlList"
                         ResizableColumns=true
                         GridTemplateColumns="60px auto auto auto auto 120px 120px 120px"
-                        AutoFitColumns=true
-                        AllowSorting=true
                         Pagination="@pagination"
+                        AutoItemsPerPage=false
                         RowSize="DataGridRowSize.Medium"
                         ShowHover=true>
             <ChildContent>
@@ -72,14 +94,67 @@
                     @(context!.Schedules?.Count ?? 0)
                 </TemplateColumn>
                 <TemplateColumn Title="Clicks" Align="Align.End" Sortable="true" SortBy="@sortByClicks">
-                    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" HorizontalAlignment="HorizontalAlignment.End">
                         @context.Clicks
-                        <FluentButton OnClick="@(() => NavigateToStats(context.RowKey))" IconEnd="@(new Icons.Regular.Size16.ChartMultiple())" />
+                        <div id="stats-button-@context.RowKey">
+                            @{
+                                var isOwner = string.Equals(context!.OwnerUpn, currentUserUpn, StringComparison.OrdinalIgnoreCase);
+                                var canViewStats = isAdmin || isOwner;
+                            }
+                            <FluentButton OnClick="@(() => NavigateToStats(context.Vanity))"
+                                          IconEnd="@(new Icons.Regular.Size16.ChartMultiple())"
+                                          Title="View Statistics"
+                                          Disabled="@(!canViewStats)" />
+                            @if (!canViewStats)
+                            {
+                                <FluentTooltip Anchor="@($"stats-button-{context.RowKey}")">
+                                    You cannot view statistics for this URL because you didn't create it
+                                </FluentTooltip>
+                            }
+                        </div>
                     </FluentStack>
                 </TemplateColumn>
                 <TemplateColumn Sortable="false">
-                    <FluentButton OnClick="@(() => EditShortUrl(context))" IconEnd="@(new Icons.Regular.Size16.Edit())" Title="Edit" />
-                    <FluentButton OnClick="@(async () => await ArchiveShortUrl(context))" IconEnd="@(new Icons.Regular.Size16.Archive())" Title="Archive" />
+                    @{
+                        var isOwner = string.Equals(context!.OwnerUpn, currentUserUpn, StringComparison.OrdinalIgnoreCase);
+                        var canModify = isAdmin || isOwner;
+                        var canArchive = isAdmin || (isOwner && userService.CanNormalUsersArchiveRecords());
+                    }
+
+                    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                        <div id="edit-button-@context.RowKey">
+                            <FluentButton OnClick="@(() => EditShortUrl(context))"
+                                          IconEnd="@(new Icons.Regular.Size16.Edit())"
+                                          Title="Edit"
+                                          Disabled="@(!canModify)" />
+                            @if (!canModify)
+                            {
+                                <FluentTooltip Anchor="@($"edit-button-{context.RowKey}")">
+                                    You cannot modify this URL because you didn't create it
+                                </FluentTooltip>
+                            }
+                        </div>
+
+                        <div id="archive-button-@context.RowKey">
+                            <FluentButton OnClick="@(async () => await ArchiveShortUrl(context))"
+                                          IconEnd="@(new Icons.Regular.Size16.Archive())"
+                                          Title="Archive"
+                                          Disabled="@(!canArchive)" />
+                            @if (!canArchive)
+                            {
+                                <FluentTooltip Anchor="@($"archive-button-{context.RowKey}")">
+                                    @if (!isOwner)
+                                    {
+                                        <span>You cannot archive this URL because you didn't create it</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Only administrators can archive URL records</span>
+                                    }
+                                </FluentTooltip>
+                            }
+                        </div>
+                    </FluentStack>
                 </TemplateColumn>
             </ChildContent>
             <EmptyContent>
@@ -89,74 +164,30 @@
     </div>
 
     <div class="paginator-container">
-        <FluentPaginator State="@pagination" />
+        <FluentPaginator State="@pagination">
+        </FluentPaginator>
     </div>
 </div>
 
 <style>
-    .page-container {
-        display: flex;
-        flex-direction: column;
-        height: calc(100vh - 100px);
-        width: 100%;
-        margin: 0;
-        padding: 0;
-    }
-
-    .header-section {
-        flex: 0 0 auto;
-        margin-bottom: 1rem;
-    }
-
-    .grid-container {
-        flex: 1 1 auto;
-        overflow: auto;
-        width: 100%;
-        position: relative;
-        min-height: 300px;
-    }
-
-    .paginator-container {
-        flex: 0 0 auto;
-        margin-top: 1rem;
+    .loading-indicator {
+        display: inline-flex;
+        align-items: center;
+        margin-left: 12px;
+        gap: 8px;
     }
 
     .actions-row {
         display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
         align-items: center;
-        margin-bottom: 12px;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 16px;
     }
 
     .search-container {
-        min-width: 250px;
         margin-left: auto;
-    }
-
-    ::deep .fluent-data-grid {
-        height: 100%;
-        width: 100%;
-    }
-
-    ::deep .fluent-data-grid-row {
-        width: 100%;
-    }
-
-    @@media (max-height: 600px) {
-        .page-container {
-            height: calc(100vh - 50px);
-        }
-    }
-
-    .info-banner {
-        background-color: #6699ff;
-        padding: 8px 16px;
-        border-radius: 4px;
-        margin-bottom: 12px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
+        min-width: 250px;
     }
 </style>
 
@@ -164,13 +195,24 @@
     private ListResponse urls = new ListResponse();
     private bool isAdmin = false;
     private string searchText = string.Empty;
+    private string currentUserUpn = string.Empty;
+
+    private string importConnectionString;
+    private bool importInProgress = false;
+    private bool isLoading = false;
+
+    // Static property to remember if data has been loaded across page refreshes
+    private static bool dataHasBeenLoadedBefore = false;
+
+    // Remember the last loaded data to avoid unnecessary reloads
+    private static List<ShortUrlEntity> cachedUrlList;
 
     IQueryable<ShortUrlEntity> urlList;
     IQueryable<ShortUrlEntity> filteredUrlList;
-    PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
+    FluentDataGrid<ShortUrlEntity>? _dataGrid;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 100 };
     ShortUrlRequest shortUrlRequest = new ShortUrlRequest();
     ShortUrlEntity editedUrl = new ShortUrlEntity();
-    public List<ShortUrlEntity> gridData { get; set; } = new List<ShortUrlEntity>();
 
     GridSort<ShortUrlEntity> sortByClicks = GridSort<ShortUrlEntity>.ByDescending(p => p.Clicks);
     GridSort<ShortUrlEntity> sortBySchedules = GridSort<ShortUrlEntity>.ByDescending(p => p.Schedules.Count);
@@ -178,8 +220,24 @@
 
     protected override async Task OnInitializedAsync()
     {
+        importConnectionString = Configuration["ImportTableStorageConnectionString"] ?? string.Empty;
+
         isAdmin = await userService.IsAdminAsync();
-        await RefreshGrid();
+        currentUserUpn = await userService.GetUserPrincipalNameAsync();
+
+        // If we have cached data, use it immediately and avoid the loading state
+        if (dataHasBeenLoadedBefore && cachedUrlList != null && cachedUrlList.Count > 0)
+        {
+            urlList = cachedUrlList.AsQueryable();
+            FilterUrls();
+        }
+        else
+        {
+            // Only show loading indicator on first load
+            isLoading = true;
+            await RefreshGrid();
+            dataHasBeenLoadedBefore = true;
+        }
     }
 
     private void OnSearchInput()
@@ -191,13 +249,34 @@
     {
         try
         {
+            isLoading = true;
+            StateHasChanged();
+
             urlList = await urlManager.GetUrls();
+
+            // Cache the data in a static field for future use
+            if (urlList != null)
+            {
+                cachedUrlList = urlList.ToList();
+            }
+
             FilterUrls();
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex.ToString());
         }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ManualRefresh()
+    {
+        await RefreshGrid();
+        toastService.ShowInfo("URL list refreshed");
     }
 
     private void FilterUrls()
@@ -226,7 +305,6 @@
 
         // Reset pagination to first page when filtering
         pagination.SetCurrentPageIndexAsync(0);
-        StateHasChanged();
     }
 
     private async Task UpdateUIList()
@@ -291,6 +369,12 @@
 
     private async Task EditShortUrl(ShortUrlEntity urlEntity)
     {
+        if (!isAdmin && !string.Equals(urlEntity.OwnerUpn, currentUserUpn, StringComparison.OrdinalIgnoreCase))
+        {
+            toastService.ShowError("You are not authorized to edit this URL");
+            return;
+        }
+
         var dialog = await DialogService.ShowDialogAsync<UpdateUrlDialog>(urlEntity, new DialogParameters()
             {
                 Title = $"Update Url: {urlEntity.RowKey}",
@@ -315,11 +399,26 @@
 
     private void NavigateToStats(string vanity)
     {
-        NavigationManager.NavigateTo("/Statistics/" + vanity);
+        NavigationManager.NavigateTo($"/Statistics/{vanity}");
     }
 
     public async Task ArchiveShortUrl(ShortUrlEntity urlEntity)
     {
+        var isOwner = string.Equals(urlEntity.OwnerUpn, currentUserUpn, StringComparison.OrdinalIgnoreCase);
+
+        if (!isAdmin && (!isOwner || !userService.CanNormalUsersArchiveRecords()))
+        {
+            if (!isOwner)
+            {
+                toastService.ShowError("You are not authorized to archive this URL because you didn't create it");
+            }
+            else
+            {
+                toastService.ShowError("Only administrators can archive URL records");
+            }
+            return;
+        }
+
         var result = await urlManager.UrlArchive(urlEntity);
         if (result)
         {
@@ -329,6 +428,69 @@
         else
         {
             toastService.ShowError("Not authorized to archive this URL");
+        }
+    }
+
+    private async Task ImportRecords()
+    {
+        try
+        {
+            importInProgress = true;
+            isLoading = true;
+            StateHasChanged();
+
+            toastService.ShowInfo("Importing records from other storage...");
+
+            var sourceTableClient = new TableServiceClient(importConnectionString);
+            sourceTableClient.CreateTableIfNotExists("UrlsDetails");
+            var sourceTable = sourceTableClient.GetTableClient("UrlsDetails");
+
+            var sourceEntities = new List<ShortUrlEntity>();
+            var queryResults = sourceTable.QueryAsync<ShortUrlEntity>(e => e.RowKey != "KEY");
+            await foreach (var entity in queryResults)
+            {
+                if (!(entity.IsArchived ?? false))
+                {
+                    sourceEntities.Add(entity);
+                }
+            }
+
+            var currentUserUpn = await userService.GetUserPrincipalNameAsync();
+
+            var importedCount = 0;
+            foreach (var entity in sourceEntities)
+            {
+                var urlRequest = new ShortRequest
+                    {
+                        Title = entity.Title ?? string.Empty,
+                        Url = entity.Url,
+                        Vanity = entity.Vanity,
+                        Clicks = entity.Clicks,
+                        Schedules = null
+                    };
+
+                try
+                {
+                    var response = await urlManager.UrlCreate(urlRequest);
+                    importedCount++;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to import {entity.Vanity}: {ex.Message}");
+                }
+            }
+            toastService.ShowSuccess($"{importedCount} records imported successfully");
+            await RefreshGrid();
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError($"Import failed: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            importInProgress = false;
+            StateHasChanged();
         }
     }
 }

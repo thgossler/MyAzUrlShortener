@@ -23,17 +23,17 @@
         <FluentStack Orientation="Orientation.Vertical" VerticalGapGap="10"  Width="100%">
 
             <div style="width: 100%;">
-                <FluentTextField @ref="_titleInput" Name="Title" Label="Title" @bind-Value="_shortUrl.Title" Immediate="true" ImmediateDelay="500" Required="true" style="width: 100%;" />
+                <FluentTextField @ref="_titleInput" Name="Title" Label="Title" @bind-Value="_shortUrl.Title" Immediate="true" ImmediateDelay="@delay" Required="true" style="width: 100%;" />
                 <FluentValidationMessage For="@(() => _shortUrl.Title)" />
             </div>
 
             <div style="width: 100%;">
-                <FluentTextField Name="Url" Label="Url" @bind-Value="_shortUrl.Url" Immediate="true" ImmediateDelay="500" Required="true" style="width: 100%;" />
+                <FluentTextField Name="Url" Label="Url" @bind-Value="_shortUrl.Url" Immediate="true" ImmediateDelay="@delay" Required="true" style="width: 100%;" />
                 <FluentValidationMessage For="@(() => _shortUrl.Url)" />
             </div>
 
             <div style="width: 100%;">
-                <FluentTextField Name="Vanity" Label="Vanity" @bind-Value="_shortUrl.Vanity" Immediate="true" ImmediateDelay="500" Required="true" style="width: 100%;" />
+                <FluentTextField Name="Vanity" Label="Vanity" @bind-Value="_shortUrl.Vanity" Immediate="true" ImmediateDelay="@delay" Required="true" style="width: 100%;" />
                 <FluentValidationMessage For="@(() => _shortUrl.Vanity)" />
             </div>
 
@@ -63,6 +63,7 @@
     private ShortUrlRequest _shortUrl = new ShortUrlRequest();
     private FluentTextField _titleInput = default!;
     private bool hasFocused;
+    private int delay = 500;
 
     protected override void OnInitialized()
     {

@@ -8,17 +8,24 @@ public class UserService
 {
     private readonly AuthenticationStateProvider _authStateProvider;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IConfiguration _configuration;
 
-    public UserService(AuthenticationStateProvider authStateProvider, IHttpContextAccessor httpContextAccessor)
+    public UserService(AuthenticationStateProvider authStateProvider, IHttpContextAccessor httpContextAccessor, IConfiguration configuration)
     {
         _authStateProvider = authStateProvider;
         _httpContextAccessor = httpContextAccessor;
+        _configuration = configuration;
     }
 
     public async Task<string> GetUserPrincipalNameAsync()
     {
         var authState = await _authStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated != true)
+        {
+            return string.Empty;
+        }
 
         var normalize = (string val) => {
             if (string.IsNullOrWhiteSpace(val))
@@ -36,8 +43,8 @@ public class UserService
         if (emailClaim != null)
             return normalize(emailClaim.Value);
 
-        // Last resort: use name
-        var nameClaim = user.FindFirst(ClaimTypes.Name);
+        // Last resort: preferred_username
+        var nameClaim = user.FindFirst("preferred_username");
         if (nameClaim != null)
             return normalize(nameClaim.Value);
 
@@ -49,6 +56,11 @@ public class UserService
         var authState = await _authStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
+        if (user.Identity?.IsAuthenticated != true)
+        {
+            return false;
+        }
+
         return user.IsInRole("Admin");
     }
 
@@ -58,6 +70,20 @@ public class UserService
         var user = authState.User;
 
         return user.IsInRole("User") || user.IsInRole("Admin");
+    }
+
+    public bool CanNormalUsersViewAllRecords()
+    {
+        bool canViewAll = false;
+        bool.TryParse(_configuration["UserSettings:AllowNormalUsersToViewAllRecords"], out canViewAll);
+        return canViewAll;
+    }
+
+    public bool CanNormalUsersArchiveRecords()
+    {
+        bool canArchive = false;
+        bool.TryParse(_configuration["UserSettings:AllowNormalUsersToArchiveRecords"], out canArchive);
+        return canArchive;
     }
 
     public async Task LogoutAsync()

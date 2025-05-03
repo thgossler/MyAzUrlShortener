@@ -1,4 +1,3 @@
-// Update TinyBlazorAdmin/UrlManagerClient.cs
 using AzUrlShortener.Core.Domain;
 using AzUrlShortener.Core.Messages;
 using AzUrlShortener.TinyBlazorAdmin.Services;
@@ -25,8 +24,8 @@ public class UrlManagerClient
             var isAdmin = await _userService.IsAdminAsync();
             string requestUrl = "/api/UrlList";
 
-            // If not admin, add the ownerUpn as a query parameter to filter at the table storage level
-            if (!isAdmin)
+            // If not admin and normal users can't view all records, filter by owner
+            if (!isAdmin && !_userService.CanNormalUsersViewAllRecords())
             {
                 var currentUpn = await _userService.GetUserPrincipalNameAsync();
                 requestUrl = $"{requestUrl}?ownerUpn={Uri.EscapeDataString(currentUpn)}";
@@ -47,6 +46,35 @@ public class UrlManagerClient
         return urlList;
     }
 
+    public async Task<ShortUrlEntity> GetUrlByVanity(string vanity)
+    {
+        ShortUrlEntity url = null;
+        try
+        {
+            // Check if user is admin
+            var isAdmin = await _userService.IsAdminAsync();
+            string requestUrl = $"/api/Url/{vanity}";
+
+            // If not admin and normal users can't view all records, filter by owner
+            if (!isAdmin && !_userService.CanNormalUsersViewAllRecords())
+            {
+                var currentUpn = await _userService.GetUserPrincipalNameAsync();
+                requestUrl = $"{requestUrl}?ownerUpn={Uri.EscapeDataString(currentUpn)}";
+            }
+
+            using var response = await _httpClient.GetAsync(requestUrl);
+            if (response.IsSuccessStatusCode)
+            {
+                url = await response.Content.ReadFromJsonAsync<ShortUrlEntity>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+        return url;
+    }
 
     public async Task<(bool, string)> UrlCreate(ShortRequest url)
     {
@@ -83,9 +111,19 @@ public class UrlManagerClient
             var isAdmin = await _userService.IsAdminAsync();
             var currentUpn = await _userService.GetUserPrincipalNameAsync();
 
-            if (!isAdmin && !string.Equals(shortUrl.OwnerUpn, currentUpn, StringComparison.OrdinalIgnoreCase))
+            if (!isAdmin)
             {
-                return false;
+                // First check: user must be the owner
+                if (!string.Equals(shortUrl.OwnerUpn, currentUpn, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                // Second check: users must be allowed to archive their own records
+                if (!_userService.CanNormalUsersArchiveRecords())
+                {
+                    return false;
+                }
             }
 
             using var response = await _httpClient.PostAsJsonAsync("/api/UrlArchive", shortUrl);

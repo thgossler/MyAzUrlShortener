@@ -1,10 +1,113 @@
 @page "/help"
+@using AzUrlShortener.TinyBlazorAdmin.Services
+@inject UserService userService
 
 <PageTitle>Help</PageTitle>
 
 <h1>Help</h1>
-<div>
-    <p>Each user can only see and modify their own short URL records.</p>
-    <p>Admin users can see and modify all short URL records.</p>
-    <p>By adding one or more schedules to a record, the target URL can be automatically changed at a later time - either once or on a recurring basis, if needed.</p>
-</div>
+
+@if (isLoading)
+{
+    <div>
+        <FluentProgressRing />
+        <span>Loading help content...</span>
+    </div>
+}
+else
+{
+    <div>
+        @if (isAdmin)
+        {
+            <h3>Administrator View</h3>
+            <FluentCard Width="100%" Height="auto" class="mb-4">
+                <h4>Your Permissions</h4>
+                <p>As an administrator, you can:</p>
+                <ul>
+                    <li>View all short URL records in the system</li>
+                    <li>Create, edit, and archive any short URL record</li>
+                    <li>Access user management features</li>
+                    <li>See configuration statuses in the Settings page</li>
+                </ul>
+            </FluentCard>
+
+            <FluentCard Width="100%" Height="auto" class="mb-4">
+                <h4>Normal User Permissions</h4>
+                <p>Normal users' permissions are determined by system configuration:</p>
+                <ul>
+                    <li>Normal users can always create, edit, and archive their own URL records</li>
+                    <li>
+                        URL record visibility:
+                        @if (normalUsersCanViewAll)
+                        {
+                            <strong>Currently, normal users can view ALL records in the system</strong>
+                        }
+                        else
+                        {
+                            <strong>Currently, normal users can only view their OWN records</strong>
+                        }
+                    </li>
+                    <li>To change this setting, update the <code>UserSettings:AllowNormalUsersToViewAllRecords</code> key in your application settings</li>
+                </ul>
+            </FluentCard>
+        }
+        else if (isUser)
+        {
+            <h3>User Help</h3>
+            <FluentCard Width="100%" Height="auto" class="mb-4">
+                <h4>Your Permissions</h4>
+                <p>You can:</p>
+                <ul>
+                    <li>Create new short URL records</li>
+                    <li>View usage statistics for your URLs</li>
+                    @if (normalUsersCanViewAll)
+                    {
+                        <li>View all short URL records in the system (but you can only modify your own)</li>
+                    }
+                    else
+                    {
+                        <li>View only the short URL records you have created</li>
+                    }
+                    @if (normalUsersCanArchive)
+                    {
+                        <li>Edit and archive short URL records you have created</li>
+                    }
+                    else
+                    {
+                        <li>Edit short URL records you have created (only admins can archive)</li>
+                    }
+                </ul>
+            </FluentCard>
+        }
+        else
+        {
+            <p>Please sign in to access the URL Shortener system.</p>
+        }
+
+        <FluentCard Width="100%" Height="auto" class="mb-4">
+            <h4>URL Scheduling</h4>
+            <p>By adding one or more schedules to a record, the target URL can be automatically changed at a later time - either once or on a recurring basis, if needed.</p>
+            <ul>
+                <li>One-time schedules: Change a URL at a specific date and time</li>
+                <li>Recurring schedules: Change a URL on a repeating pattern (daily, weekly, etc.)</li>
+                <li>Schedules can be added when creating a URL or by editing an existing one</li>
+            </ul>
+        </FluentCard>
+    </div>
+}
+
+@code {
+    private bool isLoading = true;
+    private bool isAdmin = false;
+    private bool isUser = false;
+    private bool normalUsersCanViewAll = false;
+    private bool normalUsersCanArchive = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isAdmin = await userService.IsAdminAsync();
+        isUser = await userService.IsUserAsync();
+        normalUsersCanViewAll = userService.CanNormalUsersViewAllRecords();
+        normalUsersCanArchive = userService.CanNormalUsersArchiveRecords();
+        isLoading = false;
+    }
+}

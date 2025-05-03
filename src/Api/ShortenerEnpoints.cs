@@ -22,6 +22,10 @@ public static class ShortenerEnpoints
             .WithDescription("List all Urls")
             .WithDisplayName("Url List");
 
+        endpoints.MapGet("/Url/{vanity}", UrlByVanity)
+            .WithDescription("Get Url by Vanity")
+            .WithDisplayName("Url By Vanity");
+
 
         // POSTS
 
@@ -174,8 +178,41 @@ public static class ShortenerEnpoints
             string ownerUpn = context.Request.Query["ownerUpn"];
 
             // Pass the ownerUpn to the List method
-            ListResponse Urls = await urlServices.List(host, ownerUpn);
-            return TypedResults.Ok(Urls);
+            ListResponse urls = await urlServices.List(host, ownerUpn);
+            return TypedResults.Ok(urls);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An unexpected error was encountered.");
+            return TypedResults.InternalServerError<DetailedBadRequest>(new DetailedBadRequest { Message = ex.Message });
+        }
+    }
+
+
+    private static async Task<Results<
+                            Ok<ShortUrlEntity>,
+                            InternalServerError<DetailedBadRequest>>>
+                            UrlByVanity(TableServiceClient tblClient,
+                                    HttpContext context,
+                                    string vanity,
+                                    ILogger logger)
+    {
+        try
+        {
+            var urlServices = new UrlServices(logger, new AzStorageTableService(tblClient));
+            var host = GetFullHostName(context);
+
+            if (string.IsNullOrEmpty(vanity))
+            {
+                return TypedResults.InternalServerError<DetailedBadRequest>(new DetailedBadRequest { Message = "Vanity parameter is required." });
+            }
+
+            // Get the ownerUpn query parameter if it exists
+            string ownerUpn = context.Request.Query["ownerUpn"];
+
+            // Pass the ownerUpn to the List method
+            ShortUrlEntity url = await urlServices.Get(host, vanity, ownerUpn);
+            return TypedResults.Ok(url);
         }
         catch (Exception ex)
         {

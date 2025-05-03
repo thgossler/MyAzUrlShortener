@@ -5,6 +5,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.Extensions.Configuration
 @attribute [Authorize(Policy = "AdminOnly")]
+@inject IJSRuntime JSRuntime
 @inject IConfiguration Configuration
 @inject UserService userService
 @inject NavigationManager NavigationManager
@@ -16,48 +17,63 @@
 
 <h1>User Management</h1>
 
-<p>Manage user roles in the Azure Portal under the Entra ID blade.</p>
-
 <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10">
-    <FluentButton Appearance="Appearance.Outline" OnClick="@(() => NavigationManager.NavigateTo("/urlmanager"))">
-        <FluentIcon Value="@(new Icons.Regular.Size16.ArrowLeft())" />
-        Back to URL Manager
+    <FluentButton Appearance="Appearance.Outline" OnClick="@(() => NavigationManager.NavigateTo("/settings"))">
+        &nbsp;<FluentIcon Value="@(new Icons.Regular.Size16.ArrowLeft())" />
+        Back to Settings &nbsp;
     </FluentButton>
 
     <FluentAnchor Href="@azPortalUrl" Target="_blank" Appearance="Appearance.Accent">
-        Open the Azure Portal
+        Go to the Azure Portal
     </FluentAnchor>
 </FluentStack>
 
 <h3 class="mt-4">Role Management Instructions</h3>
 
 <FluentCard Width="100%" Height="auto" class="mt-3">
+    <p>Role assignments for users/groups are managed in the Azure Portal.</p>
     <ol>
-        <li>Go to your Azure Portal</li>
-        <li>Navigate to the "Entra ID" blade</li>
-        <li>Navigate to the "App Registration" section</li>
-        <li>Find the application for this URL Shortener under "All applications"</li>
-        <li>Navigate to this application's page'</li>
-        <li>Navigate to the App Roles section'</li>
-        <li>Assign users or groups to the "User" or "Admin" roles</li>
+        <li>Go to the Azure Portal</li>
+        <li>On the "Entra ID -> Enterprise applications" page,</li>
+        <li>
+            Find the application for the URL Shortener<br />
+            (Filter: "Application ID" "starts with" "@clientAppId"
+            <FluentButton OnClick="@(() => CopyToClipboard(clientAppId))"
+                          IconEnd="@(new Icons.Regular.Size16.Copy())"
+                          Title="Copy Client ID to clipboard"
+                          Appearance="Appearance.Lightweight"
+                          Size="Size.Small"
+                          style="padding: 2px 4px; margin: -3px 0 0 0; vertical-align: middle; height: auto;" />)
+        </li>
+        <li>Navigate to the application details page</li>
+        <li>Navigate to the "Users and groups" section</li>
+        <li>Assign users or groups with the desired roles</li>
     </ol>
-    <p>Admin users can see and manage all short URL records.</p>
-    <p>Regular users can only see and manage their own short URL records.</p>
+    <p>The "Admin" role has permissions to see and manage all short URL records.</p>
+    <p>The "User" role has only permissions to manage the user-created short URL records (see help for details).</p>
 </FluentCard>
 
 @code {
+    private string clientAppId;
     private string azPortalUrl;
 
     protected override async Task OnInitializedAsync()
     {
-        var clientAppId = Configuration["Authentication:Entra:ClientId"];
-        azPortalUrl = "https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/~/AppRoles/appId/" + clientAppId + "/isMSAApp~/false";
+        var tenantId = Configuration["Authentication:Entra:TenantId"];
+        clientAppId = Configuration["Authentication:Entra:ClientId"];
+        azPortalUrl = "https://portal.azure.com/" + tenantId  + "/#view/Microsoft_AAD_IAM/StartboardApplicationsMenuBlade/~/AppAppsPreview/menuId~/null";
 
         var isAdmin = await userService.IsAdminAsync();
         if (!isAdmin)
         {
             toastService.ShowError("You are not authorized to access this page");
-            NavigationManager.NavigateTo("/urlmanager");
+            NavigationManager.NavigateTo("/manageurls");
         }
+    }
+
+    private async Task CopyToClipboard(string text)
+    {
+        await JSRuntime.InvokeVoidAsync("clipboardCopy.copyText", text);
+        toastService.ShowSuccess("Client ID copied to clipboard");
     }
 }
