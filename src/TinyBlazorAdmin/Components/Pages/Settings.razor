@@ -2,9 +2,11 @@
 
 @using AzUrlShortener.TinyBlazorAdmin
 @using AzUrlShortener.TinyBlazorAdmin.Components
+@using AzUrlShortener.TinyBlazorAdmin.Components.Shared
 @using AzUrlShortener.TinyBlazorAdmin.Services
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.FluentUI.AspNetCore.Components.Extensions
+@attribute [Authorize(Policy = "AdminOnly")]
 @inject NavigationManager NavigationManager
 @inject UserService userService
 @inject ILogger<Settings> Logger
@@ -12,70 +14,36 @@
 
 @rendermode InteractiveServer
 
-<FluentDesignTheme @bind-Mode="@Mode"
-				   @bind-OfficeColor="@OfficeColor"
-				   StorageName="theme" />
-
 <h1>Settings</h1>
 
 <div>
 	<FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Vertical">
-		<FluentCard Width="100%" Height="auto">
-			<h4>User Interface</h4>
-			<p>
-				<FluentSelect Label="Theme" Width="150px"
-								Items="@(Enum.GetValues<DesignThemeModes>())"
-								@bind-SelectedOption="@Mode" />
-			</p>
-			<p>
-				<FluentSelect   Label="Color"
-								Items="@(Enum.GetValues<OfficeColor>().Select(i => (OfficeColor?)i))"
-					Height="200px" Width="250px" @bind-SelectedOption="@OfficeColor">
-					<OptionTemplate>
-						<FluentStack>
-							<FluentIcon Value="@(new Icons.Filled.Size20.RectangleLandscape())" Color="Color.Custom"
-								CustomColor="@(@context.ToAttributeValue() != "default" ? context.ToAttributeValue() : "#036ac4" )" />
-							<FluentLabel>@context</FluentLabel>
-						</FluentStack>
-					</OptionTemplate>
-				</FluentSelect>
-			</p>
+		<FluentCard Width="100%" Height="auto" AreaRestricted="false" Style="background-color: var(--neutral-layer-1);">
+			<h4>User Permissions</h4>
+			<FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Vertical">
+				<FluentCheckbox Label="Allow normal users to view all URL records" Disabled="true" Checked="@normalUsersCanViewAll" />
+				<div class="mt-2 info-banner">
+					<FluentIcon Value="@(new Icons.Regular.Size16.Info())" Color="@Color.Accent" />
+					<span>This setting is controlled via environment configuration. To change, update the <code>UserSettings:AllowNormalUsersToViewAllRecords</code> key in your application settings.</span>
+				</div>
+
+				<FluentDivider Class="mt-3 mb-3" />
+
+				<FluentCheckbox Label="Allow normal users to archive their own URL records" Disabled="true" Checked="@normalUsersCanArchive" />
+				<div class="mt-2 info-banner">
+					<FluentIcon Value="@(new Icons.Regular.Size16.Info())" Color="@Color.Accent" />
+					<span>This setting is controlled via environment configuration. To change, update the <code>UserSettings:AllowNormalUsersToViewAllRecords</code> key in your application settings.</span>
+				</div>
+
+				<FluentDivider Class="mt-3 mb-3" />
+
+				<FluentButton OnClick="@(ManageUsers)" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.Person())">Manage Users</FluentButton>
+			</FluentStack>
 		</FluentCard>
-
-		@if (isAdmin)
-		{
-			<FluentCard Width="100%" Height="auto">
-				<h4>User Permissions</h4>
-				<FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Vertical">
-					<FluentCheckbox Label="Allow normal users to view all URL records" Disabled="true"
-									Checked="@normalUsersCanViewAll" />
-					<div class="mt-2">
-						<p>This setting is controlled via environment configuration. Current value: <strong>@(normalUsersCanViewAll ? "Enabled" : "Disabled")</strong></p>
-						<p>To change this setting, update the <code>UserSettings:AllowNormalUsersToViewAllRecords</code> key in your application settings.</p>
-					</div>
-
-					<FluentDivider Class="mt-3 mb-3" />
-
-					<FluentCheckbox Label="Allow normal users to archive their own URL records" Disabled="true"
-									Checked="@normalUsersCanArchive" />
-					<div class="mt-2">
-						<p>This setting is controlled via environment configuration. Current value: <strong>@(normalUsersCanArchive ? "Enabled" : "Disabled")</strong></p>
-						<p>To change this setting, update the <code>UserSettings:AllowNormalUsersToArchiveRecords</code> key in your application settings.</p>
-					</div>
-
-					<FluentDivider Class="mt-3 mb-3" />
-
-					<FluentButton OnClick="@(ManageUsers)" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.Person())">Manage Users</FluentButton>
-				</FluentStack>
-			</FluentCard>
-		}
 	</FluentStack>
 </div>
 
 @code {
-    public DesignThemeModes Mode { get; set; }
-    public OfficeColor? OfficeColor { get; set; }
-
 	private bool isAdmin = false;
 	private bool normalUsersCanViewAll = false;
 	private bool normalUsersCanArchive = false;
@@ -91,14 +59,4 @@
 	{
 		NavigationManager.NavigateTo("/admin/users");
 	}
-
-	void OnLoaded(Microsoft.FluentUI.AspNetCore.Components.LoadedEventArgs e)
-    {
-        Logger.LogInformation($"Loaded: {(e.Mode == DesignThemeModes.System ? "System" : "")} {(e.IsDark ? "Dark" : "Light")}");
-    }
-
-    void OnLuminanceChanged(Microsoft.FluentUI.AspNetCore.Components.LuminanceChangedEventArgs e)
-    {
-        Logger.LogInformation($"Changed: {(e.Mode == DesignThemeModes.System ? "System" : "")} {(e.IsDark ? "Dark" : "Light")}");
-    }
 }

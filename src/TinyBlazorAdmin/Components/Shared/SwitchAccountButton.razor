@@ -6,10 +6,11 @@
 
 @rendermode InteractiveServer
 
-<FluentButton Appearance="Appearance.Stealth"
-              Type="ButtonType.Button"
-              @onclick="SwitchAccountAsync"
-              Style="padding: 0px 4px; min-width: auto; height: 28px; font-weight: normal; color: var(--accent-fill-rest);">
+<FluentButton OnClick="SwitchAccountAsync"
+              Appearance="Appearance.Stealth"
+              Color="var(--fill-color)"
+              BackgroundColor="rgba(0,0,0,0)"
+              Style="font-weight: normal; font-size: var(--type-ramp-base-font-size); cursor: pointer;">
     Switch account
 </FluentButton>
 

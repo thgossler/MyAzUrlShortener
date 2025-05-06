@@ -11,11 +11,14 @@
         <input type="checkbox" title="Menu expand/collapse toggle" id="navmenu-toggle" class="navmenu-icon" />
         <label for="navmenu-toggle" class="navmenu-icon"><FluentIcon Value="@(new Icons.Regular.Size20.Navigation())" Color="Color.Fill" /></label>
         <nav class="sitenav" aria-labelledby="main-menu" onclick="document.getElementById('navmenu-toggle').click();">
-            <FluentNavMenu Id="main-menu" Collapsible="true" Width="250" Title="Navigation menu" @bind-Expanded="expanded">
+            <FluentNavMenu Id="main-menu" Collapsible="true" Width="170" Title="Navigation menu" @bind-Expanded="expanded">
                 <FluentNavLink Href="/" Match="NavLinkMatch.All" Icon="@(new Icons.Regular.Size20.Home())" IconColor="Color.Accent">Home</FluentNavLink>
                 <FluentNavLink Href="/manageurls" Icon="@(new Icons.Regular.Size20.AppsListDetail())" IconColor="Color.Accent">Manage URLs</FluentNavLink>
                 <FluentNavLink Href="/statistics" Match="NavLinkMatch.All" Icon="@(new Icons.Regular.Size20.ChartMultiple())">Statistics</FluentNavLink>
-                <FluentNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@(new Icons.Regular.Size20.TextBulletListSquareSettings())">Settings</FluentNavLink>
+                @if (isAdmin)
+                {
+                    <FluentNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@(new Icons.Regular.Size20.TextBulletListSquareSettings())">Settings</FluentNavLink>
+                }
                 <FluentNavLink Href="/help" Match="NavLinkMatch.All" Icon="@(new Icons.Regular.Size20.QuestionCircle())">Help</FluentNavLink>
             </FluentNavMenu>
         </nav>
@@ -24,4 +27,10 @@
 
 @code {
     private bool expanded = true;
+    private bool isAdmin = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isAdmin = await UserService.IsAdminAsync();
+    }
 }
