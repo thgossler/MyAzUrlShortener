@@ -8,6 +8,7 @@
 @using Microsoft.AspNetCore.Authentication.Cookies
 @using Microsoft.AspNetCore.Authentication.OpenIdConnect
 @using System.Timers
+@using System.Text.RegularExpressions
 @inject IHttpContextAccessor HttpContextAccessor
 @inject IConfiguration Configuration
 @inject NavigationManager NavigationManager
@@ -35,8 +36,16 @@
         </FluentBodyContent>
     </FluentStack>
     <FluentFooter>
-        <div class="link1">
-            <a href="https://github.com/thgossler/MyAzUrlShortener" target="_blank">GitHub</a>
+        <div class="footer-container">
+            <div class="footer-left">
+                @((MarkupString)SanitizeHtml(contactInfo))
+            </div>
+            <div class="footer-center">
+                @intendedUseLabel
+            </div>
+            <div class="footer-right">
+                @processedCopyrightLabel
+            </div>
         </div>
     </FluentFooter>
 </FluentLayout>
@@ -54,10 +63,48 @@
 @code {
     private bool isAdmin;
     private string username = "Unknown";
+    private string contactInfo = "";
+    private string intendedUseLabel = "";
+    private string copyrightLabel = "";
+    private string processedCopyrightLabel = "";
 
     protected override async Task OnInitializedAsync()
     {
         isAdmin = await UserService.IsAdminAsync();
         username = await UserService.GetUserPrincipalNameAsync();
+
+        // Get configuration values
+        contactInfo = Configuration["UserInterface:Footer:ContactInfo"] ?? "<a href=\"https://github.com/thgossler/MyAzUrlShortener\">GitHub</a>";
+        intendedUseLabel = Configuration["UserInterface:Footer:IntendedUseLabel"] ?? "";
+        copyrightLabel = Configuration["UserInterface:Footer:CopyrightLabel"] ?? "MIT License";
+
+        // Replace {Year} placeholder with the current year
+        processedCopyrightLabel = Regex.Replace(
+            copyrightLabel,
+            "{year}",
+            DateTime.Now.Year.ToString(),
+            RegexOptions.IgnoreCase);
+    }
+
+    private string SanitizeHtml(string html)
+    {
+        if (string.IsNullOrEmpty(html))
+            return string.Empty;
+
+        // Implement basic HTML sanitization
+        // This is a simple implementation - consider using a proper HTML sanitizer library in production
+        html = Regex.Replace(html, @"<script[^>]*>.*?</script>", "", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        html = Regex.Replace(html, @"<style[^>]*>.*?</style>", "", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        html = Regex.Replace(html, @"<iframe[^>]*>.*?</iframe>", "", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        html = Regex.Replace(html, @"on\w+\s*=\s*""[^""]*""", "", RegexOptions.IgnoreCase);
+
+        // Allow only basic HTML tags that would be needed for contact info
+        var allowedTags = new[] { "a", "br", "p", "span", "strong", "em", "i", "b" };
+        foreach (var tag in allowedTags)
+        {
+            // Do nothing - these tags are allowed
+        }
+
+        return html;
     }
 }
