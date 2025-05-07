@@ -18,6 +18,10 @@
 <FluentLayout>
     <FluentHeader>
         <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10" Style="align-items: center">
+            @if (!string.IsNullOrEmpty(logoUrl))
+            {
+                <img src="@logoUrl" alt="Vendor Logo" style="max-height: 40px; margin-right: 10px;" />
+            }
             <a href="/" style="text-decoration: none; color: inherit; cursor: pointer; font-size: x-large;">URL Shortener</a>
             <div style="flex-grow: 1"></div>
             <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Toggle dark/light mode">
@@ -49,7 +53,7 @@
                 @((MarkupString)SanitizeHtml(contactInfo))
             </div>
             <div class="footer-center">
-                @intendedUseLabel
+                <span style="font-weight: bold">@intendedUseLabel</span>
             </div>
             <div class="footer-right">
                 @processedCopyrightLabel
@@ -74,6 +78,7 @@
     private bool isAdmin;
     private string username = "Unknown";
     private string contactInfo = "";
+    private string logoUrl = "";
     private string intendedUseLabel = "";
     private string copyrightLabel = "";
     private string processedCopyrightLabel = "";
@@ -84,6 +89,7 @@
         username = await UserService.GetUserPrincipalNameAsync();
 
         // Get configuration values
+        logoUrl = Configuration["UserInterface:LogoUrl"] ?? "";
         contactInfo = Configuration["UserInterface:Footer:ContactInfo"] ?? "<a href=\"https://github.com/thgossler/MyAzUrlShortener\">GitHub</a>";
         intendedUseLabel = Configuration["UserInterface:Footer:IntendedUseLabel"] ?? "";
         copyrightLabel = Configuration["UserInterface:Footer:CopyrightLabel"] ?? "MIT License";

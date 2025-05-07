@@ -15,15 +15,15 @@
     <link rel="stylesheet" href="AzUrlShortener.TinyBlazorAdmin.styles.css" />
     <script>
         (function() {
-            var darkModeWanted = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches && localStorage.getItem('theme') !== 'light';
-            document.documentElement.style.backgroundColor = darkModeWanted ? '#333333' : '#FFFFFF';
+        var darkModeWanted = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches && localStorage.getItem('theme') !== 'light';
+        document.documentElement.style.backgroundColor = darkModeWanted ? '#333333' : '#FFFFFF';
         })();
     </script>
     <HeadOutlet />
 </head>
 
 <body>
-    <FluentDesignTheme Mode="DesignThemeModes.System" OfficeColor="OfficeColor.Office" />
+    <FluentDesignTheme Mode="DesignThemeModes.System" CustomColor="@ConfiguredPrimaryColor" />
 
     <CascadingAuthenticationState>
         <Routes />
@@ -37,14 +37,27 @@
 
     <script>
         window.clipboardCopy = {
-            copyText: function(text) {
-                navigator.clipboard.writeText(text)
-                .catch(function (error) {
-                    alert(error);
-                });
-            }
+        copyText: function(text) {
+        navigator.clipboard.writeText(text)
+        .catch(function (error) {
+        alert(error);
+        });
+        }
         };
     </script>
 </body>
 
 </html>
+
+@code {
+    private string ConfiguredPrimaryColor = "#0078d4";
+
+    protected override void OnInitialized()
+    {
+        var primaryColor = Configuration["UserInterface:PrimaryColor"];
+        if (!string.IsNullOrEmpty(primaryColor))
+        {
+            ConfiguredPrimaryColor = primaryColor;
+        }
+    }
+}
