@@ -15,9 +15,8 @@
     <link rel="stylesheet" href="AzUrlShortener.TinyBlazorAdmin.styles.css" />
     <script>
         (function() {
-            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                document.documentElement.style.backgroundColor = '#333333';
-            }
+            var darkModeWanted = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches && localStorage.getItem('theme') !== 'light';
+            document.documentElement.style.backgroundColor = darkModeWanted ? '#333333' : '#FFFFFF';
         })();
     </script>
     <HeadOutlet />

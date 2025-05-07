@@ -7,8 +7,14 @@
     }
 
     function setTheme(theme, storeInLocalStorage = false) {
-        // Only store in localStorage if explicitly requested
-        if (storeInLocalStorage) {
+        const systemTheme = getSystemTheme();
+
+        // If theme matches system theme, remove from localStorage
+        if (theme === systemTheme) {
+            localStorage.removeItem(THEME_STORAGE_KEY);
+        }
+        // Otherwise store in localStorage if explicitly requested
+        else if (storeInLocalStorage) {
             localStorage.setItem(THEME_STORAGE_KEY, theme);
         }
 
@@ -38,9 +44,17 @@
             const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
             if (mediaQuery.addEventListener) {
                 mediaQuery.addEventListener('change', function (e) {
-                    // Only apply system theme if no user preference is saved
-                    if (!getCurrentTheme()) {
-                        const newSystemTheme = e.matches ? 'dark' : 'light';
+                    const newSystemTheme = e.matches ? 'dark' : 'light';
+                    const savedTheme = getCurrentTheme();
+
+                    if (savedTheme) {
+                        // If saved theme now matches system theme, remove from localStorage
+                        if (savedTheme === newSystemTheme) {
+                            localStorage.removeItem(THEME_STORAGE_KEY);
+                        }
+                        // Apply saved theme without changing localStorage
+                        setTheme(savedTheme, false);
+                    } else {
                         // Apply system theme without storing in localStorage
                         setTheme(newSystemTheme, false);
                     }
@@ -59,8 +73,17 @@
                 document.documentElement.getAttribute('data-theme') ||
                 getSystemTheme();
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            // User explicitly clicked, so store in localStorage
-            setTheme(newTheme, true);
+            // User explicitly clicked, so check against system theme
+            const systemTheme = getSystemTheme();
+
+            if (newTheme === systemTheme) {
+                // If new theme matches system, remove from localStorage and apply
+                localStorage.removeItem(THEME_STORAGE_KEY);
+                setTheme(newTheme, false);
+            } else {
+                // Otherwise persist in localStorage
+                setTheme(newTheme, true);
+            }
         });
     }
 
@@ -68,11 +91,18 @@
     function initializeTheme() {
         // Check if user has a saved preference
         const savedTheme = getCurrentTheme();
+        const systemTheme = getSystemTheme();
+
         if (savedTheme) {
-            setTheme(savedTheme, false); // Don't store again
+            // If saved theme matches system theme, remove from localStorage
+            if (savedTheme === systemTheme) {
+                localStorage.removeItem(THEME_STORAGE_KEY);
+            }
+            setTheme(savedTheme, false);
         } else {
-            setTheme(getSystemTheme(), false);
+            setTheme(systemTheme, false);
         }
+
         setupToggleButton();
         setupSystemThemeListener();
     }
@@ -141,10 +171,16 @@
             window.Blazor.addEventListener('afterStarted', function () {
                 setTimeout(function () {
                     const savedTheme = getCurrentTheme();
+                    const systemTheme = getSystemTheme();
+
                     if (savedTheme) {
+                        // Check if saved theme matches system theme
+                        if (savedTheme === systemTheme) {
+                            localStorage.removeItem(THEME_STORAGE_KEY);
+                        }
                         setTheme(savedTheme, false);
                     } else {
-                        setTheme(getSystemTheme(), false);
+                        setTheme(systemTheme, false);
                     }
                 }, 50);
             });

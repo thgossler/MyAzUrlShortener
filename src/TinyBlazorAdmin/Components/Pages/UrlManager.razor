@@ -439,7 +439,7 @@
             isLoading = true;
             StateHasChanged();
 
-            toastService.ShowInfo("Importing records from other storage...");
+            toastService.ShowInfo("Importing records from configured storage...");
 
             var sourceTableClient = new TableServiceClient(importConnectionString);
             sourceTableClient.CreateTableIfNotExists("UrlsDetails");
