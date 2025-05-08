@@ -7,7 +7,8 @@
 @rendermode InteractiveServer
 
 <FluentStack Orientation="Orientation.Vertical" VerticalGapGap="10" Width="100%">
-    <FluentStack Orientation="Orientation.Horizontal" HorizontalGapGapGap="10" Width="100%">
+    <FluentLabel Typo="Typography.H6" Color="Color.FillInverse">Overall period</FluentLabel>
+    <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10" Width="100%">
         <div Width="50%">
             <FluentDatePicker Label="Starting From" Value="@startDateTime.LocalDateTime" ValueChanged="@( e => StartDateTimeReconcile(e!.Value) )" />
             <FluentTimePicker Value="@startDateTime.LocalDateTime" ValueChanged="@( e => StartDateTimeReconcile(e!.Value) )" />
@@ -21,9 +22,10 @@
         <FluentTextField Label="Alternative URL" Name="AlternativeUrl" Placeholder="https://..." @bind-Value="schedule.AlternativeUrl" style="width: 90%;"/>
     </div>
     <div>
-        <FluentStack Orientation="Orientation.Horizontal" HorizontalGapGapGap="10" >
+        <FluentLabel Typo="Typography.H6" Color="Color.FillInverse" Style="margin-bottom: 8px">Recurrences within overall period</FluentLabel>
+        <FluentStack Orientation="Orientation.Vertical" HorizontalGap="10">
             <FluentTextField Name="Cron" Label="Cron expression" Placeholder="* * * * *" @bind-Value="schedule.Cron" />
-            <span>Tool: <a href="https://crontab.guru/" target="blank">https://crontab.guru/</a> </span>
+            <p style="margin-left: 20px; font-style: italic">Cron helper tools:&nbsp;&nbsp;<a href="https://www.uptimia.com/cron-expression-generator" target="blank">Uptimia Cron Expression Generator</a>,&nbsp;&nbsp;<a href="https://crontab.guru/" target="blank">Crontab.guru</a></p>
         </FluentStack>
 
     </div>  

@@ -3,7 +3,9 @@ using AzUrlShortener.Core.Domain;
 using AzUrlShortener.Core.Messages;
 using AzUrlShortener.Core.Service;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Net;
+using System.Text.RegularExpressions;
 
 namespace AzUrlShortener.Core.Services;
 
@@ -158,7 +160,7 @@ public class UrlServices
             }
 
             // Validates if input.url is a valid aboslute url, aka is a complete refrence to the resource, ex: http(s)://google.com
-            if (!Uri.IsWellFormedUriString(input.Url, UriKind.Absolute))
+            if (!Regex.Match(input.Url, "^http[s]://[0-9a-zA-Z]+.*", RegexOptions.IgnoreCase).Success)
             {
                 throw new AzUrlShortenerException(HttpStatusCode.BadRequest, $"{input.Url} is not a valid absolute Url. The Url parameter must start with 'http://' or 'http://'.");
             }

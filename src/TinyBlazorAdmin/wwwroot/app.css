@@ -354,3 +354,30 @@ code {
     text-align: right;
     flex: 1;
 }
+
+.loading-indicator {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 12px;
+    gap: 8px;
+}
+
+.actions-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.search-container {
+    margin-left: auto;
+    min-width: 250px;
+}
+
+.truncate-with-tooltip {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}

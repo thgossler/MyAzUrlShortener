@@ -8,7 +8,7 @@
 
 <FluentCard MinimalStyle="true" AreaRestricted="false">
     <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="8" VerticalAlignment="VerticalAlignment.Center" >
-        <FluentLabel Typo="Typography.H6" Color="Color.FillInverse">Schedules</FluentLabel>
+        <FluentLabel Typo="Typography.H6" Color="Color.FillInverse">URL Override Schedules</FluentLabel>
         <FluentButton OnClick="@(async () => AddScheduleClick())" IconEnd="@(new Icons.Regular.Size16.AddSquare())" />
     </FluentStack>
     
@@ -18,7 +18,8 @@
             {
                 <FluentAccordionItem Expanded="true">
                     <HeadingTemplate>
-                        <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="8" VerticalAlignment="VerticalAlignment.Center" >
+                        <FluentLabel Typo="Typography.H6" Color="Color.FillInverse">Override schedule</FluentLabel>
+                        <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="8" VerticalAlignment="VerticalAlignment.Center">
                             <FluentButton OnClick="@( () => DeleteSchedule( s ))" IconEnd="@(new Icons.Regular.Size16.Delete())" />
                             <FluentLabel Color="Color.Accent">
                                 @s.Start.ToString("yyyy-MM-dd") &lt;                       

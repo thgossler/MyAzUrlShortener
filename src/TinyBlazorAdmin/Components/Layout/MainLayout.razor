@@ -18,11 +18,13 @@
 <FluentLayout>
     <FluentHeader>
         <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10" Style="align-items: center">
-            @if (!string.IsNullOrEmpty(logoUrl))
-            {
-                <img src="@logoUrl" alt="Vendor Logo" style="max-height: 40px; margin-right: 10px;" />
-            }
-            <a href="/" style="text-decoration: none; color: inherit; cursor: pointer; font-size: x-large;">URL Shortener</a>
+            <a href="/" style="display: inline-flex; align-items: center; text-decoration: none; color: inherit; cursor: pointer; font-size: x-large">
+                @if (!string.IsNullOrEmpty(logoUrl))
+                {
+                    <img src="@logoUrl" alt="Vendor Logo" style="max-height: 40px; margin-right: 10px;" />
+                }
+                <span>URL Shortener</span>
+            </a>
             <div style="flex-grow: 1"></div>
             <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Toggle dark/light mode">
                 <svg id="moon-icon" class="theme-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
