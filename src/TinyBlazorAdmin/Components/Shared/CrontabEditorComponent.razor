@@ -1,0 +1,500 @@
+﻿@using Microsoft.FluentUI.AspNetCore.Components
+@using System.Globalization
+@using System.Text
+@using System.Text.RegularExpressions
+@inject IJSRuntime JS
+
+<div style="max-height: 600px; overflow-y: auto; padding-right: 10px;" @onscroll:preventDefault tabindex="-1">
+    <div class="section">
+        <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10">
+            <FluentTextField @ref="_initialFocusControl" @bind-Value="Minute" Immediate="true" ImmediateDelay="300"
+                             Label="Minute" Placeholder="* or 0-59"
+                             Style="width:80px; margin-right:10px;" TabIndex="-1"
+                             Error="@(!IsValidMinute(Minute))"
+                             ErrorMessage="Valid formats: *, number (0-59), ranges (e.g., 1-15), or lists (e.g., 1,15,30)" />
+
+            <FluentTextField @bind-Value="Hour" Immediate="true" ImmediateDelay="300"
+                             Label="Hour" Placeholder="* or 0-23"
+                             Style="width:80px;" TabIndex="-1"
+                             Error="@(!IsValidHour(Hour))"
+                             ErrorMessage="Valid formats: *, number (0-23), ranges (e.g., 9-17), or lists (e.g., 9,12,17)" />
+
+            <FluentTextField @bind-Value="DayOfMonth" Immediate="true" ImmediateDelay="300"
+                             Label="Day of Month" Placeholder="* or 1-5,10"
+                             Style="width:120px; margin-right:10px;" TabIndex="-1"
+                             Error="@(!IsValidDayOfMonth(DayOfMonth))"
+                             ErrorMessage="Valid formats: *, number (1-31), ranges, or lists" />
+
+            <FluentTextField @bind-Value="Month" Immediate="true" ImmediateDelay="300"
+                             Label="Month" Placeholder="* or 1-3,6-8"
+                             Style="width:120px; margin-right:10px;" TabIndex="-1"
+                             Error="@(!IsValidMonth(Month))"
+                             ErrorMessage="Valid formats: *, number (1-12), ranges, or lists" />
+        </FluentStack>
+    </div>
+    <div class="section">
+        <div style="margin-bottom: 5px">Day of Week:</div>
+        @foreach (var day in WeekDays)
+        {
+            <FluentCheckbox @bind-Checked="day.Checked" Label="@day.Name" Style="margin-right:8px;" TabIndex="-1" />
+        }
+    </div>
+
+    <div class="section" style="margin-top: 10px">
+        <h4>Cron Expression</h4>
+        <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" Wrap="true">
+            <FluentTextField @bind-Value="CrontabExpression" Immediate="true" ImmediateDelay="300"
+                             Style="width:250px; margin-right:10px;" Placeholder="* * * * *" TabIndex="-1"
+                             Error="@(!IsValidCronExpression(CrontabExpression))"
+                             ErrorMessage="Invalid cron expression format. Expected format: 'minute hour day-of-month month day-of-week'" />
+            <FluentButton OnClick="CopyToClipboard" Style="margin-right: 5px;" TabIndex="-1">Copy</FluentButton>
+            <FluentButton OnClick="GenerateRandom" TabIndex="-1">Random</FluentButton>
+        </FluentStack>
+        <div id="description" style="margin-top:10px; font-style:italic; color:#555;">@Description</div>
+    </div>
+
+    <div class="section examples">
+        <h4 style="margin-top: 15px">Presets</h4>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            @foreach (var preset in Presets)
+            {
+                <FluentButton OnClick="() => ApplyPreset(preset.State)" TabIndex="-1">@preset.Label</FluentButton>
+            }
+        </div>
+    </div>
+
+    <FluentAccordion Style="margin-top: 20px;">
+        <FluentAccordionItem Expanded="false">
+            <HeadingTemplate>
+                <FluentLabel Typo="Typography.H5" Color="Color.FillInverse">Calendar Preview</FluentLabel>
+            </HeadingTemplate>
+            <ChildContent>
+                <div class="section calendar" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;">
+                    @foreach (var m in Enumerable.Range(1, 12))
+                    {
+                        <div class="month" style="border:1px solid #ccc; padding:5px; font-size:12px;">
+                            <div class="month-name" style="text-align:center;font-weight:bold;">@CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(m)</div>
+                            <div class="days" style="display:grid; grid-template-columns:repeat(7,1fr);">
+                                @foreach (var cell in BuildCalendarCells(Year, m, State))
+                                {
+                                    @if (cell.Day > 0)
+                                    {
+                                        <div class="day @(cell.Active?"active":"")"
+                                             title="@cell.Tooltip"
+                                             style="width:14px;height:14px;margin:1px;text-align:center;line-height:14px;cursor:pointer;@(cell.Active ? "background-color:var(--accent-fill-rest);color:white;border-radius:2px;" : "")">
+                                            @cell.Day
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="day" style="width:14px;height:14px;margin:1px;text-align:center;line-height:14px;"></div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </ChildContent>
+        </FluentAccordionItem>
+    </FluentAccordion>
+</div>
+
+@code {
+    private int Year = DateTime.Now.Year;
+
+    private bool _suppressSync = false;
+    FluentTextField _initialFocusControl;
+
+    private string _minute = "*";
+    private string Minute { get { return _minute; } set { _minute = value; if (!_suppressSync) SyncToUnifiedExpression(); } }
+
+    private string _hour = "*";
+    private string Hour { get { return _hour; } set { _hour = value; if (!_suppressSync) SyncToUnifiedExpression(); } }
+
+    private string _dayOfMonth = "*";
+    private string DayOfMonth { get { return _dayOfMonth; } set { _dayOfMonth = value; if (!_suppressSync) SyncToUnifiedExpression(); } }
+
+    private string _month = "*";
+    private string Month { get { return _month; } set { _month = value; if (!_suppressSync) SyncToUnifiedExpression(); } }
+
+    private static readonly Regex MinuteRegex = new(@"^\*$|^(\d|[1-5]\d)(-(\d|[1-5]\d))?(,(\d|[1-5]\d)(-(\d|[1-5]\d))?)*$");
+    private static readonly Regex HourRegex = new(@"^\*$|^(\d|1\d|2[0-3])(-(\d|1\d|2[0-3]))?(,(\d|1\d|2[0-3])(-(\d|1\d|2[0-3]))?)*$");
+    private static readonly Regex DayOfMonthRegex = new(@"^\*$|^([1-9]|[12]\d|3[01])(-([1-9]|[12]\d|3[01]))?(,([1-9]|[12]\d|3[01])(-([1-9]|[12]\d|3[01]))?)*$");
+    private static readonly Regex MonthRegex = new(@"^\*$|^([1-9]|1[0-2])(-([1-9]|1[0-2]))?(,([1-9]|1[0-2])(-([1-9]|1[0-2]))?)*$");
+    private static readonly Regex CronExpressionRegex = new(@"^(\S+\s){4}\S+$");
+
+    private bool IsValidMinute(string value) => string.IsNullOrEmpty(value) || MinuteRegex.IsMatch(value);
+    private bool IsValidHour(string value) => string.IsNullOrEmpty(value) || HourRegex.IsMatch(value);
+    private bool IsValidDayOfMonth(string value) => string.IsNullOrEmpty(value) || DayOfMonthRegex.IsMatch(value);
+    private bool IsValidMonth(string value) => string.IsNullOrEmpty(value) || MonthRegex.IsMatch(value);
+    private bool IsValidCronExpression(string value) => string.IsNullOrEmpty(value) || CronExpressionRegex.IsMatch(value);
+
+    private List<WeekDayItem> WeekDays = new()
+    {
+        new("Mon", DayOfWeek.Monday), new("Tue", DayOfWeek.Tuesday), new("Wed", DayOfWeek.Wednesday),
+        new("Thu", DayOfWeek.Thursday), new("Fri", DayOfWeek.Friday), new("Sat", DayOfWeek.Saturday),
+        new("Sun", DayOfWeek.Sunday)
+    };
+
+    private string _crontabExpression = "* * * * *";
+    public string CrontabExpression
+    {
+        get { return _crontabExpression; }
+        set
+        {
+            _crontabExpression = value;
+            if (value != null && value.Split(' ').Length == 5)
+            {
+                ParseUnifiedCronExpression();
+            }
+        }
+    }
+
+    private string Description = "";
+
+    private StateModel State => new()
+        {
+            Minute = string.IsNullOrWhiteSpace(Minute) ? "*" : Minute,
+            Hour = string.IsNullOrWhiteSpace(Hour) ? "*" : Hour,
+            Dom = string.IsNullOrWhiteSpace(DayOfMonth) ? "*" : DayOfMonth,
+            Mon = string.IsNullOrWhiteSpace(Month) ? "*" : Month,
+            Dow = WeekDays.Where(d => d.Checked).Select(d => ((int)d.Value).ToString()).ToList()
+        };
+
+    private List<Preset> Presets = new()
+    {
+        new("Every Monday 9:00", new StateModel{Minute="0",Hour="9",Dow=new List<string>{((int)DayOfWeek.Monday).ToString()}}),
+        new("First of Month 00:00", new StateModel{Minute="0",Hour="0",Dom="1"}),
+        new("Wed & Fri 14:30", new StateModel{Minute="30",Hour="14",Dow=new List<string>{((int)DayOfWeek.Wednesday).ToString(),((int)DayOfWeek.Friday).ToString()}}),
+        new("Every Weekend", new StateModel{Minute="0",Hour="0",Dow=new List<string>{((int)DayOfWeek.Saturday).ToString(),((int)DayOfWeek.Sunday).ToString()}}),
+        new("Every day at midnight", new StateModel{Minute="0",Hour="0"}),
+        new("Every day at 6:00", new StateModel{Minute="0",Hour="6"}),
+        new("Weekdays at 9:00", new StateModel{Minute="0",Hour="9",Dow=Enumerable.Range((int)DayOfWeek.Monday,(int)DayOfWeek.Friday-(int)DayOfWeek.Monday+1).Select(i=>i.ToString()).ToList()}),
+        new("Every Sunday at 00:00", new StateModel{Minute="0",Hour="0",Dow=new List<string>{((int)DayOfWeek.Sunday).ToString()}}),
+        new("Every Friday at 18:00", new StateModel{Minute="0",Hour="18",Dow=new List<string>{((int)DayOfWeek.Friday).ToString()}}),
+        new("1st of Month at 6:00", new StateModel{Minute="0",Hour="6",Dom="1"})
+    };
+
+    protected override void OnInitialized()
+    {
+        SyncToUnifiedExpression();
+    }
+
+    // Public method to set focus after the component is initialized
+    public async Task SetInitialFocusAsync()
+    {
+        _initialFocusControl?.FocusAsync();
+    }
+
+    private void SyncToUnifiedExpression()
+    {
+        if (IsValidMinute(Minute) && IsValidHour(Hour) &&
+            IsValidDayOfMonth(DayOfMonth) && IsValidMonth(Month))
+        {
+            // Convert empty values to "*"
+            var minutePart = string.IsNullOrWhiteSpace(Minute) ? "*" : Minute;
+            var hourPart = string.IsNullOrWhiteSpace(Hour) ? "*" : Hour;
+            var domPart = string.IsNullOrWhiteSpace(DayOfMonth) ? "*" : DayOfMonth;
+            var monthPart = string.IsNullOrWhiteSpace(Month) ? "*" : Month;
+            var dowPart = State.Dow.Any() ? string.Join(",", State.Dow) : "*";
+
+            _crontabExpression = string.Join(" ", new[] { minutePart, hourPart, domPart, monthPart, dowPart });
+            UpdateDescription();
+        }
+        StateHasChanged();
+    }
+
+
+    private void ParseUnifiedCronExpression()
+    {
+        var parts = CrontabExpression.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length >= 5)
+        {
+            _suppressSync = true;
+            try
+            {
+                // If a part is empty, use "*"
+                Minute = string.IsNullOrWhiteSpace(parts[0]) ? "*" : parts[0];
+                Hour = string.IsNullOrWhiteSpace(parts[1]) ? "*" : parts[1];
+                DayOfMonth = string.IsNullOrWhiteSpace(parts[2]) ? "*" : parts[2];
+                Month = string.IsNullOrWhiteSpace(parts[3]) ? "*" : parts[3];
+
+                // Update day of week checkboxes
+                if (parts[4] != "*" && !string.IsNullOrWhiteSpace(parts[4]))
+                {
+                    foreach (var day in WeekDays)
+                    {
+                        day.Checked = false;
+                    }
+
+                    var dowValues = parts[4].Split(',');
+                    foreach (var value in dowValues)
+                    {
+                        if (int.TryParse(value, out int dowValue))
+                        {
+                            var day = WeekDays.FirstOrDefault(d => (int)d.Value == dowValue);
+                            if (day != null)
+                            {
+                                day.Checked = true;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // When "*" is specified, uncheck all days
+                    foreach (var day in WeekDays)
+                    {
+                        day.Checked = false;
+                    }
+                }
+
+                SyncToUnifiedExpression();
+                UpdateDescription();
+            }
+            finally
+            {
+                _suppressSync = false;
+            }
+        }
+    }
+
+    public async Task InitializeWithCronExpression(string minutes, string hours, string daysOfMonth, string months, string daysOfWeek)
+    {
+        Minute = minutes;
+        Hour = hours;
+        DayOfMonth = daysOfMonth;
+        Month = months;
+
+        if (daysOfWeek != "*")
+        {
+            foreach (var day in WeekDays)
+            {
+                day.Checked = false;
+            }
+
+            var dowValues = daysOfWeek.Split(',');
+            foreach (var value in dowValues)
+            {
+                if (int.TryParse(value, out int dowValue))
+                {
+                    var day = WeekDays.FirstOrDefault(d => (int)d.Value == dowValue);
+                    if (day != null)
+                    {
+                        day.Checked = true;
+                    }
+                }
+            }
+        }
+        else
+        {
+            foreach (var day in WeekDays)
+            {
+                day.Checked = false;
+            }
+        }
+
+        CrontabExpression = string.Join(" ", new[] { minutes, hours, daysOfMonth, months, daysOfWeek });
+
+        // Set focus after initialization
+        await SetInitialFocusAsync();
+    }
+
+    private void UpdateDescription()
+    {
+        var sb = new StringBuilder();
+
+        // Handle time part
+        string effectiveMinute = string.IsNullOrWhiteSpace(Minute) ? "*" : Minute;
+        string effectiveHour = string.IsNullOrWhiteSpace(Hour) ? "*" : Hour;
+        string effectiveDayOfMonth = string.IsNullOrWhiteSpace(DayOfMonth) ? "*" : DayOfMonth;
+        string effectiveMonth = string.IsNullOrWhiteSpace(Month) ? "*" : Month;
+
+        if (effectiveHour == "*" && effectiveMinute == "*")
+        {
+            sb.Append("Every minute");
+        }
+        else if (effectiveHour == "*")
+        {
+            sb.Append($"At {effectiveMinute} minutes past every hour");
+        }
+        else if (effectiveMinute == "*")
+        {
+            sb.Append($"Every minute of hour {effectiveHour}");
+        }
+        else
+        {
+            var hh = effectiveHour.PadLeft(2, '0');
+            var mm = effectiveMinute.PadLeft(2, '0');
+            sb.Append($"At {hh}:{mm}");
+        }
+
+        // Storage for different parts of the description
+        var scheduleComponents = new List<string>();
+
+        // Handle day of week
+        var selected = WeekDays.Where(d => d.Checked).Select(d => d.Name).ToList();
+        if (selected.Any())
+        {
+            scheduleComponents.Add($"on {string.Join(" and ", selected)}");
+        }
+
+        // Handle day of month
+        if (effectiveDayOfMonth != "*")
+        {
+            scheduleComponents.Add($"on day {effectiveDayOfMonth} of the month");
+        }
+
+        // Handle month
+        if (effectiveMonth != "*")
+        {
+            if (effectiveMonth.Contains(",") || effectiveMonth.Contains("-"))
+            {
+                scheduleComponents.Add("in selected months");
+            }
+            else if (int.TryParse(effectiveMonth, out int monthNum))
+            {
+                scheduleComponents.Add($"in {CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(monthNum)}");
+            }
+        }
+
+        // Join components with appropriate conjunctions
+        if (scheduleComponents.Count > 0)
+        {
+            sb.Append(" " + string.Join(", and ", scheduleComponents));
+        }
+        else
+        {
+            sb.Append(" every day");
+        }
+
+        Description = sb.ToString() + ".";
+    }
+
+    private async Task CopyToClipboard()
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", CrontabExpression);
+    }
+
+    private void GenerateRandom()
+    {
+        var s = GenerateRandomState();
+        ApplyPreset(s);
+    }
+
+    private void ApplyPreset(StateModel s)
+    {
+        Minute = s.Minute;
+        Hour = s.Hour;
+        DayOfMonth = s.Dom;
+        Month = s.Mon;
+
+        foreach (var day in WeekDays)
+        {
+            day.Checked = s.Dow.Contains(((int)day.Value).ToString());
+        }
+
+        SyncToUnifiedExpression();
+        StateHasChanged();
+    }
+
+    private IEnumerable<CalendarCell> BuildCalendarCells(int year, int month, StateModel state)
+    {
+        var first = new DateTime(year, month, 1);
+        int offset = ((int)first.DayOfWeek + 6) % 7;
+        for (int i = 0; i < offset; i++) yield return new CalendarCell();  // Empty cells for first week padding
+        int days = DateTime.DaysInMonth(year, month);
+        for (int d = 1; d <= days; d++)
+        {
+            var dt = new DateTime(year, month, d);
+            bool active = MatchesDate(state, dt);
+            string tooltip = $"{dt:dddd}, CW {GetIsoWeekNumber(dt)}" + (active ? $"\n{Hour.PadLeft(2, '0')}:{Minute.PadLeft(2, '0')}" : "");
+            yield return new CalendarCell { Day = d, Active = active, Tooltip = tooltip };
+        }
+    }
+
+    private bool MatchesDate(StateModel s, DateTime dt)
+    {
+        bool m1 = (s.Dom == "*" || MatchField(s.Dom, dt.Day));
+        bool m2 = (s.Mon == "*" || MatchField(s.Mon, dt.Month));
+        bool m3 = (!s.Dow.Any() || s.Dow.Contains(((int)dt.DayOfWeek).ToString()));
+        return m1 && m2 && m3;
+    }
+
+    private int GetIsoWeekNumber(DateTime dt) => CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(dt, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+
+    private StateModel GenerateRandomState()
+    {
+        var types = new[] { "daily", "weekly", "monthly", "weekday", "yearly" };
+        var rnd = new Random();
+        var type = types[rnd.Next(types.Length)];
+        var s = new StateModel { Minute = "0", Hour = "0", Dom = "*", Mon = "*", Dow = new List<string>() };
+
+        s.Minute = new[] { "0", "15", "30", "45" }[rnd.Next(4)];
+        s.Hour = rnd.Next(24).ToString();
+        if (type == "weekly")
+        {
+            s.Dow = new List<string> { rnd.Next(7).ToString() };
+        }
+        else if (type == "monthly")
+        {
+            s.Dom = rnd.Next(1, 29).ToString();
+        }
+        else if (type == "yearly")
+        {
+            s.Mon = rnd.Next(1, 13).ToString();
+            s.Dom = rnd.Next(1, 28).ToString();
+        }
+        else if (type == "weekday")
+        {
+            s.Dow = Enumerable.Range((int)DayOfWeek.Monday, 5).Select(i => i.ToString()).ToList();
+        }
+        if (type != "yearly" && rnd.Next(5) == 0)
+        {
+            s.Mon = rnd.Next(1, 13).ToString();
+        }
+        return s;
+    }
+
+    private bool MatchField(string expr, int num)
+    {
+        if (string.IsNullOrWhiteSpace(expr) || expr == "*") return true;
+        foreach (var part in expr.Split(','))
+        {
+            var p = part.Trim();
+            if (p.Contains('-'))
+            {
+                var range = p.Split('-');
+                if (int.TryParse(range[0], out int start) && int.TryParse(range[1], out int end))
+                {
+                    if (num >= start && num <= end) return true;
+                }
+            }
+            else if (int.TryParse(p, out int val) && val == num)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public class WeekDayItem
+    {
+        public string Name;
+        public DayOfWeek Value;
+        private bool _checked;
+        public bool Checked { get { return _checked; } set { _checked = value; } }
+        public WeekDayItem(string name, DayOfWeek val) { Name = name; Value = val; }
+    }
+    public class Preset { public string Label; public StateModel State; public Preset(string l, StateModel s) { Label = l; State = s; } }
+    public class CalendarCell { public int Day; public bool Active; public string Tooltip; }
+    public class StateModel
+    {
+        public string Minute = "*";
+        public string Hour = "*";
+        public string Dom = "*";
+        public string Mon = "*";
+        public List<string> Dow = new();
+    }
+}

@@ -2,7 +2,9 @@
 @using AzUrlShortener.Core.Domain
 @using AzUrlShortener.TinyBlazorAdmin
 @using AzUrlShortener.TinyBlazorAdmin.Components
+@using AzUrlShortener.TinyBlazorAdmin.Components.Dialogues
 @using AzUrlShortener.TinyBlazorAdmin.Services
+@using Microsoft.FluentUI.AspNetCore.Components
 
 @rendermode InteractiveServer
 
@@ -17,23 +19,25 @@
             <FluentDatePicker Label="Ending at" Value="@endDateTime.LocalDateTime" ValueChanged="@( e => EndDateTimeReconcile(e!.Value) )" />
             <FluentTimePicker Value="@endDateTime.LocalDateTime" ValueChanged="@( e => EndDateTimeReconcile(e!.Value) )" />
         </div>
-    </FluentStack>  
+    </FluentStack>
     <div style="width: 100%;">
-        <FluentTextField Label="Alternative URL" Name="AlternativeUrl" Placeholder="https://..." @bind-Value="schedule.AlternativeUrl" style="width: 90%;"/>
+        <FluentTextField Label="Alternative URL" Name="AlternativeUrl" Placeholder="https://..." @bind-Value="schedule.AlternativeUrl" style="width: 90%;" />
     </div>
     <div>
         <FluentLabel Typo="Typography.H6" Color="Color.FillInverse" Style="margin-bottom: 8px">Recurrences within overall period</FluentLabel>
         <FluentStack Orientation="Orientation.Vertical" HorizontalGap="10">
-            <FluentTextField Name="Cron" Label="Cron expression" Placeholder="* * * * *" @bind-Value="schedule.Cron" />
+            <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10">
+                <FluentTextField Name="Cron" Label="Cron expression" Placeholder="* * * * *" @bind-Value="schedule.Cron" />
+                <FluentButton Appearance="Appearance.Accent" OnClick="OpenCronDialog">Edit</FluentButton>
+            </FluentStack>
             <p style="margin-left: 20px; font-style: italic">Cron helper tools:&nbsp;&nbsp;<a href="https://www.uptimia.com/cron-expression-generator" target="blank">Uptimia Cron Expression Generator</a>,&nbsp;&nbsp;<a href="https://crontab.guru/" target="blank">Crontab.guru</a></p>
         </FluentStack>
 
-    </div>  
+    </div>
     <div>
         <FluentNumberField Name="DurationMinutes" Label="Duration (in minutes)" @bind-Value="schedule.DurationMinutes" Min="0" Step="5" />
-    </div>  
-</FluentStack> 
-
+    </div>
+</FluentStack>
 
 @code {
     [Parameter]
@@ -41,6 +45,14 @@
 
     private DateTimeOffset startDateTime;
     private DateTimeOffset endDateTime;
+
+    private string? tempCronValue;
+    private DialogParameters dialogParameters = default!;
+    private IDialogReference? dialogReference;
+    private IDialogService DialogService { get; set; } = default!;
+
+    [Inject]
+    private IDialogService _dialogService { get; set; } = default!;
 
     private enum DateTimeSection
     {
@@ -52,8 +64,9 @@
     {
         startDateTime = schedule.Start;
         endDateTime = schedule.End;
+        DialogService = _dialogService;
     }
- 
+
     private void StartDateTimeReconcile(DateTime value)
     {
         var valueOffset = new DateTimeOffset(value);
@@ -67,4 +80,62 @@
         endDateTime = valueOffset;
         schedule.End = startDateTime;
     }
+
+    private async Task OpenCronDialog()
+    {
+        // Store current value for potential cancel operation
+        tempCronValue = schedule.Cron;
+
+        // Configure dialog parameters
+        dialogParameters = new DialogParameters
+            {
+                Title = "Edit Cron Expression",
+                Width = "800px",
+                PreventScroll = false,
+                PrimaryAction = "OK",
+                SecondaryAction = "Cancel",
+                TrapFocus = true,
+                Modal = true,
+                PrimaryActionEnabled = true,
+                SecondaryActionEnabled = true
+            };
+
+        try
+        {
+            await DialogService.UpdateDialogAsync<NewUrlDialog>("NewUrlDialog", new DialogParameters<NewUrlDialog>() { TrapFocus = false });
+            await DialogService.UpdateDialogAsync<UpdateUrlDialog>("UpdateUrlDialog", new DialogParameters<UpdateUrlDialog>() { TrapFocus = false });
+        }
+        catch (Exception) {}
+
+        // Open the dialog as a proper overlay
+        dialogReference = await DialogService.ShowDialogAsync<CronEditorDialog>(
+            new CronEditorDialogParameters
+            {
+                CronExpression = schedule.Cron,
+                OnSave = SaveCronExpression
+            }, 
+            dialogParameters);
+
+        // Handle dialog result
+        var result = await dialogReference.Result;
+        if (result.Cancelled)
+        {
+            // If cancelled, restore the original value
+            schedule.Cron = tempCronValue;
+        }
+
+        try
+        {
+            await DialogService.UpdateDialogAsync<NewUrlDialog>("NewUrlDialog", new DialogParameters<NewUrlDialog>() { TrapFocus = true });
+            await DialogService.UpdateDialogAsync<UpdateUrlDialog>("UpdateUrlDialog", new DialogParameters<UpdateUrlDialog>() { TrapFocus = true });
+        }
+        catch (Exception) { }
+    }
+
+
+    private void SaveCronExpression(string cronExpression)
+    {
+        schedule.Cron = cronExpression;
+    }
 }
+

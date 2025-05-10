@@ -29,6 +29,11 @@
             <FluentButton OnClick="@(CreateShortUrl)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.Add())">Add</FluentButton>
             <FluentButton OnClick="@(ManualRefresh)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.ArrowSync())">Refresh</FluentButton>
 
+            @if (filteredUrlList == null || !filteredUrlList.Any())
+            {
+                <FluentButton OnClick="@(AddExampleData)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.DataHistogram())">Add example data</FluentButton>
+            }
+
             @if (!string.IsNullOrWhiteSpace(importConnectionString))
             {
                 <FluentButton OnClick="@(ImportRecords)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.ArrowUpload())">Import records</FluentButton>
@@ -332,6 +337,7 @@
         shortUrlRequest = new ShortUrlRequest();
         var dialog = await DialogService.ShowDialogAsync<NewUrlDialog>(shortUrlRequest, new DialogParameters()
             {
+                Id = "NewUrlDialog",
                 Title = "Create a new Short Url",
                 PreventDismissOnOverlayClick = true,
                 PreventScroll = true,
@@ -391,6 +397,7 @@
 
         var dialog = await DialogService.ShowDialogAsync<UpdateUrlDialog>(urlEntity, new DialogParameters()
             {
+                Id = "UpdateUrlDialog",
                 Title = $"Update Url: {urlEntity.RowKey}",
                 PreventDismissOnOverlayClick = true,
                 PreventScroll = true,
@@ -442,6 +449,73 @@
         else
         {
             toastService.ShowError("Not authorized to archive this URL");
+        }
+    }
+
+    private async Task AddExampleData()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            // Example 1: GitHub
+            var githubRequest = new ShortRequest
+                {
+                    Title = "GitHub",
+                    Url = "https://github.com",
+                    Vanity = "gh",
+                    Schedules = Array.Empty<Schedule>()
+                };
+
+            // Example 2: Microsoft
+            var microsoftRequest = new ShortRequest
+                {
+                    Title = "Microsoft",
+                    Url = "https://microsoft.com",
+                    Vanity = "ms",
+                    Schedules = Array.Empty<Schedule>()
+                };
+
+            // Example 3: Stack Overflow
+            var stackOverflowRequest = new ShortRequest
+                {
+                    Title = "Stack Overflow",
+                    Url = "https://stackoverflow.com",
+                    Vanity = "so",
+                    Schedules = Array.Empty<Schedule>()
+                };
+
+            var examples = new[] { githubRequest, microsoftRequest, stackOverflowRequest };
+            var successCount = 0;
+
+            foreach (var example in examples)
+            {
+                try
+                {
+                    var response = await urlManager.UrlCreate(example);
+                    if (response.Item1)
+                    {
+                        successCount++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to create example {example.Vanity}: {ex.Message}");
+                }
+            }
+
+            await UpdateUIList();
+            toastService.ShowSuccess($"{successCount} example URLs created successfully");
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError($"Failed to create example data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
         }
     }
 
