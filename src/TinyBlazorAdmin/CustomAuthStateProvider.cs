@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
 
-namespace AzUrlShortener.TinyBlazorAdmin.Services;
+namespace AzUrlShortener.AdminUI.Services;
 
 // Custom Auth State Provider based on the ServerAuthenticationStateProvider
 public class CustomAuthStateProvider : ServerAuthenticationStateProvider

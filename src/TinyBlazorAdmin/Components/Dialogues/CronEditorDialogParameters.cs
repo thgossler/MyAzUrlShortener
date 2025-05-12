@@ -1,6 +1,6 @@
 ﻿using Microsoft.FluentUI.AspNetCore.Components;
 
-namespace AzUrlShortener.TinyBlazorAdmin.Components.Dialogues
+namespace AzUrlShortener.AdminUI.Components.Dialogues
 {
     public class CronEditorDialogParameters
     {

@@ -1,8 +1,8 @@
 using AzUrlShortener.Core.Domain;
 using AzUrlShortener.Core.Messages;
-using AzUrlShortener.TinyBlazorAdmin.Services;
+using AzUrlShortener.AdminUI.Services;
 
-namespace AzUrlShortener.TinyBlazorAdmin;
+namespace AzUrlShortener.AdminUI;
 
 public class UrlManagerClient
 {

@@ -224,12 +224,28 @@ public static class ShortenerEnpoints
 
     private static string GetFullHostName(HttpContext context)
     {
-        string customDomain = Environment.GetEnvironmentVariable("CustomDomain");
-        var host = string.IsNullOrEmpty(customDomain) ? $"{context.Request.Scheme}://{context.Request.Host.Value}" : customDomain;
+        // Need to get the external endpoint from environment
+        var funcUrl = Environment.GetEnvironmentVariable("services__functions__http__0");
+        if (string.IsNullOrEmpty(funcUrl))
+        {
+            funcUrl = Environment.GetEnvironmentVariable("functions__http__SERVICE_URI");
+        }
+
+        // Get the custom domain endpoint if configured
+        var customDomain = Environment.GetEnvironmentVariable("CustomDomain");
+
+        var host = string.IsNullOrEmpty(customDomain) ? funcUrl : customDomain;
+        if (string.IsNullOrEmpty(host))
+        {
+            // Falling-back to same host/port
+            host = $"{context.Request.Scheme}://{context.Request.Host.Value}";
+        }
         if (!host.StartsWith("http"))
         {
-            host = "https://" + host;
+            // Use same protocol is not specified
+            host = $"{context.Request.Scheme}://{host}";
         }
+
         return host ?? string.Empty;
     }
 }

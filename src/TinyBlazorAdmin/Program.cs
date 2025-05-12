@@ -1,6 +1,5 @@
-using AzUrlShortener.TinyBlazorAdmin;
-using AzUrlShortener.TinyBlazorAdmin.Components;
-using AzUrlShortener.TinyBlazorAdmin.Services;
+using AzUrlShortener.AdminUI;
+using AzUrlShortener.AdminUI.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;

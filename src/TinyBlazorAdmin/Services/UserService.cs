@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
 
-namespace AzUrlShortener.TinyBlazorAdmin.Services;
+namespace AzUrlShortener.AdminUI.Services;
 
 public class UserService
 {

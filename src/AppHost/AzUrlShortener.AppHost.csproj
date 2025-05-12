@@ -12,14 +12,14 @@
 
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" Version="9.2.1" />
-    <PackageReference Include="Aspire.Hosting.Azure.Functions" Version="9.1.0-preview.1.25121.10" />
+    <PackageReference Include="Aspire.Hosting.Azure.Functions" Version="9.2.1-preview.1.25222.1" />
     <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="9.2.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Api\AzUrlShortener.Api.csproj" />
-    <ProjectReference Include="..\FunctionsLight\AzUrlShortener.FunctionsLight.csproj" />
-    <ProjectReference Include="..\TinyBlazorAdmin\AzUrlShortener.TinyBlazorAdmin.csproj" />
+    <ProjectReference Include="..\FunctionsLight\AzUrlShortener.Functions.csproj" />
+    <ProjectReference Include="..\TinyBlazorAdmin\AzUrlShortener.AdminUI.csproj" />
   </ItemGroup>
 
 </Project>
