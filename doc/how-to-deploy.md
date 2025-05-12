@@ -36,13 +36,24 @@ After a few seconds, you should now be in your version of the AzUrlShortener pro
 1. Let's initialize your environment with the following command:
 
 	```bash
-	azd init
+	azd init'
+      or
+	azd init -s '<subscriptionId>' -l '<location>' -e '<environmentName>'
+      e.g.
+    azd init -s '693b4f92-8e56-....-b7f2-74770ba7842a' -l 'westeurope' -e 'dev'
 	```
 
 	- You will be asked "How do you want to initialize your app?" Select  **Use code in the current directory**.
 	- azd will says it will generates files for using "Azure Container Apps". Select **Confirm and continue initializing my app**
 	- Give a name to your environment (ex: azUrlShortener-prod). This will be used as Azure resource group name.
-1. If you haven't already, log in to your Azure account with `azd auth login`.
+1. If you haven't already, log in to your Azure account with 
+
+    ```
+    azd auth login
+      or
+    azd auth login --tenant-id '<entraTenantId>'
+    ```
+
 1. To avoid affecting custom domains when deploying Azure Container Apps use the following command. This mostly useful if you are re-deploying, or updating an existing application. If you don't have any custom domain assign to the Azure Container Apps, you can still execute the command, but it's optional.
    
 	```bash
@@ -53,6 +64,10 @@ After a few seconds, you should now be in your version of the AzUrlShortener pro
 
 	```bash
 	azd up
+      or
+    azd up -e '<environmentName'
+      e.g.
+    azd up -e 'dev'
 	```
 
 	You will be asked where to deploy Azure Subscription and location select what make sense for you. You will be asked two more information:
