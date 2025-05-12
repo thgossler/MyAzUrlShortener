@@ -15,7 +15,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Api\AzUrlShortener.Api.csproj" />
     <ProjectReference Include="..\Core\AzUrlShortener.Core.csproj" />
+    <ProjectReference Include="..\Functions\AzUrlShortener.Functions.csproj" />
     <ProjectReference Include="..\ServiceDefaults\AzUrlShortener.ServiceDefaults.csproj" />
   </ItemGroup>
 </Project>

@@ -17,9 +17,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\AdminUI\AzUrlShortener.AdminUI.csproj" />
     <ProjectReference Include="..\Api\AzUrlShortener.Api.csproj" />
-    <ProjectReference Include="..\FunctionsLight\AzUrlShortener.Functions.csproj" />
-    <ProjectReference Include="..\TinyBlazorAdmin\AzUrlShortener.AdminUI.csproj" />
+    <ProjectReference Include="..\Functions\AzUrlShortener.Functions.csproj" />
   </ItemGroup>
 
 </Project>
