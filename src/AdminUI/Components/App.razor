@@ -54,7 +54,7 @@
 
     protected override void OnInitialized()
     {
-        var primaryColor = Configuration["UserInterface:PrimaryColor"];
+        var primaryColor = Configuration["PrimaryColor"];
         if (!string.IsNullOrEmpty(primaryColor))
         {
             ConfiguredPrimaryColor = primaryColor;

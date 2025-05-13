@@ -11,8 +11,31 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="appsettings.json" />
+    <None Remove="appsettings.local.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings-local-example.json">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="appsettings.local.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" Version="9.2.1" />
     <PackageReference Include="Aspire.Hosting.Azure.Functions" Version="9.2.1-preview.1.25222.1" />
+    <PackageReference Include="Aspire.Hosting.Azure.KeyVault" Version="9.2.1" />
     <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="9.2.1" />
   </ItemGroup>
 

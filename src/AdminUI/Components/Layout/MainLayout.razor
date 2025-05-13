@@ -52,13 +52,13 @@
     <FluentFooter>
         <div class="footer-container">
             <div class="footer-left">
-                @((MarkupString)SanitizeHtml(contactInfo))
+                @((MarkupString)SanitizeHtml(footerLeftHtml))
             </div>
             <div class="footer-center">
-                <span style="font-weight: bold">@intendedUseLabel</span>
+                @((MarkupString)SanitizeHtml(footerCenterHtml))
             </div>
             <div class="footer-right">
-                @processedCopyrightLabel
+                @((MarkupString)SanitizeHtml(footerRightHtml))
             </div>
         </div>
     </FluentFooter>
@@ -79,11 +79,10 @@
 @code {
     private bool isAdmin;
     private string username = "Unknown";
-    private string contactInfo = "";
     private string logoUrl = "";
-    private string intendedUseLabel = "";
-    private string copyrightLabel = "";
-    private string processedCopyrightLabel = "";
+    private string footerLeftHtml = "";
+    private string footerCenterHtml = "";
+    private string footerRightHtml = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -91,17 +90,13 @@
         username = await UserService.GetUserPrincipalNameAsync();
 
         // Get configuration values
-        logoUrl = Configuration["UserInterface:LogoUrl"] ?? "";
-        contactInfo = Configuration["UserInterface:Footer:ContactInfo"] ?? "<a href=\"https://github.com/thgossler/MyAzUrlShortener\">GitHub</a>";
-        intendedUseLabel = Configuration["UserInterface:Footer:IntendedUseLabel"] ?? "";
-        copyrightLabel = Configuration["UserInterface:Footer:CopyrightLabel"] ?? "MIT License";
+        logoUrl = Configuration["LogoUrl"] ?? "";
+        footerLeftHtml = Configuration["FooterLeftHtml"] ?? "<a href=\"https://github.com/thgossler/MyAzUrlShortener\">GitHub</a>";
+        footerCenterHtml = Configuration["FooterCenterHtml"] ?? "";
+        footerRightHtml = Configuration["FooterRightHtml"] ?? "MIT License";
 
-        // Replace {Year} placeholder with the current year
-        processedCopyrightLabel = Regex.Replace(
-            copyrightLabel,
-            "{year}",
-            DateTime.Now.Year.ToString(),
-            RegexOptions.IgnoreCase);
+        // Replace $(Year) placeholder with the current year
+        footerRightHtml = footerRightHtml.Replace("$(Year)", DateTime.Now.Year.ToString(), StringComparison.OrdinalIgnoreCase);
     }
 
     private string SanitizeHtml(string html)
@@ -115,13 +110,6 @@
         html = Regex.Replace(html, @"<style[^>]*>.*?</style>", "", RegexOptions.IgnoreCase | RegexOptions.Singleline);
         html = Regex.Replace(html, @"<iframe[^>]*>.*?</iframe>", "", RegexOptions.IgnoreCase | RegexOptions.Singleline);
         html = Regex.Replace(html, @"on\w+\s*=\s*""[^""]*""", "", RegexOptions.IgnoreCase);
-
-        // Allow only basic HTML tags that would be needed for contact info
-        var allowedTags = new[] { "a", "br", "p", "span", "strong", "em", "i", "b" };
-        foreach (var tag in allowedTags)
-        {
-            // Do nothing - these tags are allowed
-        }
 
         return html;
     }

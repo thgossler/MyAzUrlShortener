@@ -75,14 +75,14 @@ public class UserService
     public bool CanNormalUsersViewAllRecords()
     {
         bool canViewAll = false;
-        bool.TryParse(_configuration["UserSettings:AllowNormalUsersToViewAllRecords"], out canViewAll);
+        bool.TryParse(_configuration["AllowRegularUsersToViewAllRecords"], out canViewAll);
         return canViewAll;
     }
 
     public bool CanNormalUsersArchiveRecords()
     {
         bool canArchive = false;
-        bool.TryParse(_configuration["UserSettings:AllowNormalUsersToArchiveRecords"], out canArchive);
+        bool.TryParse(_configuration["AllowRegularUsersToArchiveRecords"], out canArchive);
         return canArchive;
     }
 

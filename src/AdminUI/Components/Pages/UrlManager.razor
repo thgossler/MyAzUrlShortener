@@ -48,12 +48,22 @@
             }
 
             <div class="search-container">
-                <FluentSearch Placeholder="Filter..."
-                              @bind-Value="searchText"
-                              @bind-Value:after="OnSearchInput"
-                              Immediate="true"
-                              ImmediateDelay="500"
-                              Icon="@(new Icons.Regular.Size16.Search())" />
+                <FluentStack Orientation="Orientation.Horizontal" Style="align-items: baseline;">
+                    @if (isAdmin || userService.CanNormalUsersViewAllRecords())
+                    {
+                        <div class="filter-controls">
+                            <FluentCheckbox @bind-Value="showOnlyMyRecords" 
+                                Label="Show only my records"
+                                @onchange="OnShowOnlyMyRecordsChanged" />
+                        </div>
+                    }
+                    <FluentSearch Placeholder="Filter..."
+                        @bind-Value="searchText"
+                        @bind-Value:after="OnSearchInput"
+                        Immediate="true"
+                        ImmediateDelay="500"
+                        Icon="@(new Icons.Regular.Size16.Search())" />
+                </FluentStack>
             </div>
         </div>
     </div>
@@ -75,13 +85,13 @@
 
     <div class="grid-container">
         <FluentDataGrid Id="grdUrls" @ref="_dataGrid"
-                        Items="@filteredUrlList"
-                        ResizableColumns=true
-                        GridTemplateColumns="60px auto auto auto auto 120px 120px 120px"
-                        Pagination="@pagination"
-                        AutoItemsPerPage=false
-                        RowSize="DataGridRowSize.Medium"
-                        ShowHover=true>
+        Items="@filteredUrlList"
+        ResizableColumns=true
+        GridTemplateColumns="60px auto auto auto auto 120px 120px 120px"
+        Pagination="@pagination"
+        AutoItemsPerPage=false
+        RowSize="DataGridRowSize.Medium"
+        ShowHover=true>
             <ChildContent>
                 <TemplateColumn Sortable="false">
                     <FluentButton OnClick="@(async () => await CopyToClipboardAsync(context!.ShortUrl))" IconEnd="@(new Icons.Regular.Size16.Copy())" Title="Copy" />
@@ -121,9 +131,9 @@
                                 var canViewStats = isAdmin || isOwner;
                             }
                             <FluentButton OnClick="@(() => NavigateToStats(context.Vanity))"
-                                          IconEnd="@(new Icons.Regular.Size16.ChartMultiple())"
-                                          Title="View Statistics"
-                                          Disabled="@(!canViewStats)" />
+                            IconEnd="@(new Icons.Regular.Size16.ChartMultiple())"
+                            Title="View Statistics"
+                            Disabled="@(!canViewStats)" />
                             @if (!canViewStats)
                             {
                                 <FluentTooltip Anchor="@($"stats-button-{context.RowKey}")">
@@ -143,9 +153,9 @@
                     <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
                         <div id="edit-button-@context.RowKey">
                             <FluentButton OnClick="@(() => EditShortUrl(context))"
-                                          IconEnd="@(new Icons.Regular.Size16.Edit())"
-                                          Title="Edit"
-                                          Disabled="@(!canModify)" />
+                            IconEnd="@(new Icons.Regular.Size16.Edit())"
+                            Title="Edit"
+                            Disabled="@(!canModify)" />
                             @if (!canModify)
                             {
                                 <FluentTooltip Anchor="@($"edit-button-{context.RowKey}")">
@@ -156,9 +166,9 @@
 
                         <div id="archive-button-@context.RowKey">
                             <FluentButton OnClick="@(async () => await ArchiveShortUrl(context))"
-                                          IconEnd="@(new Icons.Regular.Size16.Archive())"
-                                          Title="Archive"
-                                          Disabled="@(!canArchive)" />
+                            IconEnd="@(new Icons.Regular.Size16.Archive())"
+                            Title="Archive"
+                            Disabled="@(!canArchive)" />
                             @if (!canArchive)
                             {
                                 <FluentTooltip Anchor="@($"archive-button-{context.RowKey}")">
@@ -190,31 +200,35 @@
 
 <style>
     .loading-indicator {
-        display: inline-flex;
-        align-items: center;
-        margin-left: 12px;
-        gap: 8px;
+    display: inline-flex;
+    align-items: center;
+    margin-left: 12px;
+    gap: 8px;
     }
 
     .actions-row {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
     }
 
     .search-container {
-        margin-left: auto;
-        min-width: 250px;
+    margin-left: auto;
+    min-width: 250px;
     }
 </style>
 
 @code {
+
+
+
     private ListResponse urls = new ListResponse();
     private bool isAdmin = false;
     private string searchText = string.Empty;
     private string currentUserUpn = string.Empty;
+    private bool showOnlyMyRecords = false;
 
     private string importConnectionString;
     private bool importInProgress = false;
@@ -257,6 +271,12 @@
             await RefreshGrid();
             dataHasBeenLoadedBefore = true;
         }
+    }
+
+    private void OnShowOnlyMyRecordsChanged(ChangeEventArgs args)
+    {
+        showOnlyMyRecords = !showOnlyMyRecords;
+        FilterUrls();
     }
 
     private void OnSearchInput()
@@ -306,25 +326,36 @@
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(searchText))
+        // Start with all available URLs
+        IQueryable<ShortUrlEntity> filtered = urlList;
+
+        // Apply owner filter if checkbox is checked
+        if (showOnlyMyRecords && !string.IsNullOrEmpty(currentUserUpn))
         {
-            // If search is empty, show all URLs
-            filteredUrlList = urlList;
+            filtered = filtered.Where(url =>
+                url.OwnerUpn != null &&
+                url.OwnerUpn.Equals(currentUserUpn, StringComparison.OrdinalIgnoreCase));
         }
-        else
+
+        // Then apply text search filter
+        if (!string.IsNullOrWhiteSpace(searchText))
         {
             // Apply the filter based on searchText (case-insensitive)
             var searchTerm = searchText.Trim().ToLowerInvariant();
-            filteredUrlList = urlList.Where(url =>
+            filtered = filtered.Where(url =>
                 (url.Title != null && url.Title.ToLowerInvariant().Contains(searchTerm)) ||
                 (url.Vanity != null && url.Vanity.ToLowerInvariant().Contains(searchTerm)) ||
-                (url.Url != null && url.Url.ToLowerInvariant().Contains(searchTerm))
+                (url.Url != null && url.Url.ToLowerInvariant().Contains(searchTerm)) ||
+                (isAdmin && url.OwnerUpn != null && url.OwnerUpn.ToLowerInvariant().Contains(searchTerm))
             );
         }
+
+        filteredUrlList = filtered;
 
         // Reset pagination to first page when filtering
         pagination.SetCurrentPageIndexAsync(0);
     }
+
 
     private async Task UpdateUIList()
     {

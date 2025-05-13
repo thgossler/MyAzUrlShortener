@@ -11,9 +11,13 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddJsonFile("appsettings.json", optional: false)
-                     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
-                     .AddJsonFile("appsettings.local.json", optional: true);
+var tenantId = builder.Configuration["UserAuth-EntraTenantId"];
+var clientId = builder.Configuration["UserAuth-EntraClientAppId"];
+var clientSecret = builder.Configuration["UserAuth-EntraClientAppSecret"];
+if (string.IsNullOrWhiteSpace(tenantId) || string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(clientSecret))
+{
+    throw new InvalidOperationException("Missing required configuration for Entra authentication.");
+}
 
 builder.AddServiceDefaults();
 
@@ -31,10 +35,6 @@ builder.Services.AddAuthentication(options =>
 })
 .AddOpenIdConnect("Entra", options =>
 {
-    var tenantId = builder.Configuration["Authentication:Entra:TenantId"];
-    var clientId = builder.Configuration["Authentication:Entra:ClientId"];
-    var clientSecret = builder.Configuration["Authentication:Entra:ClientSecret"];
-
     options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     options.Authority = $"https://login.microsoftonline.com/{tenantId}/v2.0";
     options.ClientId = clientId;

@@ -65,24 +65,34 @@ After a few seconds, you should now be in your version of the AzUrlShortener pro
 	```bash
 	azd up
       or
-    azd up -e '<environmentName'
+    azd up -e '<environmentName>'
       e.g.
     azd up -e 'dev'
 	```
 
-	You will be asked where to deploy Azure Subscription and location select what make sense for you. You will be asked two more information:
+	You will be asked where to deploy Azure Subscription and location select what make sense for you. You will be asked for more information, default are used from appsettings.json is provided, e.g.:
 	- **The Custom domain**: This should be the complete (including the https part) domain name for your short URLs ex: https://c5m.ca.
 	- **Default Redirect Url**: This is the URL used if the vanity doesn't exist, or if no vanity is used. It must include the https part.
+	- **Entra ID application registration** details
+	- Other optional parameter for influencing the Admin UI behavior
 
 1. Get the application URL
 
-After the deployment is complete, you will see the URLs of your applications in the terminal; the one starting by `https://admin` is the admin tools (aka TinyBlazorAdmin), and the one starting with `https://azfunc-light` is the redicrect service. There is also many details about the resources created in Azure, and a link to the .NET Aspire dashboard.
+After the deployment is complete, you will see the URLs of your applications in the terminal; the one starting by `https://admin` is the admin tools (aka AdminUI), and the one starting with `https://azfunc-light` is the redicrect service. There is also many details about the resources created in Azure, and a link to the .NET Aspire dashboard.
 
 ![azd deployment result](../images/deployment-result.png)
 
 ## Add authentication to the admin website
 
-The app is now deployed, but it does not have authentication enabled. Navigate to the [Azure Portal](https://portal.azure.com/), and find the Resource Group you just deployed (e.g., rg-azUrl-dev). From there, select the Container App named **admin**.
+The app is now deployed. It does have authentication automatically enabled, but the sign-in redirect URL 'https://admin-ui...westeurope.azurecontainerapps.io/signin-oidc' (or with your custom domain) needs to be added to the registered Entra ID app. You can use the following command for that:
+
+	```
+	add_redirect.ps1 -EntraTenantID <tenantId> -EntraClientAppId <clientAppId> -ApplicationUrl <url>
+	  e.g.
+	add_redirect.ps1 -EntraTenantID 7f6aae9c-....-48f3-....-1ea307971ea1 -EntraClientAppId 25a7c875-....-4730-....-2ce049638534 -ApplicationUrl https://admin-ui...westeurope.azurecontainerapps.io/
+	```
+
+Navigate to the [Azure Portal](https://portal.azure.com/), and find the Resource Group you just deployed (e.g., rg-azUrl-dev). From there, select the Container App named **admin**.
 
 ![select the Container App admin](../images/select-admin-container-app.png)
 

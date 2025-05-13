@@ -234,8 +234,17 @@ code {
 }
 
 .search-container {
-    min-width: 250px;
     margin-left: auto;
+    min-width: 250px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.filter-controls {
+    display: flex;
+    justify-content: flex-end;
+    padding-bottom: 4px;
 }
 
 ::deep .fluent-data-grid {
@@ -368,11 +377,6 @@ code {
     flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 16px;
-}
-
-.search-container {
-    margin-left: auto;
-    min-width: 250px;
 }
 
 .truncate-with-tooltip {

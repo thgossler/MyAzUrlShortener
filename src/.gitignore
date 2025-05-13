@@ -1,4 +1,6 @@
 .azure
+azure.yaml
+next-steps.md
 
 # Ignore local settings with secrets
 appsettings.Development.json

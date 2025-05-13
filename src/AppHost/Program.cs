@@ -1,46 +1,84 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-
-#if DEBUG
-// Set default values for local development
-if (Environment.GetEnvironmentVariable("Parameters:DefaultRedirectUrl") == null)
-{
-    Environment.SetEnvironmentVariable("Parameters:DefaultRedirectUrl", "https://github.com/thgossler/MyAzUrlShortener");
-}
-if (Environment.GetEnvironmentVariable("Parameters:CustomDomain") == null)
-{
-    Environment.SetEnvironmentVariable("Parameters:CustomDomain", "");
-}
-#endif
+using System.Text.RegularExpressions;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
 var isDevelopmentEnvironment = builder.Environment.IsDevelopment();
 
+// Read configuration from appsettings.json and environment variables in the correct order
+builder.Configuration.AddJsonFile("appsettings.json", optional: false)
+                     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
+                     .AddJsonFile("appsettings.local.json", optional: true)
+                     .AddEnvironmentVariables();
+
+// Read parameter defaults from configuration and request missing values
+var processParameterInput = (string name, bool mayBeEmpty = false, string defaultValue = null) =>
+{
+    var settingValue = builder.Configuration[name];
+    if (!string.IsNullOrWhiteSpace(settingValue) || mayBeEmpty)
+    {
+        return builder.AddParameter(name, string.IsNullOrEmpty(settingValue) ? (defaultValue != null ? defaultValue : settingValue) : settingValue, !Regex.IsMatch(name, "(Secret|Key|Password)", RegexOptions.IgnoreCase));
+    }
+    else
+    {
+        return builder.AddParameter(name);
+    }
+};
+var defaultRedirectUrl = processParameterInput("DefaultRedirectUrl");
+var customDomain = processParameterInput("CustomDomain", true, "");
+var entraTenantId = processParameterInput("UserAuth-EntraTenantId");
+var entraClientAppId = processParameterInput("UserAuth-EntraClientAppId");
+var entraClientAppSecret = processParameterInput("UserAuth-EntraClientAppSecret"); // TODO: Use Key Vault
+var importTableStorageConnectionString = processParameterInput("ImportTableStorageConnectionString", true, "");
+var allowRegularUsersToViewAllRecords = processParameterInput("AllowRegularUsersToViewAllRecords", true, "true");
+var allowRegularUsersToArchiveRecords = processParameterInput("AllowRegularUsersToArchiveRecords", true, "false");
+var primaryColor = processParameterInput("PrimaryColor", true, "");
+var headerLogoUrl = processParameterInput("LogoUrl", true, "");
+var footerLeftHtml = processParameterInput("FooterLeftHtml", true, "");
+var footerCenterHtml = processParameterInput("FooterCenterHtml", true, "");
+var footerRightHtml = processParameterInput("FooterRightHtml", true, "");
+
+// Storage
 var storage = builder.AddAzureStorage("url-data");
 if (isDevelopmentEnvironment)
 {
     storage.RunAsEmulator();
 }
-
 var azTableClient = storage.AddTables("table-client");
 
-var defaultRedirectUrl = builder.AddParameter("DefaultRedirectUrl");
-var customDomain = builder.AddParameter("CustomDomain");
-
-var azFuncLight = builder.AddAzureFunctionsProject<Projects.AzUrlShortener_Functions>("functions")
+// Redirect Function App
+var functionApp = builder.AddAzureFunctionsProject<Projects.AzUrlShortener_Functions>("functions")
                             .WithReference(azTableClient)
                             .WaitFor(azTableClient)
-                            .WithEnvironment("DefaultRedirectUrl", defaultRedirectUrl);
+                            .WithEnvironment("DefaultRedirectUrl", defaultRedirectUrl)
+                            .WithExternalHttpEndpoints();
 
-var manAPI = builder.AddProject<Projects.AzUrlShortener_Api>("api")
+// API Web Service
+var apiService = builder.AddProject<Projects.AzUrlShortener_Api>("api")
                         .WithReference(azTableClient)
-                        .WithReference(azFuncLight)
+                        .WithReference(functionApp)
                         .WaitFor(azTableClient)
-                        .WaitFor(azFuncLight)
+                        .WaitFor(functionApp)
                         .WithEnvironment("DefaultRedirectUrl", defaultRedirectUrl)
-                        .WithEnvironment("CustomDomain", customDomain);
+                        .WithEnvironment("CustomDomain", customDomain)
+                        .WithExternalHttpEndpoints();
 
+// Admin UI Web App
 builder.AddProject<Projects.AzUrlShortener_AdminUI>("admin-ui")
-        .WithReference(manAPI);
+        .WithReference(apiService)
+        .WithExternalHttpEndpoints()
+        .WithEnvironment("UserAuth-EntraTenantId", entraTenantId)
+        .WithEnvironment("UserAuth-EntraClientAppId", entraClientAppId)
+        .WithEnvironment("UserAuth-EntraClientAppSecret", entraClientAppSecret)
+        .WithEnvironment("PrimaryColor", primaryColor)
+        .WithEnvironment("LogoUrl", headerLogoUrl)
+        .WithEnvironment("FooterLeftHtml", footerLeftHtml)
+        .WithEnvironment("FooterCenterHtml", footerCenterHtml)
+        .WithEnvironment("FooterRightHtml", footerRightHtml)
+        .WithEnvironment("AllowRegularUsersToViewAllRecords", allowRegularUsersToViewAllRecords)
+        .WithEnvironment("AllowRegularUsersToArchiveRecords", allowRegularUsersToArchiveRecords)
+        .WithEnvironment("ImportTableStorageConnectionString", importTableStorageConnectionString);
 
+// Build and run the application
 builder.Build().Run();
