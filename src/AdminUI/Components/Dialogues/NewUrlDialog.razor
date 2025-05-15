@@ -3,11 +3,13 @@
 @using AzUrlShortener.AdminUI.Components
 @using AzUrlShortener.AdminUI.Components.Shared
 @using AzUrlShortener.AdminUI.Services
+@using AzUrlShortener.Core.Domain
+@using System.Text.RegularExpressions
 @implements IDialogContentComponent<ShortUrlRequest>
 
 @rendermode InteractiveServer
 
-<FluentDialogHeader ShowDismiss="true">
+<FluentDialogHeader ShowDismiss="false" TabIndex="-1">
     <FluentStack VerticalAlignment="VerticalAlignment.Center">
         <FluentIcon Value="@(new Icons.Regular.Size24.WindowApps())" />
         <FluentLabel Typo="Typography.PaneHeader">
@@ -38,7 +40,8 @@
             </div>
 
             <div style="width: 100%;">
-                <SchedulesComponent Schedules="_shortUrl.Schedules"></SchedulesComponent>
+                <SchedulesComponent Schedules="_editableSchedules" 
+                                   OnEdit="OnSchedulesEdit" />
             </div>
 
         </FluentStack>
@@ -48,7 +51,7 @@
 </FluentDialogBody>
 
 <FluentDialogFooter>
-    <FluentButton Appearance="Appearance.Accent" Disabled="@(!_shortUrl.Validate())" OnClick="@SaveAsync">Save</FluentButton>
+    <FluentButton Appearance="Appearance.Accent" Disabled="@(!_shortUrl.Validate() || HasInvalidScheduleUrl())" OnClick="@SaveAsync">Save</FluentButton>
     <FluentButton Appearance="Appearance.Neutral" OnClick="@CancelAsync">Cancel</FluentButton>
 </FluentDialogFooter>
 
@@ -62,12 +65,39 @@
 
     private ShortUrlRequest _shortUrl = new ShortUrlRequest();
     private FluentTextField _titleInput = default!;
+    private List<Schedule> _originalSchedules = new();
+    private List<Schedule> _editableSchedules = new();
     private bool hasFocused;
     private int delay = 500;
+    
+    // Store the original TrapFocus value
+    private bool? _originalTrapFocus;
+
+    private Schedule DeepCopySchedule(Schedule s)
+    {
+        return new Schedule {
+            Id = s.Id,
+            Start = s.Start,
+            End = s.End,
+            Cron = s.Cron,
+            DurationMinutes = s.DurationMinutes,
+            AlternativeUrl = s.AlternativeUrl
+            // Add deep copy for any reference-type properties here if needed
+        };
+    }
 
     protected override void OnInitialized()
     {
         _shortUrl = Content;
+        
+        // Deep copy original schedules
+        _originalSchedules = _shortUrl.Schedules?.Select(DeepCopySchedule).ToList() ?? new List<Schedule>();
+        
+        // Create a separate editable list for the UI
+        _editableSchedules = _shortUrl.Schedules?.Select(DeepCopySchedule).ToList() ?? new List<Schedule>();
+        
+        if (_shortUrl.Schedules == null)
+            _shortUrl.Schedules = new List<Schedule>();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -83,17 +113,20 @@
     {
         Dialog!.TogglePrimaryActionButton(enable);
     }
-
-	private async Task SaveAsync()
+    
+    private async Task SaveAsync()
     {
-        if (_shortUrl.Validate())
-		{
-			await Dialog!.CloseAsync(_shortUrl);
-		}
+        if (_shortUrl.Validate() && !HasInvalidScheduleUrl())
+        {
+            // Copy the edited schedules back to the _shortUrl
+            _shortUrl.Schedules = _editableSchedules.Select(DeepCopySchedule).ToList();
+            await Dialog!.CloseAsync(_shortUrl);
+        }
     }
 
     private async Task CancelAsync()
     {
+        // No need to update _shortUrl.Schedules as we'll discard the whole dialog
         await Dialog!.CancelAsync();
     }
 
@@ -107,5 +140,17 @@
         {
             await CancelAsync();
         }
+    }
+
+    private void OnSchedulesEdit()
+    {
+        StateHasChanged();
+    }
+
+    private bool HasInvalidScheduleUrl()
+    {
+        return _editableSchedules != null &&
+            _editableSchedules.Any(s =>
+                !Regex.Match(s.AlternativeUrl, "^http[s]://[0-9a-zA-Z]+.*", RegexOptions.IgnoreCase).Success);
     }
 }

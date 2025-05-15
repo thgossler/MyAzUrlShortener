@@ -23,7 +23,7 @@
 <div class="page-container">
     <div class="header-section">
         <h1>Manage URLs</h1>
-        <h4 class="hide-on-small-sized-displays">Add, edit and archive URL records</h4>
+        <h4 class="hide-on-small-sized-displays">Add, edit and archive short URL records</h4>
 
         <div class="actions-row">
             <FluentButton OnClick="@(CreateShortUrl)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.Add())">Add</FluentButton>
@@ -378,9 +378,10 @@
         var dialog = await DialogService.ShowDialogAsync<NewUrlDialog>(shortUrlRequest, new DialogParameters()
             {
                 Id = "NewUrlDialog",
-                Title = "Create a new Short Url",
+                Title = "Create a new short URL record",
                 PreventDismissOnOverlayClick = true,
                 PreventScroll = true,
+                TrapFocus = true,
                 Width = "600px"
             });
 
@@ -438,9 +439,10 @@
         var dialog = await DialogService.ShowDialogAsync<UpdateUrlDialog>(urlEntity, new DialogParameters()
             {
                 Id = "UpdateUrlDialog",
-                Title = $"Update Url: {urlEntity.RowKey}",
+                Title = $"Update short URL record for '{urlEntity.Vanity}'",
                 PreventDismissOnOverlayClick = true,
                 PreventScroll = true,
+                TrapFocus = true,
                 Width = "600px"
             });
 

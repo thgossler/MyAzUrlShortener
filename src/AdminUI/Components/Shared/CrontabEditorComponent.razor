@@ -30,13 +30,13 @@
     </div>
     <div class="section">
         <div style="margin-bottom: 5px">Day of Week:</div>
-        @foreach (var day in WeekDays)
-        {
-            <FluentCheckbox @bind-Checked="day.Checked"
-            @onchange="SyncToUnifiedExpression"
-            Label="@day.Name" 
-            Style="margin-right:8px;" />
-        }
+        <FluentCheckbox @bind-Value="Mon.Checked" Label="Mon" Style="margin-right:8px;" />
+        <FluentCheckbox @bind-Value="Tue.Checked" Label="Tue" Style="margin-right:8px;" />
+        <FluentCheckbox @bind-Value="Wed.Checked" Label="Wed" Style="margin-right:8px;" />
+        <FluentCheckbox @bind-Value="Thu.Checked" Label="Thu" Style="margin-right:8px;" />
+        <FluentCheckbox @bind-Value="Fri.Checked" Label="Fri" Style="margin-right:8px;" />
+        <FluentCheckbox @bind-Value="Sat.Checked" Label="Sat" Style="margin-right:8px;" />
+        <FluentCheckbox @bind-Value="Sun.Checked" Label="Sun" Style="margin-right:8px;" />
     </div>
 
     <div class="section" style="margin-top: 10px">
@@ -99,42 +99,30 @@
 
 @code {
     private int Year = DateTime.Now.Year;
-
-    private bool _suppressSync = false;
     FluentTextField _initialFocusControl;
 
     private string _minute = "*";
-    private string Minute { 
-        get { 
-            return _minute; 
-        } 
-        set { 
-            _minute = value; 
-            if (!_suppressSync) 
-                SyncToUnifiedExpression(); 
-        } 
-    }
-
+    private string Minute { get => _minute; set { _minute = value; SyncToUnifiedExpression(); } }
     private string _hour = "*";
-    private string Hour { get { return _hour; } set { _hour = value; if (!_suppressSync) SyncToUnifiedExpression(); } }
-
+    private string Hour { get => _hour; set { _hour = value; SyncToUnifiedExpression(); } }
     private string _dayOfMonth = "*";
-    private string DayOfMonth { get { return _dayOfMonth; } set { _dayOfMonth = value; if (!_suppressSync) SyncToUnifiedExpression(); } }
-
+    private string DayOfMonth { get => _dayOfMonth; set { _dayOfMonth = value; SyncToUnifiedExpression(); } }
     private string _month = "*";
-    private string Month { get { return _month; } set { _month = value; if (!_suppressSync) SyncToUnifiedExpression(); } }
+    private string Month { get => _month; set { _month = value; SyncToUnifiedExpression(); } }
 
-    private List<WeekDayItem> WeekDays = new()
-    {
-        new("Mon", DayOfWeek.Monday), new("Tue", DayOfWeek.Tuesday), new("Wed", DayOfWeek.Wednesday),
-        new("Thu", DayOfWeek.Thursday), new("Fri", DayOfWeek.Friday), new("Sat", DayOfWeek.Saturday),
-        new("Sun", DayOfWeek.Sunday)
-    };
+    // Individual weekday items
+    private WeekDayItem Mon = new("Mon", DayOfWeek.Monday);
+    private WeekDayItem Tue = new("Tue", DayOfWeek.Tuesday);
+    private WeekDayItem Wed = new("Wed", DayOfWeek.Wednesday);
+    private WeekDayItem Thu = new("Thu", DayOfWeek.Thursday);
+    private WeekDayItem Fri = new("Fri", DayOfWeek.Friday);
+    private WeekDayItem Sat = new("Sat", DayOfWeek.Saturday);
+    private WeekDayItem Sun = new("Sun", DayOfWeek.Sunday);
 
     private string _crontabExpression = "* * * * *";
     public string CrontabExpression
     {
-        get { return _crontabExpression; }
+        get => _crontabExpression;
         set
         {
             _crontabExpression = value;
@@ -148,13 +136,23 @@
     private string Description = "";
 
     private StateModel State => new()
-        {
-            Minute = string.IsNullOrWhiteSpace(Minute) ? "*" : Minute,
-            Hour = string.IsNullOrWhiteSpace(Hour) ? "*" : Hour,
-            Dom = string.IsNullOrWhiteSpace(DayOfMonth) ? "*" : DayOfMonth,
-            Mon = string.IsNullOrWhiteSpace(Month) ? "*" : Month,
-            Dow = WeekDays.Where(d => d.Checked).Select(d => ((int)d.Value).ToString()).ToList()
-        };
+    {
+        Minute = string.IsNullOrWhiteSpace(Minute) ? "*" : Minute,
+        Hour = string.IsNullOrWhiteSpace(Hour) ? "*" : Hour,
+        Dom = string.IsNullOrWhiteSpace(DayOfMonth) ? "*" : DayOfMonth,
+        Mon = string.IsNullOrWhiteSpace(Month) ? "*" : Month,
+        Dow = GetCheckedDays()
+    };
+
+    private List<string> GetCheckedDays() => new List<string> {
+        Mon.Checked ? ((int)Mon.Value).ToString() : null,
+        Tue.Checked ? ((int)Tue.Value).ToString() : null,
+        Wed.Checked ? ((int)Wed.Value).ToString() : null,
+        Thu.Checked ? ((int)Thu.Value).ToString() : null,
+        Fri.Checked ? ((int)Fri.Value).ToString() : null,
+        Sat.Checked ? ((int)Sat.Value).ToString() : null,
+        Sun.Checked ? ((int)Sun.Value).ToString() : null
+    }.Where(x => x != null).ToList();
 
     private List<Preset> Presets = new()
     {
@@ -172,8 +170,36 @@
 
     protected override void OnInitialized()
     {
-        WeekDayItem.NotificationTarget = this;
-        SyncToUnifiedExpression();
+        Mon.OnChanged = OnWeekDayChangedFromUI;
+        Tue.OnChanged = OnWeekDayChangedFromUI;
+        Wed.OnChanged = OnWeekDayChangedFromUI;
+        Thu.OnChanged = OnWeekDayChangedFromUI;
+        Fri.OnChanged = OnWeekDayChangedFromUI;
+        Sat.OnChanged = OnWeekDayChangedFromUI;
+        Sun.OnChanged = OnWeekDayChangedFromUI;
+        UpdateAllFromState();
+    }
+
+    private void OnWeekDayChangedFromUI()
+    {
+        UpdateAllFromState();
+    }
+
+    private void UpdateAllFromState()
+    {
+        var minutePart = string.IsNullOrWhiteSpace(Minute) ? "*" : Minute;
+        var hourPart = string.IsNullOrWhiteSpace(Hour) ? "*" : Hour;
+        var domPart = string.IsNullOrWhiteSpace(DayOfMonth) ? "*" : DayOfMonth;
+        var monthPart = string.IsNullOrWhiteSpace(Month) ? "*" : Month;
+        var dowPart = State.Dow.Any() ? string.Join(",", State.Dow) : "*";
+        _crontabExpression = string.Join(" ", new[] { minutePart, hourPart, domPart, monthPart, dowPart });
+        UpdateDescription();
+        StateHasChanged();
+    }
+
+    private void SyncToUnifiedExpression()
+    {
+        UpdateAllFromState();
     }
 
     public async Task SetInitialInputFocusAsync()
@@ -181,73 +207,39 @@
         _initialFocusControl?.FocusAsync();
     }
 
-    private void SyncToUnifiedExpression()
-    {
-        var minutePart = string.IsNullOrWhiteSpace(Minute) ? "*" : Minute;
-        var hourPart = string.IsNullOrWhiteSpace(Hour) ? "*" : Hour;
-        var domPart = string.IsNullOrWhiteSpace(DayOfMonth) ? "*" : DayOfMonth;
-        var monthPart = string.IsNullOrWhiteSpace(Month) ? "*" : Month;
-        var dowPart = State.Dow.Any() ? string.Join(",", State.Dow) : "*";
-
-        _crontabExpression = string.Join(" ", new[] { minutePart, hourPart, domPart, monthPart, dowPart });
-        UpdateDescription();
-
-        StateHasChanged();
-    }
-
-
     private void ParseUnifiedCronExpression()
     {
         var parts = CrontabExpression.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
         if (parts.Length >= 5)
         {
-            _suppressSync = true;
             try
             {
-                // If a part is empty, use "*"
                 Minute = string.IsNullOrWhiteSpace(parts[0]) ? "*" : parts[0];
                 Hour = string.IsNullOrWhiteSpace(parts[1]) ? "*" : parts[1];
                 DayOfMonth = string.IsNullOrWhiteSpace(parts[2]) ? "*" : parts[2];
                 Month = string.IsNullOrWhiteSpace(parts[3]) ? "*" : parts[3];
-
                 // Update day of week checkboxes
+                var allDays = new[] { Mon, Tue, Wed, Thu, Fri, Sat, Sun };
                 if (parts[4] != "*" && !string.IsNullOrWhiteSpace(parts[4]))
                 {
-                    foreach (var day in WeekDays)
-                    {
-                        day.Checked = false;
-                    }
-
+                    foreach (var day in allDays) day.Checked = false;
                     var dowValues = parts[4].Split(',');
                     foreach (var value in dowValues)
                     {
                         if (int.TryParse(value, out int dowValue))
                         {
-                            var day = WeekDays.FirstOrDefault(d => (int)d.Value == dowValue);
-                            if (day != null)
-                            {
-                                day.Checked = true;
-                            }
+                            var day = allDays.FirstOrDefault(d => (int)d.Value == dowValue);
+                            if (day != null) day.Checked = true;
                         }
                     }
                 }
                 else
                 {
-                    // When "*" is specified, uncheck all days
-                    foreach (var day in WeekDays)
-                    {
-                        day.Checked = false;
-                    }
+                    foreach (var day in allDays) day.Checked = false;
                 }
-
-                SyncToUnifiedExpression();
-                UpdateDescription();
+                UpdateAllFromState();
             }
-            finally
-            {
-                _suppressSync = false;
-            }
+            finally { }
         }
     }
 
@@ -255,64 +247,42 @@
     {
         try
         {
-            _suppressSync = true;
-
             Minute = minutes;
             Hour = hours;
             DayOfMonth = daysOfMonth;
             Month = months;
-
+            var allDays = new[] { Mon, Tue, Wed, Thu, Fri, Sat, Sun };
             if (daysOfWeek != "*")
             {
-                foreach (var day in WeekDays)
-                {
-                    day.Checked = false;
-                }
-
+                foreach (var day in allDays) day.Checked = false;
                 var dowValues = daysOfWeek.Split(',');
                 foreach (var value in dowValues)
                 {
                     if (int.TryParse(value, out int dowValue))
                     {
-                        var day = WeekDays.FirstOrDefault(d => (int)d.Value == dowValue);
-                        if (day != null)
-                        {
-                            day.Checked = true;
-                        }
+                        var day = allDays.FirstOrDefault(d => (int)d.Value == dowValue);
+                        if (day != null) day.Checked = true;
                     }
                 }
             }
             else
             {
-                foreach (var day in WeekDays)
-                {
-                    day.Checked = false;
-                }
+                foreach (var day in allDays) day.Checked = false;
             }
-
             CrontabExpression = string.Join(" ", new[] { minutes, hours, daysOfMonth, months, daysOfWeek });
         }
-        finally
-        {
-            _suppressSync = false;
-        }
-
-        StateHasChanged();
-
-        // Set input focus after initialization
+        finally { }
+        UpdateAllFromState();
         await SetInitialInputFocusAsync();
     }
 
     private void UpdateDescription()
     {
         var sb = new StringBuilder();
-
-        // Handle time part
         string effectiveMinute = string.IsNullOrWhiteSpace(Minute) ? "*" : Minute;
         string effectiveHour = string.IsNullOrWhiteSpace(Hour) ? "*" : Hour;
         string effectiveDayOfMonth = string.IsNullOrWhiteSpace(DayOfMonth) ? "*" : DayOfMonth;
         string effectiveMonth = string.IsNullOrWhiteSpace(Month) ? "*" : Month;
-
         if (effectiveHour == "*" && effectiveMinute == "*")
         {
             sb.Append("Every minute");
@@ -331,24 +301,16 @@
             var mm = effectiveMinute.PadLeft(2, '0');
             sb.Append($"At {hh}:{mm}");
         }
-
-        // Storage for different parts of the description
         var scheduleComponents = new List<string>();
-
-        // Handle day of week
-        var selected = WeekDays.Where(d => d.Checked).Select(d => d.Name).ToList();
+        var selected = new[] { Mon, Tue, Wed, Thu, Fri, Sat, Sun }.Where(d => d.Checked).Select(d => d.Name).ToList();
         if (selected.Any())
         {
             scheduleComponents.Add($"on {string.Join(" and ", selected)}");
         }
-
-        // Handle day of month
         if (effectiveDayOfMonth != "*")
         {
             scheduleComponents.Add($"on day {effectiveDayOfMonth} of the month");
         }
-
-        // Handle month
         if (effectiveMonth != "*")
         {
             if (effectiveMonth.Contains(",") || effectiveMonth.Contains("-"))
@@ -360,8 +322,6 @@
                 scheduleComponents.Add($"in {CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(monthNum)}");
             }
         }
-
-        // Join components with appropriate conjunctions
         if (scheduleComponents.Count > 0)
         {
             sb.Append(" " + string.Join(", and ", scheduleComponents));
@@ -370,7 +330,6 @@
         {
             sb.Append(" every day");
         }
-
         Description = sb.ToString() + ".";
     }
 
@@ -387,32 +346,25 @@
 
     private void ApplyPreset(StateModel s)
     {
-        _suppressSync = true;
-        try
-        {
-            Minute = s.Minute;
-            Hour = s.Hour;
-            DayOfMonth = s.Dom;
-            Month = s.Mon;
-
-            foreach (var day in WeekDays)
-            {
-                day.Checked = s.Dow.Contains(((int)day.Value).ToString());
-            }
-        }
-        finally
-        {
-            _suppressSync = false;
-            SyncToUnifiedExpression();
-            StateHasChanged();
-        }
+        Minute = s.Minute;
+        Hour = s.Hour;
+        DayOfMonth = s.Dom;
+        Month = s.Mon;
+        Mon.Checked = s.Dow.Contains(((int)DayOfWeek.Monday).ToString());
+        Tue.Checked = s.Dow.Contains(((int)DayOfWeek.Tuesday).ToString());
+        Wed.Checked = s.Dow.Contains(((int)DayOfWeek.Wednesday).ToString());
+        Thu.Checked = s.Dow.Contains(((int)DayOfWeek.Thursday).ToString());
+        Fri.Checked = s.Dow.Contains(((int)DayOfWeek.Friday).ToString());
+        Sat.Checked = s.Dow.Contains(((int)DayOfWeek.Saturday).ToString());
+        Sun.Checked = s.Dow.Contains(((int)DayOfWeek.Sunday).ToString());
+        UpdateAllFromState();
     }
 
     private IEnumerable<CalendarCell> BuildCalendarCells(int year, int month, StateModel state)
     {
         var first = new DateTime(year, month, 1);
         int offset = ((int)first.DayOfWeek + 6) % 7;
-        for (int i = 0; i < offset; i++) yield return new CalendarCell();  // Empty cells for first week padding
+        for (int i = 0; i < offset; i++) yield return new CalendarCell();
         int days = DateTime.DaysInMonth(year, month);
         for (int d = 1; d <= days; d++)
         {
@@ -439,7 +391,6 @@
         var rnd = new Random();
         var type = types[rnd.Next(types.Length)];
         var s = new StateModel { Minute = "0", Hour = "0", Dom = "*", Mon = "*", Dow = new List<string>() };
-
         s.Minute = new[] { "0", "15", "30", "45" }[rnd.Next(4)];
         s.Hour = rnd.Next(24).ToString();
         if (type == "weekly")
@@ -490,11 +441,22 @@
 
     public class WeekDayItem
     {
-        public static CrontabEditorComponent NotificationTarget;
         public string Name;
         public DayOfWeek Value;
         private bool _checked;
-        public bool Checked { get { return _checked; } set { _checked = value; NotificationTarget?.SyncToUnifiedExpression(); } }
+        public Action OnChanged;
+        public bool Checked
+        {
+            get => _checked;
+            set
+            {
+                if (_checked != value)
+                {
+                    _checked = value;
+                    OnChanged?.Invoke();
+                }
+            }
+        }
         public WeekDayItem(string name, DayOfWeek val) { Name = name; Value = val; }
     }
     public class Preset { public string Label; public StateModel State; public Preset(string l, StateModel s) { Label = l; State = s; } }

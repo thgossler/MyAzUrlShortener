@@ -13,47 +13,61 @@
     <FluentLabel Typo="Typography.H6" Color="Color.FillInverse">Overall period</FluentLabel>
     <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10" Width="100%">
         <div Width="50%">
-            <FluentDatePicker Label="Starting From" Value="@startDateTime.LocalDateTime" ValueChanged="@( e => StartDateTimeReconcile(e!.Value) )" />
-            <FluentTimePicker Value="@startDateTime.LocalDateTime" ValueChanged="@( e => StartDateTimeReconcile(e!.Value) )" />
+            <FluentDatePicker Label="Starting From" Value="@schedule.Start.LocalDateTime" ValueChanged="@( e => StartDateTimeReconcile(e!.Value) )" />
+            <FluentTimePicker Value="@schedule.Start.LocalDateTime" ValueChanged="@( e => StartDateTimeReconcile(e!.Value) )" />
         </div>
         <div Width="50%">
-            <FluentDatePicker Label="Ending at" Value="@endDateTime.LocalDateTime" ValueChanged="@( e => EndDateTimeReconcile(e!.Value) )" />
-            <FluentTimePicker Value="@endDateTime.LocalDateTime" ValueChanged="@( e => EndDateTimeReconcile(e!.Value) )" />
+            <FluentDatePicker Label="Ending at" Value="@schedule.End.LocalDateTime" ValueChanged="@( e => EndDateTimeReconcile(e!.Value) )" />
+            <FluentTimePicker Value="@schedule.End.LocalDateTime" ValueChanged="@( e => EndDateTimeReconcile(e!.Value) )" />
         </div>
     </FluentStack>
     <div style="width: 100%;">
-        <FluentTextField Label="Alternative URL" Name="AlternativeUrl" Placeholder="https://..." @bind-Value="schedule.AlternativeUrl" style="width: 90%;" />
+        <FluentTextField Label="Alternative URL" Name="AlternativeUrl" Placeholder="https://..." @bind-Value="schedule.AlternativeUrl" @bind-Value:after="OnScheduleFieldChanged" style="width: 90%;" />
     </div>
     <div>
         <FluentLabel Typo="Typography.H6" Color="Color.FillInverse" Style="margin-bottom: 8px">Recurrences within overall period</FluentLabel>
         <FluentStack Orientation="Orientation.Vertical" HorizontalGap="10">
             <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10">
-                <FluentTextField Name="Cron" Label="Cron expression" Placeholder="* * * * *" @bind-Value="schedule.Cron" />
+                <FluentTextField Name="Cron" Label="Cron expression" Placeholder="* * * * *" @bind-Value="schedule.Cron" @bind-Value:after="OnScheduleFieldChanged" />
                 <FluentButton Appearance="Appearance.Accent" OnClick="OpenCronDialog">Edit</FluentButton>
             </FluentStack>
             <p style="margin-left: 20px; font-style: italic">Cron helper tools:&nbsp;&nbsp;<a href="https://www.uptimia.com/cron-expression-generator" target="blank">Uptimia Cron Expression Generator</a>,&nbsp;&nbsp;<a href="https://crontab.guru/" target="blank">Crontab.guru</a></p>
         </FluentStack>
-
     </div>
     <div>
-        <FluentNumberField Name="DurationMinutes" Label="Duration (in minutes)" @bind-Value="schedule.DurationMinutes" Min="0" Step="5" />
+        <FluentNumberField Name="DurationMinutes" Label="Duration (in minutes)" @bind-Value="schedule.DurationMinutes" @bind-Value:after="OnScheduleFieldChanged" Min="0" Step="5" />
     </div>
 </FluentStack>
 
 <script>
     window.getViewportWidth = () => {
-    return window.innerWidth;
+        return window.innerWidth;
+    };
+
+    window.disableFluentDialogFocusTrap = function(dialogId) {
+        const dialog = document.getElementById(dialogId) || document.querySelector(dialogId);
+        if (!dialog) return;
+        dialog.trapFocus = false;
+        dialog.isTrappingFocus = false;
+        dialog.updateTrapFocus(false);
+    };
+
+    window.enableFluentDialogFocusTrap = function(dialogId) {
+        const dialog = document.getElementById(dialogId) || document.querySelector(dialogId);
+        if (!dialog) return;
+        dialog.trapFocus = true;
+        dialog.isTrappingFocus = true;
+        dialog.updateTrapFocus(true);
     };
 </script>
 
 @code {
     [Parameter]
     public Schedule schedule { get; set; } = new Schedule();
-
-    private DateTimeOffset startDateTime;
-    private DateTimeOffset endDateTime;
-
-    private string? tempCronValue;
+    
+    [Parameter]
+    public EventCallback<Schedule> OnScheduleChanged { get; set; }
+    
     private DialogParameters dialogParameters = default!;
     private IDialogReference? dialogReference;
     private IDialogService DialogService { get; set; } = default!;
@@ -61,16 +75,8 @@
     [Inject]
     private IDialogService _dialogService { get; set; } = default!;
 
-    private enum DateTimeSection
-    {
-        Date,
-        Time
-    }
-
     protected override void OnInitialized()
     {
-        startDateTime = schedule.Start;
-        endDateTime = schedule.End;
         DialogService = _dialogService;
     }
 
@@ -81,74 +87,91 @@
 
     private void StartDateTimeReconcile(DateTime value)
     {
-        var valueOffset = new DateTimeOffset(value);
-        startDateTime = valueOffset;
-        schedule.Start = startDateTime;
+        schedule.Start = new DateTimeOffset(value);
+        OnScheduleChanged.InvokeAsync(schedule);
     }
 
     private void EndDateTimeReconcile(DateTime value)
     {
-        var valueOffset = new DateTimeOffset(value);
-        endDateTime = valueOffset;
-        schedule.End = startDateTime;
+        schedule.End = new DateTimeOffset(value);
+        OnScheduleChanged.InvokeAsync(schedule);
+    }
+    
+    private void OnScheduleFieldChanged()
+    {
+        OnScheduleChanged.InvokeAsync(schedule);
     }
 
     private async Task OpenCronDialog()
     {
-        // Store current value for potential cancel operation
-        tempCronValue = schedule.Cron;
-
-        // Configure dialog parameters
+        var viewportWidth = await GetViewportWidthAsync();
+        
+        // Create a deep copy of the schedule to preserve its state
+        Schedule originalSchedule = new Schedule
+        {
+            Id = schedule.Id,
+            Start = schedule.Start,
+            End = schedule.End,
+            Cron = schedule.Cron,
+            DurationMinutes = schedule.DurationMinutes,
+            AlternativeUrl = schedule.AlternativeUrl
+        };
+        
         dialogParameters = new DialogParameters
-            {
-                Id="EditCronDialog",
-                Title = "Edit Cron Expression",
-                Width = await GetViewportWidthAsync() > 600 ? "800px" : "350px",
-                PreventScroll = false,
-                PrimaryAction = "OK",
-                SecondaryAction = "Cancel",
-                TrapFocus = true,
-                Modal = true,
-                PrimaryActionEnabled = true,
-                SecondaryActionEnabled = true
-            };
-
+        {
+            Id = "EditCronDialog",
+            Title = "Edit Cron Expression",
+            Width = viewportWidth > 600 ? "800px" : $"{viewportWidth}px",
+            PreventScroll = false,
+            PrimaryAction = "OK",
+            SecondaryAction = "Cancel",
+            PreventDismissOnOverlayClick = true,
+            TrapFocus = true,
+            Modal = true,
+            PrimaryActionEnabled = true,
+            SecondaryActionEnabled = true
+        };
+        
         try
         {
-            await DialogService.UpdateDialogAsync<NewUrlDialog>("NewUrlDialog", new DialogParameters<NewUrlDialog>() { TrapFocus = false });
-            await DialogService.UpdateDialogAsync<UpdateUrlDialog>("UpdateUrlDialog", new DialogParameters<UpdateUrlDialog>() { TrapFocus = false });
-        }
-        catch (Exception) {}
+            await JS.InvokeVoidAsync("disableFluentDialogFocusTrap", "NewUrlDialog");
+            await JS.InvokeVoidAsync("disableFluentDialogFocusTrap", "UpdateUrlDialog");
 
-        // Open the dialog as a proper overlay
-        dialogReference = await DialogService.ShowDialogAsync<CronEditorDialog>(
-            new CronEditorDialogParameters
+            // Open the CronEditorDialog
+            dialogReference = await DialogService.ShowDialogAsync<CronEditorDialog>(
+                new CronEditorDialogParameters
+                {
+                    CronExpression = schedule.Cron,
+                    OnSave = null
+                }, 
+                dialogParameters);
+            
+            var result = await dialogReference.Result;
+
+            await JS.InvokeVoidAsync("enableFluentDialogFocusTrap", "NewUrlDialog");
+            await JS.InvokeVoidAsync("enableFluentDialogFocusTrap", "UpdateUrlDialog");
+
+            if (!result.Cancelled && result.Data is CronEditorDialogParameters cronParams)
             {
-                CronExpression = schedule.Cron,
-                OnSave = SaveCronExpression
-            }, 
-            dialogParameters);
-
-        // Handle dialog result
-        var result = await dialogReference.Result;
-        if (result.Cancelled)
-        {
-            // If cancelled, restore the original value
-            schedule.Cron = tempCronValue;
+                // Apply the change only if not cancelled
+                schedule.Cron = cronParams.CronExpression;
+            }
+            else
+            {
+                // Restore from our copy if cancelled
+                schedule.Cron = originalSchedule.Cron;
+            }
+            
+            // Always notify of changes to ensure parent updates 
+            await OnScheduleChanged.InvokeAsync(schedule);
         }
-
-        try
+        catch (Exception ex)
         {
-            await DialogService.UpdateDialogAsync<NewUrlDialog>("NewUrlDialog", new DialogParameters<NewUrlDialog>() { TrapFocus = true });
-            await DialogService.UpdateDialogAsync<UpdateUrlDialog>("UpdateUrlDialog", new DialogParameters<UpdateUrlDialog>() { TrapFocus = true });
+            Console.WriteLine($"Error in Cron dialog: {ex.Message}");
+            // Restore original on error
+            schedule.Cron = originalSchedule.Cron;
+            await OnScheduleChanged.InvokeAsync(schedule);
         }
-        catch (Exception) { }
-    }
-
-
-    private void SaveCronExpression(string cronExpression)
-    {
-        schedule.Cron = cronExpression;
     }
 }
 

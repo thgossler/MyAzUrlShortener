@@ -100,8 +100,8 @@
         footerCenterHtml = Configuration["FooterCenterHtml"] ?? "";
         footerRightHtml = Configuration["FooterRightHtml"] ?? "MIT License";
 
-        // Replace $(Year) placeholder with the current year
-        footerRightHtml = footerRightHtml.Replace("$(Year)", DateTime.Now.Year.ToString(), StringComparison.OrdinalIgnoreCase);
+        // Replace $(Year) placeholder with the current year 
+        footerRightHtml = footerRightHtml.Replace("$YEAR", DateTime.Now.Year.ToString());
     }
 
     private string SanitizeHtml(string html)

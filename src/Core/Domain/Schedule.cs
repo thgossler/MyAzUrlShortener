@@ -4,6 +4,7 @@ namespace AzUrlShortener.Core.Domain
 {
     public class Schedule
     {
+        public Guid Id { get; set; } = Guid.NewGuid();
         public DateTimeOffset Start { get; set; } = DateTimeOffset.UtcNow;
         public DateTimeOffset End { get; set; } = DateTimeOffset.MaxValue;
 

@@ -5,53 +5,150 @@
 @using AzUrlShortener.AdminUI.Components
 @using AzUrlShortener.AdminUI.Services
 
-
 <FluentCard MinimalStyle="true" AreaRestricted="false">
     <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="8" VerticalAlignment="VerticalAlignment.Center" >
         <FluentLabel Typo="Typography.H6" Color="Color.FillInverse">URL Override Schedules</FluentLabel>
-        <FluentButton OnClick="@(async () => AddScheduleClick())" IconEnd="@(new Icons.Regular.Size16.AddSquare())" />
+        <FluentButton OnClick="AddScheduleClick" IconEnd="@(new Icons.Regular.Size16.AddSquare())" />
     </FluentStack>
     
     <FluentAccordion ExpandMode="AccordionExpandMode.Multi">
-
-            @foreach(var s in schedules)
-            {
-                <FluentAccordionItem Expanded="true">
-                    <HeadingTemplate>
-                        <FluentLabel Typo="Typography.H6" Color="Color.FillInverse">Override schedule</FluentLabel>
-                        <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="8" VerticalAlignment="VerticalAlignment.Center">
-                            <FluentButton OnClick="@( () => DeleteSchedule( s ))" IconEnd="@(new Icons.Regular.Size16.Delete())" />
-                            <FluentLabel Color="Color.Accent">
-                                @s.Start.ToString("yyyy-MM-dd") &lt;                       
-                                @s.GetDisplayableUrl(25) &gt;
-                                @s.End.ToString("yyyy-MM-dd")
-                            </FluentLabel> 
-                        </FluentStack>
-                    </HeadingTemplate>
-                    <ChildContent>
-                        <ScheduleComponent schedule=@s></ScheduleComponent>
-                    </ChildContent>
-                </FluentAccordionItem >
-            } 
-
+        @for (int i = 0; i < workingSchedules.Count; i++)
+        {
+            var s = workingSchedules[i];
+            var scheduleIndex = i; // capture index for closures
+            <FluentAccordionItem Expanded="true" @key="s.Id">
+                <HeadingTemplate>
+                    <FluentLabel Typo="Typography.H6" Color="Color.FillInverse">Override schedule</FluentLabel>
+                    <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="8" VerticalAlignment="VerticalAlignment.Center">
+                        <FluentButton OnClick="@(() => DeleteSchedule(s.Id))" IconEnd="@(new Icons.Regular.Size16.Delete())" />
+                        <FluentLabel Color="Color.Accent">
+                            @s.Start.ToString("yyyy-MM-dd") &lt;                        
+                            @s.GetDisplayableUrl(25) &gt;
+                            @s.End.ToString("yyyy-MM-dd")
+                        </FluentLabel> 
+                    </FluentStack>
+                </HeadingTemplate>
+                <ChildContent>
+                    <ScheduleComponent @key="s.Id" 
+                                      schedule="@s" 
+                                      OnScheduleChanged="(updated) => UpdateSchedule(updated, s.Id)" />
+                </ChildContent>
+            </FluentAccordionItem >
+        } 
     </FluentAccordion >
-
 </FluentCard>
 
 @code {
-
     [Parameter]
-    public List<Schedule> schedules { get; set; } = new List<Schedule>();
+    public List<Schedule> Schedules { get; set; } = new List<Schedule>();
+    
+    [Parameter]
+    public EventCallback OnEdit { get; set; }
+    
+    // Internal working copy of schedules to avoid modifying the parent's list directly
+    private List<Schedule> workingSchedules = new List<Schedule>();
+    
+    private Schedule DeepCopySchedule(Schedule s)
+    {
+        if (s == null) return null;
+        return new Schedule {
+            Id = s.Id,
+            Start = s.Start,
+            End = s.End,
+            Cron = s.Cron,
+            DurationMinutes = s.DurationMinutes,
+            AlternativeUrl = s.AlternativeUrl
+        };
+    }
+    
+    protected override void OnInitialized()
+    {
+        // Create deep copies of schedules for our internal working copy
+        if (Schedules != null)
+        {
+            workingSchedules = Schedules.Select(DeepCopySchedule).ToList();
+        }
+    }
+    
+    protected override void OnParametersSet()
+    {
+        // Update our working copy if the parent's Schedules list has changed
+        if (Schedules != null && !SchedulesListsEqual(workingSchedules, Schedules))
+        {
+            workingSchedules = Schedules.Select(DeepCopySchedule).ToList();
+        }
+    }
+    
+    private bool SchedulesListsEqual(List<Schedule> list1, List<Schedule> list2)
+    {
+        if (list1 == null && list2 == null)
+            return true;
+            
+        if (list1 == null || list2 == null)
+            return false;
+            
+        if (list1.Count != list2.Count)
+            return false;
+            
+        // Compare IDs to determine if they're the same schedules
+        for (int i = 0; i < list1.Count; i++)
+        {
+            if (list1[i].Id != list2[i].Id)
+                return false;
+        }
+        
+        return true;
+    }
+    
+    // Apply changes to parent's list after every change
+    private void SyncChangesToParent()
+    {
+        // Create new list with deep copies
+        var newSchedules = workingSchedules.Select(DeepCopySchedule).ToList();
+        
+        // Clear and repopulate parent's list
+        Schedules.Clear();
+        foreach (var s in newSchedules)
+        {
+            Schedules.Add(s);
+        }
+        
+        // Notify parent of changes
+        OnEdit.InvokeAsync();
+    }
 
-
-    private void AddScheduleClick(){
-        schedules.Add(new Schedule());
+    private void AddScheduleClick()
+    {
+        var newSchedule = new Schedule { 
+            Id = Guid.NewGuid(),
+            Start = DateTimeOffset.Now,
+            End = DateTimeOffset.Now.AddDays(7),
+            DurationMinutes = 60
+        };
+        workingSchedules.Add(newSchedule);
+        SyncChangesToParent();
         StateHasChanged();
     }
 
-    private void DeleteSchedule(Schedule schedule){
-        schedules.Remove(schedule);
-        StateHasChanged();
+    private void DeleteSchedule(Guid id)
+    {
+        var scheduleToRemove = workingSchedules.FirstOrDefault(s => s.Id == id);
+        if (scheduleToRemove != null)
+        {
+            workingSchedules.Remove(scheduleToRemove);
+            SyncChangesToParent();
+            StateHasChanged();
+        }
     }
 
+    private void UpdateSchedule(Schedule updated, Guid id)
+    {
+        var idx = workingSchedules.FindIndex(s => s.Id == id);
+        if (idx >= 0)
+        {
+            workingSchedules[idx] = DeepCopySchedule(updated);
+            SyncChangesToParent();
+            StateHasChanged();
+        }
+    }
 }

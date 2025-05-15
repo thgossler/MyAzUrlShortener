@@ -1,9 +1,19 @@
 ﻿@using Microsoft.FluentUI.AspNetCore.Components
 @using AzUrlShortener.AdminUI.Components.Shared
 @implements IDialogContentComponent<CronEditorDialogParameters>
+@inject IJSRuntime JS
+
+<FluentDialogHeader ShowDismiss="false" TabIndex="-1">
+    <FluentStack VerticalAlignment="VerticalAlignment.Center">
+        <FluentIcon Value="@(new Icons.Regular.Size24.WindowApps())" />
+        <FluentLabel Typo="Typography.PaneHeader">
+            @Dialog?.Instance?.Parameters?.Title
+        </FluentLabel>
+    </FluentStack>
+</FluentDialogHeader>
 
 <div class="cron-editor-dialog">
-    <div style="width: 100%; padding: 10px;" tabindex="-1" @onkeydown:stopPropagation @onkeydown:preventDefault @onkeydown="HandleKeyDown">
+    <div style="width: 100%; padding: 10px;" @onkeydown="HandleKeyDown">
         <CrontabEditorComponent @ref="cronEditor" />
     </div>
 
@@ -66,7 +76,15 @@
     {
         if (cronEditor != null)
         {
-            Content.OnSave(cronEditor.CrontabExpression);
+            // Instead of calling OnSave directly, store the expression in the Content object
+            // that will be returned to the caller
+            Content.CronExpression = cronEditor.CrontabExpression;
+            
+            // If OnSave callback is provided, also call it (for backward compatibility)
+            if (Content.OnSave != null)
+            {
+                Content.OnSave(cronEditor.CrontabExpression);
+            }
         }
 
         await Dialog.CloseAsync(Content);
@@ -75,6 +93,7 @@
 
     public async Task CancelAsync()
     {
+        // We don't modify Content when cancelling
         await Dialog.CancelAsync();
     }
 }
