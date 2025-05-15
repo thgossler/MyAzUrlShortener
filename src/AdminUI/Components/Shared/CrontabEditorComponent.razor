@@ -4,51 +4,49 @@
 @using System.Text.RegularExpressions
 @inject IJSRuntime JS
 
-<div style="max-height: 600px; overflow-y: auto; padding-right: 10px;" @onscroll:preventDefault tabindex="-1">
+<div style="max-height: 600px; overflow-y: auto; padding-right: 10px;">
     <div class="section">
         <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10">
-            <FluentTextField @ref="_initialFocusControl" @bind-Value="Minute" Immediate="true" ImmediateDelay="300"
-                             Label="Minute" Placeholder="* or 0-59"
-                             Style="width:80px; margin-right:10px;" TabIndex="-1"
-                             Error="@(!IsValidMinute(Minute))"
-                             ErrorMessage="Valid formats: *, number (0-59), ranges (e.g., 1-15), or lists (e.g., 1,15,30)" />
+            <FluentTextField @ref="_initialFocusControl" @bind-Value="Minute" 
+            Immediate="true" ImmediateDelay="300"
+            Label="Minute" Placeholder="* or 0-59"
+            Style="width:80px; margin-right:10px;" />
 
-            <FluentTextField @bind-Value="Hour" Immediate="true" ImmediateDelay="300"
-                             Label="Hour" Placeholder="* or 0-23"
-                             Style="width:80px;" TabIndex="-1"
-                             Error="@(!IsValidHour(Hour))"
-                             ErrorMessage="Valid formats: *, number (0-23), ranges (e.g., 9-17), or lists (e.g., 9,12,17)" />
+            <FluentTextField @bind-Value="Hour" 
+            Immediate="true" ImmediateDelay="300"
+            Label="Hour" Placeholder="* or 0-23"
+            Style="width:80px;" />
 
-            <FluentTextField @bind-Value="DayOfMonth" Immediate="true" ImmediateDelay="300"
-                             Label="Day of Month" Placeholder="* or 1-5,10"
-                             Style="width:120px; margin-right:10px;" TabIndex="-1"
-                             Error="@(!IsValidDayOfMonth(DayOfMonth))"
-                             ErrorMessage="Valid formats: *, number (1-31), ranges, or lists" />
+            <FluentTextField @bind-Value="DayOfMonth" 
+            Immediate="true" ImmediateDelay="300"
+            Label="Day of Month" Placeholder="* or 1-5,10"
+            Style="width:120px; margin-right:10px;" />
 
-            <FluentTextField @bind-Value="Month" Immediate="true" ImmediateDelay="300"
-                             Label="Month" Placeholder="* or 1-3,6-8"
-                             Style="width:120px; margin-right:10px;" TabIndex="-1"
-                             Error="@(!IsValidMonth(Month))"
-                             ErrorMessage="Valid formats: *, number (1-12), ranges, or lists" />
+            <FluentTextField @bind-Value="Month" 
+            Immediate="true" ImmediateDelay="300"
+            Label="Month" Placeholder="* or 1-3,6-8"
+            Style="width:120px; margin-right:10px;" />
         </FluentStack>
     </div>
     <div class="section">
         <div style="margin-bottom: 5px">Day of Week:</div>
         @foreach (var day in WeekDays)
         {
-            <FluentCheckbox @bind-Checked="day.Checked" Label="@day.Name" Style="margin-right:8px;" TabIndex="-1" />
+            <FluentCheckbox @bind-Checked="day.Checked"
+            @onchange="SyncToUnifiedExpression"
+            Label="@day.Name" 
+            Style="margin-right:8px;" />
         }
     </div>
 
     <div class="section" style="margin-top: 10px">
         <h4>Cron Expression</h4>
         <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" Wrap="true">
-            <FluentTextField @bind-Value="CrontabExpression" Immediate="true" ImmediateDelay="300"
-                             Style="width:250px; margin-right:10px;" Placeholder="* * * * *" TabIndex="-1"
-                             Error="@(!IsValidCronExpression(CrontabExpression))"
-                             ErrorMessage="Invalid cron expression format. Expected format: 'minute hour day-of-month month day-of-week'" />
-            <FluentButton OnClick="CopyToClipboard" Style="margin-right: 5px;" TabIndex="-1">Copy</FluentButton>
-            <FluentButton OnClick="GenerateRandom" TabIndex="-1">Random</FluentButton>
+            <FluentTextField @bind-Value="CrontabExpression" 
+            Immediate="true" ImmediateDelay="300"
+            Style="width:250px; margin-right:10px;" Placeholder="* * * * *" />
+            <FluentButton OnClick="CopyToClipboard" Style="margin-right: 5px;">Copy</FluentButton>
+            <FluentButton OnClick="GenerateRandom">Random</FluentButton>
         </FluentStack>
         <div id="description" style="margin-top:10px; font-style:italic; color:#555;">@Description</div>
     </div>
@@ -58,7 +56,7 @@
         <div style="display: flex; flex-wrap: wrap; gap: 8px;">
             @foreach (var preset in Presets)
             {
-                <FluentButton OnClick="() => ApplyPreset(preset.State)" TabIndex="-1">@preset.Label</FluentButton>
+                <FluentButton OnClick="() => ApplyPreset(preset.State)">@preset.Label</FluentButton>
             }
         </div>
     </div>
@@ -80,8 +78,8 @@
                                     @if (cell.Day > 0)
                                     {
                                         <div class="day @(cell.Active?"active":"")"
-                                             title="@cell.Tooltip"
-                                             style="width:14px;height:14px;margin:1px;text-align:center;line-height:14px;cursor:pointer;@(cell.Active ? "background-color:var(--accent-fill-rest);color:white;border-radius:2px;" : "")">
+                                        title="@cell.Tooltip"
+                                        style="width:14px;height:14px;margin:1px;text-align:center;line-height:14px;cursor:pointer;@(cell.Active ? "background-color:var(--accent-fill-rest);color:white;border-radius:2px;" : "")">
                                             @cell.Day
                                         </div>
                                     }
@@ -106,7 +104,16 @@
     FluentTextField _initialFocusControl;
 
     private string _minute = "*";
-    private string Minute { get { return _minute; } set { _minute = value; if (!_suppressSync) SyncToUnifiedExpression(); } }
+    private string Minute { 
+        get { 
+            return _minute; 
+        } 
+        set { 
+            _minute = value; 
+            if (!_suppressSync) 
+                SyncToUnifiedExpression(); 
+        } 
+    }
 
     private string _hour = "*";
     private string Hour { get { return _hour; } set { _hour = value; if (!_suppressSync) SyncToUnifiedExpression(); } }
@@ -116,18 +123,6 @@
 
     private string _month = "*";
     private string Month { get { return _month; } set { _month = value; if (!_suppressSync) SyncToUnifiedExpression(); } }
-
-    private static readonly Regex MinuteRegex = new(@"^\*$|^(\d|[1-5]\d)(-(\d|[1-5]\d))?(,(\d|[1-5]\d)(-(\d|[1-5]\d))?)*$");
-    private static readonly Regex HourRegex = new(@"^\*$|^(\d|1\d|2[0-3])(-(\d|1\d|2[0-3]))?(,(\d|1\d|2[0-3])(-(\d|1\d|2[0-3]))?)*$");
-    private static readonly Regex DayOfMonthRegex = new(@"^\*$|^([1-9]|[12]\d|3[01])(-([1-9]|[12]\d|3[01]))?(,([1-9]|[12]\d|3[01])(-([1-9]|[12]\d|3[01]))?)*$");
-    private static readonly Regex MonthRegex = new(@"^\*$|^([1-9]|1[0-2])(-([1-9]|1[0-2]))?(,([1-9]|1[0-2])(-([1-9]|1[0-2]))?)*$");
-    private static readonly Regex CronExpressionRegex = new(@"^(\S+\s){4}\S+$");
-
-    private bool IsValidMinute(string value) => string.IsNullOrEmpty(value) || MinuteRegex.IsMatch(value);
-    private bool IsValidHour(string value) => string.IsNullOrEmpty(value) || HourRegex.IsMatch(value);
-    private bool IsValidDayOfMonth(string value) => string.IsNullOrEmpty(value) || DayOfMonthRegex.IsMatch(value);
-    private bool IsValidMonth(string value) => string.IsNullOrEmpty(value) || MonthRegex.IsMatch(value);
-    private bool IsValidCronExpression(string value) => string.IsNullOrEmpty(value) || CronExpressionRegex.IsMatch(value);
 
     private List<WeekDayItem> WeekDays = new()
     {
@@ -177,30 +172,26 @@
 
     protected override void OnInitialized()
     {
+        WeekDayItem.NotificationTarget = this;
         SyncToUnifiedExpression();
     }
 
-    // Public method to set focus after the component is initialized
-    public async Task SetInitialFocusAsync()
+    public async Task SetInitialInputFocusAsync()
     {
         _initialFocusControl?.FocusAsync();
     }
 
     private void SyncToUnifiedExpression()
     {
-        if (IsValidMinute(Minute) && IsValidHour(Hour) &&
-            IsValidDayOfMonth(DayOfMonth) && IsValidMonth(Month))
-        {
-            // Convert empty values to "*"
-            var minutePart = string.IsNullOrWhiteSpace(Minute) ? "*" : Minute;
-            var hourPart = string.IsNullOrWhiteSpace(Hour) ? "*" : Hour;
-            var domPart = string.IsNullOrWhiteSpace(DayOfMonth) ? "*" : DayOfMonth;
-            var monthPart = string.IsNullOrWhiteSpace(Month) ? "*" : Month;
-            var dowPart = State.Dow.Any() ? string.Join(",", State.Dow) : "*";
+        var minutePart = string.IsNullOrWhiteSpace(Minute) ? "*" : Minute;
+        var hourPart = string.IsNullOrWhiteSpace(Hour) ? "*" : Hour;
+        var domPart = string.IsNullOrWhiteSpace(DayOfMonth) ? "*" : DayOfMonth;
+        var monthPart = string.IsNullOrWhiteSpace(Month) ? "*" : Month;
+        var dowPart = State.Dow.Any() ? string.Join(",", State.Dow) : "*";
 
-            _crontabExpression = string.Join(" ", new[] { minutePart, hourPart, domPart, monthPart, dowPart });
-            UpdateDescription();
-        }
+        _crontabExpression = string.Join(" ", new[] { minutePart, hourPart, domPart, monthPart, dowPart });
+        UpdateDescription();
+
         StateHasChanged();
     }
 
@@ -262,43 +253,54 @@
 
     public async Task InitializeWithCronExpression(string minutes, string hours, string daysOfMonth, string months, string daysOfWeek)
     {
-        Minute = minutes;
-        Hour = hours;
-        DayOfMonth = daysOfMonth;
-        Month = months;
-
-        if (daysOfWeek != "*")
+        try
         {
-            foreach (var day in WeekDays)
-            {
-                day.Checked = false;
-            }
+            _suppressSync = true;
 
-            var dowValues = daysOfWeek.Split(',');
-            foreach (var value in dowValues)
+            Minute = minutes;
+            Hour = hours;
+            DayOfMonth = daysOfMonth;
+            Month = months;
+
+            if (daysOfWeek != "*")
             {
-                if (int.TryParse(value, out int dowValue))
+                foreach (var day in WeekDays)
                 {
-                    var day = WeekDays.FirstOrDefault(d => (int)d.Value == dowValue);
-                    if (day != null)
+                    day.Checked = false;
+                }
+
+                var dowValues = daysOfWeek.Split(',');
+                foreach (var value in dowValues)
+                {
+                    if (int.TryParse(value, out int dowValue))
                     {
-                        day.Checked = true;
+                        var day = WeekDays.FirstOrDefault(d => (int)d.Value == dowValue);
+                        if (day != null)
+                        {
+                            day.Checked = true;
+                        }
                     }
                 }
             }
-        }
-        else
-        {
-            foreach (var day in WeekDays)
+            else
             {
-                day.Checked = false;
+                foreach (var day in WeekDays)
+                {
+                    day.Checked = false;
+                }
             }
+
+            CrontabExpression = string.Join(" ", new[] { minutes, hours, daysOfMonth, months, daysOfWeek });
+        }
+        finally
+        {
+            _suppressSync = false;
         }
 
-        CrontabExpression = string.Join(" ", new[] { minutes, hours, daysOfMonth, months, daysOfWeek });
+        StateHasChanged();
 
-        // Set focus after initialization
-        await SetInitialFocusAsync();
+        // Set input focus after initialization
+        await SetInitialInputFocusAsync();
     }
 
     private void UpdateDescription()
@@ -385,18 +387,25 @@
 
     private void ApplyPreset(StateModel s)
     {
-        Minute = s.Minute;
-        Hour = s.Hour;
-        DayOfMonth = s.Dom;
-        Month = s.Mon;
-
-        foreach (var day in WeekDays)
+        _suppressSync = true;
+        try
         {
-            day.Checked = s.Dow.Contains(((int)day.Value).ToString());
-        }
+            Minute = s.Minute;
+            Hour = s.Hour;
+            DayOfMonth = s.Dom;
+            Month = s.Mon;
 
-        SyncToUnifiedExpression();
-        StateHasChanged();
+            foreach (var day in WeekDays)
+            {
+                day.Checked = s.Dow.Contains(((int)day.Value).ToString());
+            }
+        }
+        finally
+        {
+            _suppressSync = false;
+            SyncToUnifiedExpression();
+            StateHasChanged();
+        }
     }
 
     private IEnumerable<CalendarCell> BuildCalendarCells(int year, int month, StateModel state)
@@ -481,10 +490,11 @@
 
     public class WeekDayItem
     {
+        public static CrontabEditorComponent NotificationTarget;
         public string Name;
         public DayOfWeek Value;
         private bool _checked;
-        public bool Checked { get { return _checked; } set { _checked = value; } }
+        public bool Checked { get { return _checked; } set { _checked = value; NotificationTarget?.SyncToUnifiedExpression(); } }
         public WeekDayItem(string name, DayOfWeek val) { Name = name; Value = val; }
     }
     public class Preset { public string Label; public StateModel State; public Preset(string l, StateModel s) { Label = l; State = s; } }

@@ -5,6 +5,7 @@
 @using AzUrlShortener.AdminUI.Components.Dialogues
 @using AzUrlShortener.AdminUI.Services
 @using Microsoft.FluentUI.AspNetCore.Components
+@inject IJSRuntime JS
 
 @rendermode InteractiveServer
 
@@ -39,6 +40,12 @@
     </div>
 </FluentStack>
 
+<script>
+    window.getViewportWidth = () => {
+    return window.innerWidth;
+    };
+</script>
+
 @code {
     [Parameter]
     public Schedule schedule { get; set; } = new Schedule();
@@ -67,6 +74,11 @@
         DialogService = _dialogService;
     }
 
+    private async Task<int> GetViewportWidthAsync()
+    {
+        return await JS.InvokeAsync<int>("getViewportWidth");
+    }
+
     private void StartDateTimeReconcile(DateTime value)
     {
         var valueOffset = new DateTimeOffset(value);
@@ -89,8 +101,9 @@
         // Configure dialog parameters
         dialogParameters = new DialogParameters
             {
+                Id="EditCronDialog",
                 Title = "Edit Cron Expression",
-                Width = "800px",
+                Width = await GetViewportWidthAsync() > 600 ? "800px" : "350px",
                 PreventScroll = false,
                 PrimaryAction = "OK",
                 SecondaryAction = "Cancel",

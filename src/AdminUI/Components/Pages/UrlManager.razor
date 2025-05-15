@@ -23,27 +23,29 @@
 <div class="page-container">
     <div class="header-section">
         <h1>Manage URLs</h1>
-        <h4>Add, edit and archive URL records</h4>
+        <h4 class="hide-on-small-sized-displays">Add, edit and archive URL records</h4>
 
         <div class="actions-row">
             <FluentButton OnClick="@(CreateShortUrl)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.Add())">Add</FluentButton>
-            <FluentButton OnClick="@(ManualRefresh)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.ArrowSync())">Refresh</FluentButton>
+            <FluentButton OnClick="@(ManualRefresh)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.ArrowSync())"><div class="hide-on-small-height-displays">Refresh</div></FluentButton>
 
-            @if (filteredUrlList == null || !filteredUrlList.Any())
-            {
-                <FluentButton OnClick="@(AddExampleData)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.DataHistogram())">Add example data</FluentButton>
-            }
+            <div class="hide-on-small-sized-displays">
+                @if (filteredUrlList == null || !filteredUrlList.Any())
+                {
+                    <FluentButton OnClick="@(AddExampleData)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.DataHistogram())">Add example data</FluentButton>
+                }
 
-            @if (!string.IsNullOrWhiteSpace(importConnectionString))
-            {
-                <FluentButton OnClick="@(ImportRecords)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.ArrowUpload())">Import records</FluentButton>
-            }
+                @if (!string.IsNullOrWhiteSpace(importConnectionString))
+                {
+                    <FluentButton OnClick="@(ImportRecords)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.ArrowUpload())">Import records</FluentButton>
+                }
+            </div>
 
             @if (isLoading)
             {
                 <div class="loading-indicator">
                     <FluentProgressRing />
-                    <span>Loading...</span>
+                    <div class="hide-on-small-sized-displays">Loading...</div>
                 </div>
             }
 
@@ -53,8 +55,9 @@
                     {
                         <div class="filter-controls">
                             <FluentCheckbox @bind-Value="showOnlyMyRecords" 
-                                Label="Show only my records"
-                                @onchange="OnShowOnlyMyRecordsChanged" />
+                                Label="Only my records"
+                                @onchange="OnShowOnlyMyRecordsChanged" 
+                                Style="min-width: max-content" />
                         </div>
                     }
                     <FluentSearch Placeholder="Filter..."
@@ -85,13 +88,14 @@
 
     <div class="grid-container">
         <FluentDataGrid Id="grdUrls" @ref="_dataGrid"
-        Items="@filteredUrlList"
-        ResizableColumns=true
-        GridTemplateColumns="60px auto auto auto auto 120px 120px 120px"
-        Pagination="@pagination"
-        AutoItemsPerPage=false
-        RowSize="DataGridRowSize.Medium"
-        ShowHover=true>
+                Class="sticky-header-grid"
+                Items="@filteredUrlList"
+                ResizableColumns=true
+                GridTemplateColumns="60px auto auto auto auto 120px 120px 120px"
+                Pagination="@pagination"
+                AutoItemsPerPage=false
+                RowSize="DataGridRowSize.Medium"
+                ShowHover=true>
             <ChildContent>
                 <TemplateColumn Sortable="false">
                     <FluentButton OnClick="@(async () => await CopyToClipboardAsync(context!.ShortUrl))" IconEnd="@(new Icons.Regular.Size16.Copy())" Title="Copy" />
@@ -186,8 +190,15 @@
                     </FluentStack>
                 </TemplateColumn>
             </ChildContent>
+            <LoadingContent>
+                <div class="custom-loading-content">
+                    <FluentProgressRing /> Loading data...
+                </div>
+            </LoadingContent>
             <EmptyContent>
-                <FluentIcon Value="@(new Icons.Filled.Size16.Info())" Color="@Color.Accent" />&nbsp; No short URLs found.
+                <div class="custom-empty-content">
+                    <FluentIcon Value="@(new Icons.Filled.Size16.Info())" Color="@Color.Accent" />&nbsp; No short URLs found.
+                </div>
             </EmptyContent>
         </FluentDataGrid>
     </div>
@@ -199,31 +210,29 @@
 </div>
 
 <style>
-    .loading-indicator {
-    display: inline-flex;
-    align-items: center;
-    margin-left: 12px;
-    gap: 8px;
+    .sticky-header-grid tr[row-type="header"] th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background-color: var(--neutral-layer-floating);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
 
-    .actions-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 16px;
+    .sticky-header-grid tbody {
+        overflow-y: auto;
     }
 
-    .search-container {
-    margin-left: auto;
-    min-width: 250px;
+    @@media (max-width: 600px), (max-height: 600px) {
+        .custom-empty-content,
+        .custom-loading-content {
+            text-align: start !important;
+            align-self: start !important;
+            justify-content: start !important;
+        }
     }
 </style>
 
 @code {
-
-
-
     private ListResponse urls = new ListResponse();
     private bool isAdmin = false;
     private string searchText = string.Empty;

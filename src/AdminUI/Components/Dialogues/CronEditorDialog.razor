@@ -2,14 +2,16 @@
 @using AzUrlShortener.AdminUI.Components.Shared
 @implements IDialogContentComponent<CronEditorDialogParameters>
 
-<div style="width: 100%; padding: 10px;" tabindex="-1" @onkeydown:stopPropagation @onkeydown:preventDefault @onkeydown="HandleKeyDown">
-    <CrontabEditorComponent @ref="cronEditor" />
-</div>
+<div class="cron-editor-dialog">
+    <div style="width: 100%; padding: 10px;" tabindex="-1" @onkeydown:stopPropagation @onkeydown:preventDefault @onkeydown="HandleKeyDown">
+        <CrontabEditorComponent @ref="cronEditor" />
+    </div>
 
-<FluentDialogFooter>
-    <FluentButton Appearance="Appearance.Accent" OnClick="@SaveAsync">OK</FluentButton>
-    <FluentButton Appearance="Appearance.Neutral" OnClick="@CancelAsync">Cancel</FluentButton>
-</FluentDialogFooter>
+    <FluentDialogFooter>
+        <FluentButton Appearance="Appearance.Accent" OnClick="@SaveAsync">OK</FluentButton>
+        <FluentButton Appearance="Appearance.Neutral" OnClick="@CancelAsync">Cancel</FluentButton>
+    </FluentDialogFooter>
+</div>
 
 @code {
     [CascadingParameter]
@@ -40,14 +42,9 @@
             else
             {
                 // If there's no initial expression, we still need to set focus
-                await cronEditor.SetInitialFocusAsync();
+                await cronEditor.SetInitialInputFocusAsync();
                 isInitialized = true;
             }
-        }
-        else if (!firstRender && cronEditor != null && isInitialized)
-        {
-            // This ensures focus is set on subsequent renders too
-            await cronEditor.SetInitialFocusAsync();
         }
 
         await base.OnAfterRenderAsync(firstRender);
