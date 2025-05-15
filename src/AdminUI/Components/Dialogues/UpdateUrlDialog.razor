@@ -63,7 +63,7 @@
 </FluentDialogBody>
 
 <FluentDialogFooter>
-    <FluentButton Appearance="Appearance.Accent" Disabled="@(!_shortUrl.Validate() || HasInvalidScheduleUrl())" OnClick="@SaveAsync">Save</FluentButton>
+    <FluentButton Appearance="Appearance.Accent" Disabled="@(!_shortUrl.Validate() || HasInvalidInput())" OnClick="@SaveAsync">Save</FluentButton>
     <FluentButton Appearance="Appearance.Neutral" OnClick="@CancelAsync">Cancel</FluentButton>
 </FluentDialogFooter>
 
@@ -81,9 +81,6 @@
     private List<Schedule> _originalSchedules = new();
     private List<Schedule> _editableSchedules = new();
     
-    // Store the original TrapFocus value
-    private bool? _originalTrapFocus;
-
     private Schedule DeepCopySchedule(Schedule s)
     {
         return new Schedule {
@@ -130,7 +127,7 @@
     
     private async Task SaveAsync()
     {
-        if (_shortUrl.Validate() && !HasInvalidScheduleUrl())
+        if (_shortUrl.Validate() && !HasInvalidInput())
         {
             // Copy the edited schedules back to the _shortUrl
             _shortUrl.Schedules = _editableSchedules.Select(DeepCopySchedule).ToList();
@@ -161,9 +158,29 @@
         StateHasChanged();
     }
 
-    private bool HasInvalidScheduleUrl() {
+    private bool HasInvalidInput() {
         return _editableSchedules != null && 
             _editableSchedules.Any(s => 
-                !Regex.Match(s.AlternativeUrl, "^http[s]://[0-9a-zA-Z]+.*", RegexOptions.IgnoreCase).Success);
+                !Regex.Match(s.AlternativeUrl, "^http[s]://[0-9a-zA-Z]+.*", RegexOptions.IgnoreCase).Success
+                || !IsValidCron(s.Cron)
+                || s.DurationMinutes <= 0
+            );
+    }
+
+    private bool IsValidCron(string cron)
+    {
+        if (string.IsNullOrWhiteSpace(cron)) return false;
+        try
+        {
+            // Accept only 5-part cron expressions
+            var parts = cron.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length != 5) return false;
+            Cronos.CronExpression.Parse(cron);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

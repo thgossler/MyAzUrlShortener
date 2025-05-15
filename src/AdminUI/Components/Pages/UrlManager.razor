@@ -251,7 +251,7 @@
 
     IQueryable<ShortUrlEntity> urlList;
     IQueryable<ShortUrlEntity> filteredUrlList;
-    FluentDataGrid<ShortUrlEntity>? _dataGrid;
+    FluentDataGrid<ShortUrlEntity> _dataGrid;
     PaginationState pagination = new PaginationState { ItemsPerPage = 100 };
     ShortUrlRequest shortUrlRequest = new ShortUrlRequest();
     ShortUrlEntity editedUrl = new ShortUrlEntity();

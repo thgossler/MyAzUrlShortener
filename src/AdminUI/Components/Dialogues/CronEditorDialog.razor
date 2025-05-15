@@ -32,7 +32,6 @@
 
     private CrontabEditorComponent cronEditor;
     private string originalCronExpression = string.Empty;
-    private bool isInitialized = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -46,14 +45,12 @@
                 if (parts.Length >= 5)
                 {
                     await cronEditor.InitializeWithCronExpression(parts[0], parts[1], parts[2], parts[3], parts[4]);
-                    isInitialized = true;
                 }
             }
             else
             {
                 // If there's no initial expression, we still need to set focus
                 await cronEditor.SetInitialInputFocusAsync();
-                isInitialized = true;
             }
         }
 

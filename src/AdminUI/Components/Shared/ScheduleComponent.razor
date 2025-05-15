@@ -22,20 +22,33 @@
         </div>
     </FluentStack>
     <div style="width: 100%;">
-        <FluentTextField Label="Alternative URL" Name="AlternativeUrl" Placeholder="https://..." @bind-Value="schedule.AlternativeUrl" @bind-Value:after="OnScheduleFieldChanged" style="width: 90%;" />
+        <FluentTextField Label="Alternative URL" Name="AlternativeUrl" Placeholder="https://..." Immediate="true" ImmediateDelay="300" @bind-Value="schedule.AlternativeUrl" @bind-Value:after="OnScheduleFieldChanged" style="width: 90%;" />
     </div>
     <div>
         <FluentLabel Typo="Typography.H6" Color="Color.FillInverse" Style="margin-bottom: 8px">Recurrences within overall period</FluentLabel>
         <FluentStack Orientation="Orientation.Vertical" HorizontalGap="10">
             <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10">
-                <FluentTextField Name="Cron" Label="Cron expression" Placeholder="* * * * *" @bind-Value="schedule.Cron" @bind-Value:after="OnScheduleFieldChanged" />
+                <FluentTextField Name="Cron" Label="Cron expression" Placeholder="* * * * *" Immediate="true" ImmediateDelay="300" @bind-Value="schedule.Cron" @bind-Value:after="OnScheduleFieldChanged" />
                 <FluentButton Appearance="Appearance.Accent" OnClick="OpenCronDialog">Edit</FluentButton>
             </FluentStack>
             <p style="margin-left: 20px; font-style: italic">Cron helper tools:&nbsp;&nbsp;<a href="https://www.uptimia.com/cron-expression-generator" target="blank">Uptimia Cron Expression Generator</a>,&nbsp;&nbsp;<a href="https://crontab.guru/" target="blank">Crontab.guru</a></p>
         </FluentStack>
     </div>
     <div>
-        <FluentNumberField Name="DurationMinutes" Label="Duration (in minutes)" @bind-Value="schedule.DurationMinutes" @bind-Value:after="OnScheduleFieldChanged" Min="0" Step="5" />
+        <FluentStack Orientation="Orientation.Vertical">
+            <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="6" Style="margin-top:4px; margin-left:2px;">
+                <FluentNumberField Name="DurationMinutes" Label="Duration (minutes)" @bind-Value="schedule.DurationMinutes" @bind-Value:after="OnScheduleFieldChanged" Min="0" Step="5" Style="width:100px;" />
+                <FluentButton Size="ButtonSize.Small" Title="Reset" OnClick="@(() => SetDuration(0))">0</FluentButton>
+                <FluentButton Size="ButtonSize.Small" Title="Add 1 hour" OnClick="@(() => AddDuration(60))">+h</FluentButton>
+                <FluentButton Size="ButtonSize.Small" Title="Add 1 day" OnClick="@(() => AddDuration(1440))">+d</FluentButton>
+                <FluentButton Size="ButtonSize.Small" Title="Add 1 week" OnClick="@(() => AddDuration(10080))">+w</FluentButton>
+                <FluentButton Size="ButtonSize.Small" Title="Add 1 month (30d)" OnClick="@(() => AddDuration(43200))">+mo</FluentButton>
+                <FluentButton Size="ButtonSize.Small" Title="Add 1 year (365d)" OnClick="@(() => AddDuration(525600))">+y</FluentButton>
+            </FluentStack>
+            <FluentLabel Style="margin-left:130px; margin-top:0px; color: #666; font-size: 0.95em; font-style: italic;">
+                @GetDurationNaturalLanguage(schedule.DurationMinutes) 
+            </FluentLabel>
+        </FluentStack>
     </div>
 </FluentStack>
 
@@ -69,7 +82,7 @@
     public EventCallback<Schedule> OnScheduleChanged { get; set; }
     
     private DialogParameters dialogParameters = default!;
-    private IDialogReference? dialogReference;
+    private IDialogReference dialogReference;
     private IDialogService DialogService { get; set; } = default!;
 
     [Inject]
@@ -173,5 +186,41 @@
             await OnScheduleChanged.InvokeAsync(schedule);
         }
     }
-}
 
+    private void SetDuration(int minutes)
+    {
+        schedule.DurationMinutes = minutes;
+        OnScheduleChanged.InvokeAsync(schedule);
+    }
+
+    private void AddDuration(int minutes)
+    {
+        schedule.DurationMinutes += minutes;
+        OnScheduleChanged.InvokeAsync(schedule);
+    }
+
+    private string GetDurationNaturalLanguage(int minutes)
+    {
+        if (minutes <= 0) return "No duration set.";
+        var parts = new List<string>();
+        int years = minutes / 525600; minutes %= 525600;
+        int months = minutes / 43200; minutes %= 43200;
+        int weeks = minutes / 10080; minutes %= 10080;
+        int days = minutes / 1440; minutes %= 1440;
+        int hours = minutes / 60; minutes %= 60;
+
+        // Normalize units so that e.g. 4 weeks = 1 month, 12 months = 1 year, etc.
+        if (weeks >= 4) { months += weeks / 4; weeks = weeks % 4; }
+        if (months >= 12) { years += months / 12; months = months % 12; }
+        if (days >= 7) { weeks += days / 7; days = days % 7; }
+        if (hours >= 24) { days += hours / 24; hours = hours % 24; }
+
+        if (years > 0) parts.Add($"{years} year{(years > 1 ? "s" : "")}");
+        if (months > 0) parts.Add($"{months} month{(months > 1 ? "s" : "")}");
+        if (weeks > 0) parts.Add($"{weeks} week{(weeks > 1 ? "s" : "")}");
+        if (days > 0) parts.Add($"{days} day{(days > 1 ? "s" : "")}");
+        if (hours > 0) parts.Add($"{hours} hour{(hours > 1 ? "s" : "")}");
+        if (minutes > 0) parts.Add($"{minutes} minute{(minutes > 1 ? "s" : "")}");
+        return string.Join(", ", parts); 
+    }
+}
