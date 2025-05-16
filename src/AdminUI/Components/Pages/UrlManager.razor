@@ -176,15 +176,15 @@
                                           IconEnd="@(new Icons.Regular.Size16.Archive())" 
                                           Title="Archive" 
                                           Disabled="@(!canArchive)"
-                                          OnClick="@(() => OnArchiveMenuButtonClick(context.RowKey))" />
+                                          OnClick="@(() => ArchiveMenuStates[context.RowKey] = true)" />
                             @if (canArchive)
                             {
                                 <FluentMenu Anchor="@($"archive-action-button-{context.RowKey}")" 
                                             UseMenuService="true" 
                                             VerticalThreshold="170"
-                                            HorizontalPosition="HorizontalPosition.Start"
-                                            Open="@(openArchiveMenuRowKey == context.RowKey)">
-                                    <FluentMenuItem @onclick="@(async () => { openArchiveMenuRowKey = null; await ArchiveShortUrl(context); })">
+                                            @bind-Open="ArchiveMenuStates[context.RowKey]"
+                                            Anchored="true">
+                                    <FluentMenuItem @onclick="@(async () => { await ArchiveShortUrl(context); })">
                                         <FluentIcon Value="@(new Icons.Regular.Size16.Archive())" Color="@Color.Neutral" Slot="start" />
                                         Archive
                                     </FluentMenuItem> 
@@ -252,6 +252,7 @@
 <script src="/js/helpers.js"></script>
 
 @code {
+
     private ListResponse urls = new ListResponse();
     private bool isAdmin = false;
     private string searchText = string.Empty;
@@ -268,7 +269,7 @@
     // Remember the last loaded data to avoid unnecessary reloads
     private static List<ShortUrlEntity> cachedUrlList;
 
-    private string openArchiveMenuRowKey = null;
+    private Dictionary<string, bool> ArchiveMenuStates = new Dictionary<string, bool>();
 
     IQueryable<ShortUrlEntity> urlList;
     IQueryable<ShortUrlEntity> filteredUrlList;
@@ -382,10 +383,14 @@
 
         filteredUrlList = filtered;
 
+        foreach (var record in filteredUrlList)
+        {
+            ArchiveMenuStates[record.RowKey] = false;
+        }
+
         // Reset pagination to first page when filtering
         pagination.SetCurrentPageIndexAsync(0);
     }
-
 
     private async Task UpdateUIList()
     {
@@ -646,19 +651,6 @@
             isLoading = false;
             importInProgress = false;
             StateHasChanged();
-        }
-    }
-
-    private void OnArchiveMenuButtonClick(string rowKey)
-    {
-        openArchiveMenuRowKey = rowKey;
-    }
-
-    private void OnArchiveMenuDismiss(string rowKey)
-    {
-        if (openArchiveMenuRowKey == rowKey)
-        {
-            openArchiveMenuRowKey = null;
         }
     }
 }
