@@ -21,18 +21,18 @@
 		<FluentCard Width="100%" Height="auto" AreaRestricted="false" Style="background-color: var(--neutral-layer-1);">
 			<h4>User Permissions</h4>
 			<FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Vertical">
-				<FluentCheckbox Label="Allow normal users to view all URL records" Disabled="true" Checked="@normalUsersCanViewAll" />
+				<FluentCheckbox Label="Allow regular users to view all URL records" Disabled="true" Checked="@regularUsersCanViewAll" />
 				<div class="mt-2 info-banner">
 					<FluentIcon Value="@(new Icons.Regular.Size16.Info())" Color="@Color.Accent" />
-					<span>This setting is controlled via environment configuration. To change, update the <code>AllowNormalUsersToViewAllRecords</code> key in your application settings.</span>
+					<span>This setting is controlled via environment configuration. To change, update the <code>AllowRegularUsersToViewAllRecords</code> key in your application settings.</span>
 				</div>
 
 				<FluentDivider Class="mt-3 mb-3" />
 
-				<FluentCheckbox Label="Allow normal users to archive their own URL records" Disabled="true" Checked="@normalUsersCanArchive" />
+				<FluentCheckbox Label="Allow regular users to archive their own URL records" Disabled="true" Checked="@regularUsersCanArchive" />
 				<div class="mt-2 info-banner">
 					<FluentIcon Value="@(new Icons.Regular.Size16.Info())" Color="@Color.Accent" />
-					<span>This setting is controlled via environment configuration. To change, update the <code>AllowNormalUsersToArchiveRecords</code> key in your application settings.</span>
+					<span>This setting is controlled via environment configuration. To change, update the <code>AllowRegularUsersToArchiveRecords</code> key in your application settings.</span>
 				</div>
 
 				<FluentDivider Class="mt-3 mb-3" />
@@ -45,14 +45,14 @@
 
 @code {
 	private bool isAdmin = false;
-	private bool normalUsersCanViewAll = false;
-	private bool normalUsersCanArchive = false;
+	private bool regularUsersCanViewAll = false;
+	private bool regularUsersCanArchive = false;
 
 	protected override async Task OnInitializedAsync()
 	{
 		isAdmin = await userService.IsAdminAsync();
-		normalUsersCanViewAll = userService.CanNormalUsersViewAllRecords();
-		normalUsersCanArchive = userService.CanNormalUsersArchiveRecords();
+		regularUsersCanViewAll = userService.CanRegularUsersViewAllRecords();
+		regularUsersCanArchive = userService.CanRegularUsersArchiveRecords();
 	}
 
 	private void ManageUsers()

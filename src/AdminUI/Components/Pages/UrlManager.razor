@@ -52,7 +52,7 @@
 
             <div class="search-container">
                 <FluentStack Orientation="Orientation.Horizontal" Style="align-items: baseline;">
-                    @if (isAdmin || userService.CanNormalUsersViewAllRecords())
+                    @if (isAdmin || userService.CanRegularUsersViewAllRecords())
                     {
                         <div class="filter-controls">
                             <FluentCheckbox @bind-Value="showOnlyMyRecords" 
@@ -76,7 +76,7 @@
     {
         <div class="info-banner">
             <FluentIcon Value="@(new Icons.Regular.Size16.Info())" Color="@Color.Accent" />
-            @if (userService.CanNormalUsersViewAllRecords())
+            @if (userService.CanRegularUsersViewAllRecords())
             {
                 <span>You are viewing all URLs but can only modify your own.</span>
             }
@@ -152,7 +152,8 @@
                     @{
                         var isOwner = string.Equals(context!.OwnerUpn, currentUserUpn, StringComparison.OrdinalIgnoreCase);
                         var canModify = isAdmin || isOwner;
-                        var canArchive = isAdmin || (isOwner && userService.CanNormalUsersArchiveRecords());
+                        var canRegularUsersArchiveRecords = userService.CanRegularUsersArchiveRecords();
+                        var canArchive = isAdmin || (isOwner && canRegularUsersArchiveRecords);
                     }
 
                     <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
@@ -169,14 +170,29 @@
                             }
                         </div>
 
-                        <div id="archive-button-@context.RowKey">
-                            <FluentButton OnClick="@(async () => await ArchiveShortUrl(context))"
-                            IconEnd="@(new Icons.Regular.Size16.Archive())"
-                            Title="Archive"
-                            Disabled="@(!canArchive)" />
-                            @if (!canArchive)
+                        <div id="archive-menu-@context.RowKey">
+                            <FluentButton Id="@($"archive-action-button-{context.RowKey}")" 
+                                          Appearance="Appearance.Outline" 
+                                          IconEnd="@(new Icons.Regular.Size16.Archive())" 
+                                          Title="Archive" 
+                                          Disabled="@(!canArchive)"
+                                          OnClick="@(() => OnArchiveMenuButtonClick(context.RowKey))" />
+                            @if (canArchive)
                             {
-                                <FluentTooltip Anchor="@($"archive-button-{context.RowKey}")">
+                                <FluentMenu Anchor="@($"archive-action-button-{context.RowKey}")" 
+                                            UseMenuService="true" 
+                                            VerticalThreshold="170"
+                                            HorizontalPosition="HorizontalPosition.Start"
+                                            Open="@(openArchiveMenuRowKey == context.RowKey)">
+                                    <FluentMenuItem @onclick="@(async () => { openArchiveMenuRowKey = null; await ArchiveShortUrl(context); })">
+                                        <FluentIcon Value="@(new Icons.Regular.Size16.Archive())" Color="@Color.Neutral" Slot="start" />
+                                        Archive
+                                    </FluentMenuItem> 
+                                </FluentMenu>
+                            }
+                            else 
+                            {
+                                <FluentTooltip Anchor="@($"archive-action-button-{context.RowKey}")">
                                     @if (!isOwner)
                                     {
                                         <span>You cannot archive this URL because you didn't create it</span>
@@ -251,6 +267,8 @@
 
     // Remember the last loaded data to avoid unnecessary reloads
     private static List<ShortUrlEntity> cachedUrlList;
+
+    private string openArchiveMenuRowKey = null;
 
     IQueryable<ShortUrlEntity> urlList;
     IQueryable<ShortUrlEntity> filteredUrlList;
@@ -476,7 +494,7 @@
     {
         var isOwner = string.Equals(urlEntity.OwnerUpn, currentUserUpn, StringComparison.OrdinalIgnoreCase);
 
-        if (!isAdmin && (!isOwner || !userService.CanNormalUsersArchiveRecords()))
+        if (!isAdmin && (!isOwner || !userService.CanRegularUsersArchiveRecords()))
         {
             if (!isOwner)
             {
@@ -628,6 +646,19 @@
             isLoading = false;
             importInProgress = false;
             StateHasChanged();
+        }
+    }
+
+    private void OnArchiveMenuButtonClick(string rowKey)
+    {
+        openArchiveMenuRowKey = rowKey;
+    }
+
+    private void OnArchiveMenuDismiss(string rowKey)
+    {
+        if (openArchiveMenuRowKey == rowKey)
+        {
+            openArchiveMenuRowKey = null;
         }
     }
 }

@@ -37,7 +37,7 @@ else
                     <li>Normal users can always create, edit, and archive their own URL records</li>
                     <li>
                         URL record visibility:
-                        @if (normalUsersCanViewAll)
+                        @if (regularUsersCanViewAll)
                         {
                             <strong>Currently, normal users can view ALL records in the system</strong>
                         }
@@ -46,7 +46,7 @@ else
                             <strong>Currently, normal users can only view their OWN records</strong>
                         }
                     </li>
-                    <li>To change this setting, update the <code>AllowNormalUsersToViewAllRecords</code> key in your application settings</li>
+                    <li>To change this setting, update the <code>AllowRegularUsersToViewAllRecords</code> key in your application settings</li>
                 </ul>
             </FluentCard>
         }
@@ -59,7 +59,7 @@ else
                 <ul>
                     <li>Create new short URL records</li>
                     <li>View usage statistics for your URLs</li>
-                    @if (normalUsersCanViewAll)
+                    @if (regularUsersCanViewAll)
                     {
                         <li>View all short URL records in the system (but you can only modify your own)</li>
                     }
@@ -67,7 +67,7 @@ else
                     {
                         <li>View only the short URL records you have created</li>
                     }
-                    @if (normalUsersCanArchive)
+                    @if (regularUsersCanArchive)
                     {
                         <li>Edit and archive short URL records you have created</li>
                     }
@@ -99,15 +99,15 @@ else
     private bool isLoading = true;
     private bool isAdmin = false;
     private bool isUser = false;
-    private bool normalUsersCanViewAll = false;
-    private bool normalUsersCanArchive = false;
+    private bool regularUsersCanViewAll = false;
+    private bool regularUsersCanArchive = false;
 
     protected override async Task OnInitializedAsync()
     {
         isAdmin = await userService.IsAdminAsync();
         isUser = await userService.IsUserAsync();
-        normalUsersCanViewAll = userService.CanNormalUsersViewAllRecords();
-        normalUsersCanArchive = userService.CanNormalUsersArchiveRecords();
+        regularUsersCanViewAll = userService.CanRegularUsersViewAllRecords();
+        regularUsersCanArchive = userService.CanRegularUsersArchiveRecords();
         isLoading = false;
     }
 }

@@ -25,7 +25,7 @@ public class UrlManagerClient
             string requestUrl = "/api/UrlList";
 
             // If not admin and normal users can't view all records, filter by owner
-            if (!isAdmin && !_userService.CanNormalUsersViewAllRecords())
+            if (!isAdmin && !_userService.CanRegularUsersViewAllRecords())
             {
                 var currentUpn = await _userService.GetUserPrincipalNameAsync();
                 requestUrl = $"{requestUrl}?ownerUpn={Uri.EscapeDataString(currentUpn)}";
@@ -56,7 +56,7 @@ public class UrlManagerClient
             string requestUrl = $"/api/Url/{vanity}";
 
             // If not admin and normal users can't view all records, filter by owner
-            if (!isAdmin && !_userService.CanNormalUsersViewAllRecords())
+            if (!isAdmin && !_userService.CanRegularUsersViewAllRecords())
             {
                 var currentUpn = await _userService.GetUserPrincipalNameAsync();
                 requestUrl = $"{requestUrl}?ownerUpn={Uri.EscapeDataString(currentUpn)}";
@@ -120,7 +120,7 @@ public class UrlManagerClient
                 }
 
                 // Second check: users must be allowed to archive their own records
-                if (!_userService.CanNormalUsersArchiveRecords())
+                if (!_userService.CanRegularUsersArchiveRecords())
                 {
                     return false;
                 }

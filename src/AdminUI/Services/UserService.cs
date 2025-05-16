@@ -72,14 +72,14 @@ public class UserService
         return user.IsInRole("User") || user.IsInRole("Admin");
     }
 
-    public bool CanNormalUsersViewAllRecords()
+    public bool CanRegularUsersViewAllRecords()
     {
         bool canViewAll = false;
         bool.TryParse(_configuration["AllowRegularUsersToViewAllRecords"], out canViewAll);
         return canViewAll;
     }
 
-    public bool CanNormalUsersArchiveRecords()
+    public bool CanRegularUsersArchiveRecords()
     {
         bool canArchive = false;
         bool.TryParse(_configuration["AllowRegularUsersToArchiveRecords"], out canArchive);
