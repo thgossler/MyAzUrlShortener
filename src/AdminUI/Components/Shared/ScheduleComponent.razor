@@ -28,7 +28,7 @@
         <FluentLabel Typo="Typography.H6" Color="Color.FillInverse" Style="margin-bottom: 8px">Recurrences within overall period</FluentLabel>
         <FluentStack Orientation="Orientation.Vertical" HorizontalGap="10">
             <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10">
-                <FluentTextField Name="Cron" Label="Cron expression" Placeholder="* * * * *" Immediate="true" ImmediateDelay="300" @bind-Value="schedule.Cron" @bind-Value:after="OnScheduleFieldChanged" />
+                <FluentTextField @ref="_cronTextField" Name="Cron" Label="Cron expression" Placeholder="* * * * *" Immediate="true" ImmediateDelay="300" @bind-Value="schedule.Cron" @bind-Value:after="OnScheduleFieldChanged" />
                 <FluentButton Appearance="Appearance.Accent" OnClick="OpenCronDialog">Edit</FluentButton>
             </FluentStack>
             <p style="margin-left: 20px; font-style: italic">Cron helper tools:&nbsp;&nbsp;<a href="https://www.uptimia.com/cron-expression-generator" target="blank">Uptimia Cron Expression Generator</a>,&nbsp;&nbsp;<a href="https://crontab.guru/" target="blank">Crontab.guru</a></p>
@@ -36,7 +36,7 @@
     </div>
     <div>
         <FluentStack Orientation="Orientation.Vertical">
-            <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="6" Style="margin-top:4px; margin-left:2px;" Wrap="true">
+            <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" HorizontalGap="6" Style="margin-top:4px; margin-left:2px;" Wrap="true">
                 <FluentNumberField Name="DurationMinutes" Label="Duration (minutes)" @bind-Value="schedule.DurationMinutes" @bind-Value:after="OnScheduleFieldChanged" Min="0" Step="5" Style="width:100px;" />
                 <FluentButton Size="ButtonSize.Small" Title="Reset" OnClick="@(() => SetDuration(0))">0</FluentButton>
                 <FluentButton Size="ButtonSize.Small" Title="Add 1 hour" OnClick="@(() => AddDuration(60))">+h</FluentButton>
@@ -73,16 +73,18 @@
 @code {
     [Parameter]
     public Schedule schedule { get; set; } = new Schedule();
-    
+
     [Parameter]
     public EventCallback<Schedule> OnScheduleChanged { get; set; }
-    
+
     private DialogParameters dialogParameters = default!;
     private IDialogReference dialogReference;
     private IDialogService DialogService { get; set; } = default!;
 
     [Inject]
     private IDialogService _dialogService { get; set; } = default!;
+
+    private FluentTextField _cronTextField;
 
     protected override void OnInitialized()
     {
@@ -100,7 +102,7 @@
         schedule.End = new DateTimeOffset(value);
         OnScheduleChanged.InvokeAsync(schedule);
     }
-    
+
     private void OnScheduleFieldChanged()
     {
         OnScheduleChanged.InvokeAsync(schedule);
@@ -109,7 +111,7 @@
     private async Task OpenCronDialog()
     {
         var viewportWidth = await JS.InvokeAsync<int>("getViewportWidth");
-        
+
         // Create a deep copy of the schedule to preserve its state
         Schedule originalSchedule = new Schedule
         {
@@ -120,7 +122,7 @@
             DurationMinutes = schedule.DurationMinutes,
             AlternativeUrl = schedule.AlternativeUrl
         };
-        
+
         dialogParameters = new DialogParameters
         {
             Id = "EditCronDialog",
@@ -135,7 +137,7 @@
             PrimaryActionEnabled = true,
             SecondaryActionEnabled = true
         };
-        
+
         try
         {
             await JS.InvokeVoidAsync("disableFluentDialogFocusTrap", "NewUrlDialog");
@@ -149,7 +151,7 @@
                     OnSave = null
                 }, 
                 dialogParameters);
-            
+
             var result = await dialogReference.Result;
 
             await JS.InvokeVoidAsync("enableFluentDialogFocusTrap", "NewUrlDialog");
@@ -165,7 +167,9 @@
                 // Restore from our copy if cancelled
                 schedule.Cron = originalSchedule.Cron;
             }
-            
+
+            _cronTextField?.FocusAsync();
+
             // Always notify of changes to ensure parent updates 
             await OnScheduleChanged.InvokeAsync(schedule);
         }
