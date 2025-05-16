@@ -60,6 +60,12 @@ After a few seconds, you should now be in your version of the AzUrlShortener pro
 	azd config set alpha.aca.persistDomains on
 	```
 
+1. To ensure that the following command is deploying the application in Release mode, execute:
+
+    ```
+	set AZD_DOTNET_CONFIGURATION=Release
+	```
+
 1. Provision all required Azure resources and deploy the application with the following command:
 
 	```bash

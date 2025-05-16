@@ -30,6 +30,7 @@
             <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10">
                 <FluentTextField @ref="_cronTextField" Name="Cron" Label="Cron expression" Placeholder="* * * * *" Immediate="true" ImmediateDelay="300" @bind-Value="schedule.Cron" @bind-Value:after="OnScheduleFieldChanged" />
                 <FluentButton Appearance="Appearance.Accent" OnClick="OpenCronDialog">Edit</FluentButton>
+                <FluentButton Appearance="Appearance.Accent" OnClick="ResetCronExpression">Reset</FluentButton>
             </FluentStack>
             <p style="margin-left: 20px; font-style: italic">Cron helper tools:&nbsp;&nbsp;<a href="https://www.uptimia.com/cron-expression-generator" target="blank">Uptimia Cron Expression Generator</a>,&nbsp;&nbsp;<a href="https://crontab.guru/" target="blank">Crontab.guru</a></p>
         </FluentStack>
@@ -180,6 +181,13 @@
             schedule.Cron = originalSchedule.Cron;
             await OnScheduleChanged.InvokeAsync(schedule);
         }
+    }
+
+    private async Task ResetCronExpression()
+    {
+        schedule.Cron = "* * * * *";
+        _cronTextField?.FocusAsync();
+        await OnScheduleChanged.InvokeAsync(schedule);
     }
 
     private void SetDuration(int minutes)

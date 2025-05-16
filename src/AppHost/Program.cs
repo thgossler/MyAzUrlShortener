@@ -29,7 +29,14 @@ var defaultRedirectUrl = processParameterInput("DefaultRedirectUrl");
 var customDomain = processParameterInput("CustomDomain", true, "");
 var entraTenantId = processParameterInput("UserAuthEntraTenantId");
 var entraClientAppId = processParameterInput("UserAuthEntraClientAppId");
-var entraClientAppSecret = processParameterInput("UserAuthEntraClientAppSecret"); // TODO: Use Key Vault
+
+// TODO: Use Key Vault for secrets
+var entraClientAppSecret = processParameterInput("UserAuthEntraClientAppSecret");
+
+// TODO: Use Key Vault for connection strings
+var backupBlobStorageConnectionString = processParameterInput("BackupBlobStorageConnectionString", true, "");
+
+var backupSchedule = processParameterInput("BackupSchedule", true, "0 */1 * * *");
 var importTableStorageConnectionString = processParameterInput("ImportTableStorageConnectionString", true, "");
 var allowRegularUsersToViewAllRecords = processParameterInput("AllowRegularUsersToViewAllRecords", true, "true");
 var allowRegularUsersToArchiveRecords = processParameterInput("AllowRegularUsersToArchiveRecords", true, "false");
@@ -52,6 +59,8 @@ var functionApp = builder.AddAzureFunctionsProject<Projects.AzUrlShortener_Funct
                             .WithReference(azTableClient)
                             .WaitFor(azTableClient)
                             .WithEnvironment("DefaultRedirectUrl", defaultRedirectUrl)
+                            .WithEnvironment("BackupSchedule", backupSchedule)
+                            .WithEnvironment("BackupBlobStorageConnectionString", backupBlobStorageConnectionString)
                             .WithExternalHttpEndpoints();
 
 // API Web Service

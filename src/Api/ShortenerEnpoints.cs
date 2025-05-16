@@ -234,7 +234,7 @@ public static class ShortenerEnpoints
         // Get the custom domain endpoint if configured
         var customDomain = Environment.GetEnvironmentVariable("CustomDomain");
 
-        var host = !string.IsNullOrWhiteSpace(customDomain) ? customDomain : funcUrl;
+        var host = !string.IsNullOrWhiteSpace(customDomain) && !funcUrl.Contains("localhost") ? customDomain : funcUrl;
         if (string.IsNullOrWhiteSpace(host))
         {
             // Falling-back to same host/port

@@ -122,8 +122,7 @@
         var newSchedule = new Schedule { 
             Id = Guid.NewGuid(),
             Start = DateTimeOffset.Now,
-            End = DateTimeOffset.Now.AddDays(7),
-            DurationMinutes = 60
+            End = DateTimeOffset.Now.AddDays(7)
         };
         workingSchedules.Add(newSchedule);
         SyncChangesToParent();
