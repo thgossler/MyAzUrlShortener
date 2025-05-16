@@ -24,7 +24,7 @@ public class UrlManagerClient
             var isAdmin = await _userService.IsAdminAsync();
             string requestUrl = "/api/UrlList";
 
-            // If not admin and normal users can't view all records, filter by owner
+            // If not admin and regular users can't view all records, filter by owner
             if (!isAdmin && !_userService.CanRegularUsersViewAllRecords())
             {
                 var currentUpn = await _userService.GetUserPrincipalNameAsync();
@@ -55,7 +55,7 @@ public class UrlManagerClient
             var isAdmin = await _userService.IsAdminAsync();
             string requestUrl = $"/api/Url/{vanity}";
 
-            // If not admin and normal users can't view all records, filter by owner
+            // If not admin and regular users can't view all records, filter by owner
             if (!isAdmin && !_userService.CanRegularUsersViewAllRecords())
             {
                 var currentUpn = await _userService.GetUserPrincipalNameAsync();

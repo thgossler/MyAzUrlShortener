@@ -31,19 +31,19 @@ else
             </FluentCard>
 
             <FluentCard Width="100%" Height="auto" class="mb-4">
-                <h4>Normal User Permissions</h4>
-                <p>Normal users' permissions are determined by system configuration:</p>
+                <h4>Regular User Permissions</h4>
+                <p>Regular users' permissions are determined by system configuration:</p>
                 <ul>
-                    <li>Normal users can always create, edit, and archive their own URL records</li>
+                    <li>Regular users can always create, edit, and archive their own URL records</li>
                     <li>
                         URL record visibility:
                         @if (regularUsersCanViewAll)
                         {
-                            <strong>Currently, normal users can view ALL records in the system</strong>
+                            <strong>Currently, regular users can view ALL records in the system</strong>
                         }
                         else
                         {
-                            <strong>Currently, normal users can only view their OWN records</strong>
+                            <strong>Currently, regular users can only view their OWN records</strong>
                         }
                     </li>
                     <li>To change this setting, update the <code>AllowRegularUsersToViewAllRecords</code> key in your application settings</li>
