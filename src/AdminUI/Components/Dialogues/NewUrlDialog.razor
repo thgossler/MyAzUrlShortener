@@ -70,9 +70,6 @@
     private bool hasFocused;
     private int delay = 500;
     
-    // Store the original TrapFocus value
-    private bool? _originalTrapFocus;
-
     private Schedule DeepCopySchedule(Schedule s)
     {
         return new Schedule {
@@ -157,6 +154,13 @@
             );
     }
 
+    private bool HasDuplicateInList(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value == "*") return false;
+        var parts = value.Split(',').Select(p => p.Trim()).Where(p => p != "*");
+        return parts.GroupBy(x => x).Any(g => g.Count() > 1);
+    }
+
     private bool IsValidCron(string cron)
     {
         if (string.IsNullOrWhiteSpace(cron)) return false;
@@ -165,12 +169,14 @@
             // Accept only 5-part cron expressions
             var parts = cron.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length != 5) return false;
+            // Check for duplicates in day-of-month and month fields
+            if (HasDuplicateInList(parts[2]) || HasDuplicateInList(parts[3]) || HasDuplicateInList(parts[4])) return false;
             Cronos.CronExpression.Parse(cron);
             return true;
         }
         catch
         {
-            return false;
+            return false; 
         }
     }
 }

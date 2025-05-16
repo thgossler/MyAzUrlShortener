@@ -36,7 +36,7 @@
     </div>
     <div>
         <FluentStack Orientation="Orientation.Vertical">
-            <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="6" Style="margin-top:4px; margin-left:2px;">
+            <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="6" Style="margin-top:4px; margin-left:2px;" Wrap="true">
                 <FluentNumberField Name="DurationMinutes" Label="Duration (minutes)" @bind-Value="schedule.DurationMinutes" @bind-Value:after="OnScheduleFieldChanged" Min="0" Step="5" Style="width:100px;" />
                 <FluentButton Size="ButtonSize.Small" Title="Reset" OnClick="@(() => SetDuration(0))">0</FluentButton>
                 <FluentButton Size="ButtonSize.Small" Title="Add 1 hour" OnClick="@(() => AddDuration(60))">+h</FluentButton>
@@ -45,7 +45,7 @@
                 <FluentButton Size="ButtonSize.Small" Title="Add 1 month (30d)" OnClick="@(() => AddDuration(43200))">+mo</FluentButton>
                 <FluentButton Size="ButtonSize.Small" Title="Add 1 year (365d)" OnClick="@(() => AddDuration(525600))">+y</FluentButton>
             </FluentStack>
-            <FluentLabel Style="margin-left:130px; margin-top:0px; color: #666; font-size: 0.95em; font-style: italic;">
+            <FluentLabel Style="margin-left:5px; margin-top:0px; color: #666; font-size: 0.95em; font-style: italic;">
                 @GetDurationNaturalLanguage(schedule.DurationMinutes) 
             </FluentLabel>
         </FluentStack>
@@ -53,10 +53,6 @@
 </FluentStack>
 
 <script>
-    window.getViewportWidth = () => {
-        return window.innerWidth;
-    };
-
     window.disableFluentDialogFocusTrap = function(dialogId) {
         const dialog = document.getElementById(dialogId) || document.querySelector(dialogId);
         if (!dialog) return;
@@ -93,11 +89,6 @@
         DialogService = _dialogService;
     }
 
-    private async Task<int> GetViewportWidthAsync()
-    {
-        return await JS.InvokeAsync<int>("getViewportWidth");
-    }
-
     private void StartDateTimeReconcile(DateTime value)
     {
         schedule.Start = new DateTimeOffset(value);
@@ -117,7 +108,7 @@
 
     private async Task OpenCronDialog()
     {
-        var viewportWidth = await GetViewportWidthAsync();
+        var viewportWidth = await JS.InvokeAsync<int>("getViewportWidth");
         
         // Create a deep copy of the schedule to preserve its state
         Schedule originalSchedule = new Schedule
