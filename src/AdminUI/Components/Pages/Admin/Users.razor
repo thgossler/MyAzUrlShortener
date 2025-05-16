@@ -59,8 +59,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var tenantId = Configuration["UserAuth-EntraTenantId"];
-        clientAppId = Configuration["UserAuth-EntraClientAppId"];
+        var tenantId = Configuration["UserAuthEntraTenantId"];
+        clientAppId = Configuration["UserAuthEntraClientAppId"];
         azPortalUrl = "https://portal.azure.com/" + tenantId  + "/#view/Microsoft_AAD_IAM/StartboardApplicationsMenuBlade/~/AppAppsPreview/menuId~/null";
 
         var isAdmin = await userService.IsAdminAsync();

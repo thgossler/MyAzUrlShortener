@@ -11,9 +11,9 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var tenantId = builder.Configuration["UserAuth-EntraTenantId"];
-var clientId = builder.Configuration["UserAuth-EntraClientAppId"];
-var clientSecret = builder.Configuration["UserAuth-EntraClientAppSecret"];
+var tenantId = builder.Configuration["UserAuthEntraTenantId"];
+var clientId = builder.Configuration["UserAuthEntraClientAppId"];
+var clientSecret = builder.Configuration["UserAuthEntraClientAppSecret"];
 if (string.IsNullOrWhiteSpace(tenantId) || string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(clientSecret))
 {
     throw new InvalidOperationException("Missing required configuration for Entra authentication.");

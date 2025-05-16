@@ -27,9 +27,9 @@ var processParameterInput = (string name, bool mayBeEmpty = false, string defaul
 };
 var defaultRedirectUrl = processParameterInput("DefaultRedirectUrl");
 var customDomain = processParameterInput("CustomDomain", true, "");
-var entraTenantId = processParameterInput("UserAuth-EntraTenantId");
-var entraClientAppId = processParameterInput("UserAuth-EntraClientAppId");
-var entraClientAppSecret = processParameterInput("UserAuth-EntraClientAppSecret"); // TODO: Use Key Vault
+var entraTenantId = processParameterInput("UserAuthEntraTenantId");
+var entraClientAppId = processParameterInput("UserAuthEntraClientAppId");
+var entraClientAppSecret = processParameterInput("UserAuthEntraClientAppSecret"); // TODO: Use Key Vault
 var importTableStorageConnectionString = processParameterInput("ImportTableStorageConnectionString", true, "");
 var allowRegularUsersToViewAllRecords = processParameterInput("AllowRegularUsersToViewAllRecords", true, "true");
 var allowRegularUsersToArchiveRecords = processParameterInput("AllowRegularUsersToArchiveRecords", true, "false");
@@ -68,9 +68,9 @@ var apiService = builder.AddProject<Projects.AzUrlShortener_Api>("api")
 builder.AddProject<Projects.AzUrlShortener_AdminUI>("admin-ui")
         .WithReference(apiService)
         .WithExternalHttpEndpoints()
-        .WithEnvironment("UserAuth-EntraTenantId", entraTenantId)
-        .WithEnvironment("UserAuth-EntraClientAppId", entraClientAppId)
-        .WithEnvironment("UserAuth-EntraClientAppSecret", entraClientAppSecret)
+        .WithEnvironment("UserAuthEntraTenantId", entraTenantId)
+        .WithEnvironment("UserAuthEntraClientAppId", entraClientAppId)
+        .WithEnvironment("UserAuthEntraClientAppSecret", entraClientAppSecret)
         .WithEnvironment("PrimaryColor", primaryColor)
         .WithEnvironment("LogoUrl", headerLogoUrl)
         .WithEnvironment("FooterLeftHtml", footerLeftHtml)
