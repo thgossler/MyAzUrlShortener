@@ -287,7 +287,7 @@
     IQueryable<ShortUrlEntity> urlList;
     IQueryable<ShortUrlEntity> filteredUrlList;
     FluentDataGrid<ShortUrlEntity> _dataGrid;
-    PaginationState pagination = new PaginationState { ItemsPerPage = 100 };
+    PaginationState pagination = new PaginationState { ItemsPerPage = 25 };
     ShortUrlRequest shortUrlRequest = new ShortUrlRequest();
     ShortUrlEntity editedUrl = new ShortUrlEntity();
 
@@ -295,11 +295,36 @@
     GridSort<ShortUrlEntity> sortBySchedules = GridSort<ShortUrlEntity>.ByDescending(p => p.Schedules.Count);
     GridSort<ShortUrlEntity> sortByVanities = GridSort<ShortUrlEntity>.ByAscending(p => p.RowKey);
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                // If we have cached data, use it immediately and avoid the loading state
+                if (dataHasBeenLoadedBefore && cachedUrlList != null && cachedUrlList.Count > 0)
+                {
+                    urlList = cachedUrlList.AsQueryable();
+                    FilterUrls();
+                    StateHasChanged();
+                }
+            }
+            catch (Exception) { }
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+
     protected override async Task OnInitializedAsync()
     {
+        isAdmin = await userService.IsAdminAsync();
+        currentUserUpn = await userService.GetUserPrincipalNameAsync();
+        canRegularUsersArchiveRecords = userService.CanRegularUsersArchiveRecords();
+
         importConnectionString = Configuration["ImportTableStorageConnectionString"] ?? string.Empty;
 
-        // Load persisted checkbox state from local storage FIRST
+        // Load persisted checkbox state from local storage
         try
         {
             var storedValue = await JSRuntime.InvokeAsync<string>("localStorage.getItem", ShowOnlyMyRecordsKey);
@@ -310,19 +335,8 @@
         }
         catch (Exception) { }
 
-        isAdmin = await userService.IsAdminAsync();
-        currentUserUpn = await userService.GetUserPrincipalNameAsync();
-        canRegularUsersArchiveRecords = userService.CanRegularUsersArchiveRecords();
-
-        // If we have cached data, use it immediately and avoid the loading state
-        if (dataHasBeenLoadedBefore && cachedUrlList != null && cachedUrlList.Count > 0)
+        if (!dataHasBeenLoadedBefore || cachedUrlList == null || cachedUrlList.Count == 0)
         {
-            urlList = cachedUrlList.AsQueryable();
-            FilterUrls();
-        }
-        else
-        {
-            // Only show loading indicator on first load
             isLoading = true;
             await RefreshGrid();
             dataHasBeenLoadedBefore = true;
