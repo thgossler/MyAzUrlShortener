@@ -195,7 +195,7 @@ namespace AzUrlShortener.Core.Domain
         public static bool Validate(string url, string vanity, string title, Schedule[] schedules)
         {
             if (string.IsNullOrWhiteSpace(url)) return false;
-            if (!Regex.Match(url, "^http[s]://[0-9a-zA-Z]+.*", RegexOptions.IgnoreCase).Success) return false;
+            if (!Regex.Match(url, "^http[s]*://[0-9a-zA-Z]+.*", RegexOptions.IgnoreCase).Success) return false;
 
             if (string.IsNullOrWhiteSpace(vanity)) return false;
             if (!Regex.Match(vanity, "^[0-9a-zA-Z-_]+$", RegexOptions.IgnoreCase).Success) return false;

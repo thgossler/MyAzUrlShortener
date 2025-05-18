@@ -3,24 +3,28 @@
 @implements IDialogContentComponent<CronEditorDialogParameters>
 @inject IJSRuntime JS
 
-<FluentDialogHeader ShowDismiss="false" TabIndex="-1">
-    <FluentStack VerticalAlignment="VerticalAlignment.Center">
-        <FluentIcon Value="@(new Icons.Regular.Size24.WindowApps())" />
-        <FluentLabel Typo="Typography.PaneHeader">
-            @Dialog?.Instance?.Parameters?.Title
-        </FluentLabel>
-    </FluentStack>
-</FluentDialogHeader>
+<div tabindex="0" onkeydown:window="HandleDialogKeyDown">
+    <FluentDialog>
+        <FluentDialogHeader ShowDismiss="false" TabIndex="-1">
+            <FluentStack VerticalAlignment="VerticalAlignment.Center">
+                <FluentIcon Value="@(new Icons.Regular.Size24.WindowApps())" />
+                <FluentLabel Typo="Typography.PaneHeader">
+                    @Dialog?.Instance?.Parameters?.Title
+                </FluentLabel>
+            </FluentStack>
+        </FluentDialogHeader>
 
-<div class="cron-editor-dialog">
-    <div style="width: 100%; padding: 10px;" @onkeydown="HandleKeyDown">
-        <CrontabEditorComponent @ref="cronEditor" />
-    </div>
+        <div class="cron-editor-dialog">
+            <div style="width: 100%; padding: 10px;">
+                <CrontabEditorComponent @ref="cronEditor" />
+            </div>
 
-    <FluentDialogFooter>
-        <FluentButton Appearance="Appearance.Accent" OnClick="@SaveAsync">OK</FluentButton>
-        <FluentButton Appearance="Appearance.Neutral" OnClick="@CancelAsync">Cancel</FluentButton>
-    </FluentDialogFooter>
+            <FluentDialogFooter>
+                <FluentButton Appearance="Appearance.Accent" OnClick="@SaveAsync">OK</FluentButton>
+                <FluentButton Appearance="Appearance.Neutral" OnClick="@CancelAsync">Cancel</FluentButton>
+            </FluentDialogFooter>
+        </div>
+    </FluentDialog>
 </div>
 
 @code {
@@ -58,6 +62,18 @@
     }
 
     private async Task HandleKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+        {
+            await CancelAsync();
+        }
+        else if (args.Key == "Enter" && !args.ShiftKey && !args.CtrlKey && !args.AltKey)
+        {
+            await SaveAsync();
+        }
+    }
+
+    private async void HandleDialogKeyDown(KeyboardEventArgs args)
     {
         if (args.Key == "Escape")
         {

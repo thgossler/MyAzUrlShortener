@@ -1,0 +1,56 @@
+@using Microsoft.FluentUI.AspNetCore.Components
+@implements IDialogContentComponent<DeleteShortUrlDialog.DeleteShortUrlParameters>
+
+<div tabindex="-1" onkeydown:window="@HandleKeyDown">
+
+<FluentDialogHeader>
+    <FluentIcon Value="@(new Icons.Regular.Size24.Delete())" Style="color: #f44336;" />
+    <span>Delete Short URL</span>
+</FluentDialogHeader>
+
+<FluentDialogBody>
+    <p>@Content.Message</p>
+    <p><b>Are you sure you want to proceed?</b></p>
+</FluentDialogBody>
+
+<FluentDialogFooter>
+    <FluentButton Appearance="Appearance.Accent" OnClick="Cancel" Autofocus="true">Cancel</FluentButton>
+    <FluentButton Appearance="Appearance.Neutral" Style="background-color: var(--color-danger, #f44336); color: white;" OnClick="Proceed">Proceed</FluentButton>
+</FluentDialogFooter>
+
+</div>
+
+@code {
+    [CascadingParameter]
+    public FluentDialog Dialog { get; set; } = default!;
+
+    [Parameter]
+    public DeleteShortUrlParameters Content { get; set; } = default!;
+
+    public class DeleteShortUrlParameters
+    {
+        public string Message { get; set; } = string.Empty;
+    }
+
+    private async Task Cancel()
+    {
+        await Dialog.CancelAsync();
+    }
+
+    private async Task Proceed()
+    {
+        await Dialog.CloseAsync(true);
+    }
+
+    private async void HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            await Cancel();
+        }
+        else if (e.Key == "Enter")
+        {
+            await Proceed();
+        }
+    }
+}

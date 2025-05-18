@@ -252,4 +252,36 @@ public class AzStorageTableService(TableServiceClient client) : IAzStorageTableS
     {
         var result = await GetStatsTable().UpsertEntityAsync(newStats);
     }
+
+    public async Task<bool> DeleteShortUrlEntity(string vanity)
+    {
+        var tblUrls = GetUrlsTable();
+        var entity = await GetShortUrlEntityByVanity(vanity);
+        if (entity == null)
+            return false;
+        await tblUrls.DeleteEntityAsync(entity.PartitionKey, entity.RowKey);
+        return true;
+    }
+
+    public async Task<ShortUrlEntity> CloneShortUrlEntity(string sourceVanity, string newVanity)
+    {
+        var source = await GetShortUrlEntityByVanity(sourceVanity);
+        if (source == null)
+            return null;
+        var clone = ShortUrlEntity.GetNewEntity(source.Url, newVanity, source.Title, source.Schedules?.ToArray(), source.OwnerUpn);
+        clone.Clicks = source.Clicks;
+        clone.IsArchived = false;
+        await SaveShortUrlEntity(clone);
+        return clone;
+    }
+
+    public async Task<ShortUrlEntity> ReactivateShortUrlEntity(string vanity)
+    {
+        var entity = await GetShortUrlEntityByVanity(vanity);
+        if (entity == null)
+            return null;
+        entity.IsArchived = false;
+        await SaveShortUrlEntity(entity);
+        return entity;
+    }
 }

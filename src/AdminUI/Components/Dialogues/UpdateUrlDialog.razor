@@ -7,8 +7,12 @@
 @using System.Text.RegularExpressions
 @implements IDialogContentComponent<ShortUrlEntity>
 @inject UserService userService
+@inject IDialogService DialogService
+@inject IJSRuntime JSRuntime
 
 @rendermode InteractiveServer
+
+<div tabindex="-1" onkeydown:window="@HandleKeyDown">
 
 <FluentDialogHeader ShowDismiss="false" TabIndex="-1">
     <FluentStack VerticalAlignment="VerticalAlignment.Center">
@@ -54,18 +58,32 @@
 
             <div>
                 <SchedulesComponent Schedules="_editableSchedules" 
-                                   OnEdit="OnSchedulesEdit" />
+                                    OnEdit="OnSchedulesEdit" />
             </div>
 
         </FluentStack>
     </EditForm>
-
 </FluentDialogBody>
 
 <FluentDialogFooter>
-    <FluentButton Appearance="Appearance.Accent" Disabled="@(!_shortUrl.Validate() || HasInvalidInput())" OnClick="@SaveAsync">Save</FluentButton>
-    <FluentButton Appearance="Appearance.Neutral" OnClick="@CancelAsync">Cancel</FluentButton>
+    <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Style="width: 100%;">
+        <div id="rename-button">
+            <FluentButton Appearance="Appearance.Neutral" Disabled="@(!_isAdmin)" OnClick="@ShowRenameDialog">Rename</FluentButton>
+            @if (!_isAdmin)
+            {
+                <FluentTooltip Anchor="rename-button">
+                    Only administrators can rename the vanity of URL records
+                </FluentTooltip>
+            }
+        </div>
+        <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.Right" Style="gap: 0.5rem;">
+            <FluentButton Appearance="Appearance.Accent" Disabled="@(!_shortUrl.Validate() || HasInvalidInput())" OnClick="@SaveAsync">Save</FluentButton>
+            <FluentButton Appearance="Appearance.Neutral" OnClick="@CancelAsync">Cancel</FluentButton>
+        </FluentStack>
+    </FluentStack>
 </FluentDialogFooter>
+
+</div>
 
 @code {
     [Parameter]
@@ -74,13 +92,24 @@
     [CascadingParameter]
     public FluentDialog Dialog { get; set; } = default!;
 
+    public class RenameResult
+    {
+        public bool IsRename { get; set; }
+        public string NewVanity { get; set; }
+        public ShortUrlEntity OldEntity { get; set; }
+    }
+
     private ShortUrlEntity _shortUrl = new ShortUrlEntity();
     private FluentTextField _titleInput = default!;
     private bool hasFocused;
     private bool _isAdmin = false;
     private List<Schedule> _originalSchedules = new();
     private List<Schedule> _editableSchedules = new();
-    
+    private bool showRenameConfirmDialog = false;
+    private bool showNewVanityDialog = false;
+    private bool _newVanityDialogWasShown = false;
+    private static bool _isOtherDialogOpen = false;
+
     private Schedule DeepCopySchedule(Schedule s)
     {
         return new Schedule {
@@ -97,34 +126,36 @@
     protected override async Task OnInitializedAsync()
     {
         _shortUrl = Content;
-        
+
         // Store original schedules in _originalSchedules with deep copy
         _originalSchedules = _shortUrl.Schedules?.Select(DeepCopySchedule).ToList() ?? new List<Schedule>();
-        
+
         // Create a separate editable list for the UI
         _editableSchedules = _shortUrl.Schedules?.Select(DeepCopySchedule).ToList() ?? new List<Schedule>();
-        
+
         // Initialize schedule lists if null
         if (_shortUrl.Schedules == null)
             _shortUrl.Schedules = new List<Schedule>();
-            
+
         _isAdmin = await userService.IsAdminAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !hasFocused)
+        if (firstRender && !hasFocused && !_isOtherDialogOpen)
         {
             hasFocused = true;
             _titleInput?.FocusAsync();
         }
+
+        await base.OnAfterRenderAsync(firstRender);
     }
 
     private void ToggleDialogPrimaryActionButton(bool enable)
     {
         Dialog!.TogglePrimaryActionButton(enable);
     }
-    
+
     private async Task SaveAsync()
     {
         if (_shortUrl.Validate() && !HasInvalidInput())
@@ -161,7 +192,7 @@
     private bool HasInvalidInput() {
         return _editableSchedules != null && 
             _editableSchedules.Any(s => 
-                !Regex.Match(s.AlternativeUrl, "^http[s]://[0-9a-zA-Z]+.*", RegexOptions.IgnoreCase).Success
+                !Regex.Match(s.AlternativeUrl, "^http[s]*://[0-9a-zA-Z]+.*", RegexOptions.IgnoreCase).Success
                 || !IsValidCron(s.Cron)
                 || s.DurationMinutes <= 0
             );
@@ -190,6 +221,50 @@
         catch
         {
             return false;
+        }
+    }
+
+    private async Task ShowRenameDialog()
+    {
+        var parameters = new RenameConfirmDialog.RenameVanityParameters
+        {
+            Vanity = _shortUrl.Vanity
+        };
+
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("disableFluentDialogFocusTrap", "UpdateUrlDialog");
+            _isOtherDialogOpen = true;
+
+            var dialog = await DialogService.ShowDialogAsync<RenameConfirmDialog>(parameters, new DialogParameters
+            {
+                Id = "RenameConfirmDialog",
+                Title = "Rename Vanity",
+                PreventDismissOnOverlayClick = true,
+                ShowDismiss = false,
+                PreventScroll = true,
+                TrapFocus = true
+            });
+            var result = await dialog.Result;
+
+            await JSRuntime.InvokeVoidAsync("enableFluentDialogFocusTrap", "UpdateUrlDialog");
+
+            if (!result.Cancelled && result.Data is string newVanity)
+            {
+                if (!string.IsNullOrWhiteSpace(newVanity))
+                {
+                    var renameResult = new RenameResult { IsRename = true, NewVanity = newVanity, OldEntity = _shortUrl };
+                    await Dialog!.CloseAsync(renameResult);
+                }
+                else
+                {
+                    await Dialog!.CancelAsync();
+                }
+            }
+        }
+        finally
+        {
+            _isOtherDialogOpen = false;
         }
     }
 }

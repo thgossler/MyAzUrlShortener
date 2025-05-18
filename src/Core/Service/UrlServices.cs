@@ -25,6 +25,7 @@ public class UrlServices
         ShortUrlEntity result = await _tableService.ArchiveShortUrlEntity(input);
         return result;
     }
+
     public async Task<string> Redirect(string shortUrl)
     {
         string defaultUrl = Environment.GetEnvironmentVariable("DefaultRedirectUrl") ?? "https://azure.com";
@@ -102,8 +103,7 @@ public class UrlServices
         return result;
     }
 
-
-    public async Task<ShortUrlEntity> Get(string host, string vanity, string ownerUpn = null)
+    public async Task<ShortUrlEntity> Get(string host, string vanity, string ownerUpn = null, bool includeArchived = false)
     {
         _logger.LogInformation($"Starting UrlByVanity...");
 
@@ -119,8 +119,8 @@ public class UrlServices
                 return null;
             }
 
-            // Filter out archived URLs
-            if (url.IsArchived ?? false)
+            // Only filter out archived URLs if includeArchived is false
+            if (!includeArchived && (url.IsArchived ?? false))
             {
                 return null;
             }
@@ -145,14 +145,12 @@ public class UrlServices
         return result;
     }
 
-
     public async Task<ShortResponse> Create(ShortRequest input, string host)
     {
         ShortResponse result;
 
         try
         {
-
             // If the Url parameter only contains whitespaces or is empty return with BadRequest.
             if (string.IsNullOrWhiteSpace(input.Url))
             {
@@ -160,7 +158,7 @@ public class UrlServices
             }
 
             // Validates if input.url is a valid aboslute url, aka is a complete refrence to the resource, ex: http(s)://google.com
-            if (!Regex.Match(input.Url, "^http[s]://[0-9a-zA-Z]+.*", RegexOptions.IgnoreCase).Success)
+            if (!Regex.Match(input.Url, "^http[s]*://[0-9a-zA-Z]+.*", RegexOptions.IgnoreCase).Success)
             {
                 throw new AzUrlShortenerException(HttpStatusCode.BadRequest, $"{input.Url} is not a valid absolute Url. The Url parameter must start with 'http://' or 'http://'.");
             }
@@ -177,9 +175,17 @@ public class UrlServices
             {
                 newRow = new ShortUrlEntity(longUrl, vanity, title, input.Schedules, ownerUpn);
 
-                if (await _tableService.IfShortUrlEntityExist(newRow))
+                var existing = await _tableService.GetShortUrlEntityByVanity(vanity);
+                if (existing != null)
                 {
-                    throw new AzUrlShortenerException(HttpStatusCode.Conflict, "This Short URL already exist.");
+                    if (existing.IsArchived ?? false)
+                    {
+                        throw new AzUrlShortenerException(HttpStatusCode.Conflict, "This Short URL exists but is archived.");
+                    }
+                    else
+                    {
+                        throw new AzUrlShortenerException(HttpStatusCode.Conflict, "This Short URL already exist.");
+                    }
                 }
             }
             else
@@ -225,7 +231,6 @@ public class UrlServices
 
             result = await _tableService.UpdateShortUrlEntity(input);
             result.ShortUrl = Utility.GetShortUrl(host, result.Vanity);
-
         }
         catch (Exception ex)
         {
@@ -258,6 +263,21 @@ public class UrlServices
             throw;
         }
         return result;
+    }
+
+    public async Task<bool> Delete(string vanity)
+    {
+        return await _tableService.DeleteShortUrlEntity(vanity);
+    }
+
+    public async Task<ShortUrlEntity> Clone(string sourceVanity, string newVanity)
+    {
+        return await _tableService.CloneShortUrlEntity(sourceVanity, newVanity);
+    }
+
+    public async Task<ShortUrlEntity> Reactivate(string vanity)
+    {
+        return await _tableService.ReactivateShortUrlEntity(vanity);
     }
 }
 

@@ -1,0 +1,56 @@
+@using Microsoft.FluentUI.AspNetCore.Components
+@implements IDialogContentComponent<ReactivateVanityDialog.ReactivateVanityParameters>
+
+<div tabindex="-1" onkeydown:window="@HandleKeyDown">
+
+<FluentDialogHeader>
+    <FluentIcon Value="@(new Icons.Regular.Size24.ArrowSync())" Style="color: #f44336;" />
+    <span>Reactivate Archived Vanity</span>
+</FluentDialogHeader>
+
+<FluentDialogBody>
+    <p>The vanity '<b>@Content.Vanity</b>' exists but is archived. Would you like to reactivate it?</p>
+    <p><b>Reactivating will restore the previous record. This may overwrite any new data you entered.</b></p>
+</FluentDialogBody>
+
+<FluentDialogFooter>
+    <FluentButton Appearance="Appearance.Accent" OnClick="Cancel" Autofocus="true">Cancel</FluentButton>
+    <FluentButton Appearance="Appearance.Neutral" Style="background-color: var(--color-danger, #f44336); color: white;" OnClick="Proceed">Reactivate</FluentButton>
+</FluentDialogFooter>
+
+</div>
+
+@code {
+    [CascadingParameter]
+    public FluentDialog Dialog { get; set; } = default!;
+
+    [Parameter]
+    public ReactivateVanityParameters Content { get; set; } = default!;
+
+    public class ReactivateVanityParameters
+    {
+        public string Vanity { get; set; } = string.Empty;
+    }
+
+    private async Task Cancel()
+    {
+        await Dialog.CancelAsync();
+    }
+
+    private async Task Proceed()
+    {
+        await Dialog.CloseAsync(true);
+    }
+
+    private async void HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            await Cancel();
+        }
+        else if (e.Key == "Enter")
+        {
+            await Proceed();
+        }
+    }
+}

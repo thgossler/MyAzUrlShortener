@@ -53,13 +53,13 @@ public class UrlManagerClient
         {
             // Check if user is admin
             var isAdmin = await _userService.IsAdminAsync();
-            string requestUrl = $"/api/Url/{vanity}";
+            string requestUrl = $"/api/Url/{vanity}?includeArchived=true";
 
             // If not admin and regular users can't view all records, filter by owner
             if (!isAdmin && !_userService.CanRegularUsersViewAllRecords())
             {
                 var currentUpn = await _userService.GetUserPrincipalNameAsync();
-                requestUrl = $"{requestUrl}?ownerUpn={Uri.EscapeDataString(currentUpn)}";
+                requestUrl += $"&ownerUpn={Uri.EscapeDataString(currentUpn)}";
             }
 
             using var response = await _httpClient.GetAsync(requestUrl);
@@ -195,6 +195,65 @@ public class UrlManagerClient
             Console.WriteLine(ex.Message);
         }
 
+        return null;
+    }
+
+    public async Task<bool> UrlDelete(string vanity)
+    {
+        try
+        {
+            var isAdmin = await _userService.IsAdminAsync();
+            if (!isAdmin) return false;
+            using var response = await _httpClient.PostAsJsonAsync("/api/UrlDelete", vanity);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+        return false;
+    }
+
+    public async Task<ShortUrlEntity> UrlClone(string sourceVanity, string newVanity)
+    {
+        try
+        {
+            var isAdmin = await _userService.IsAdminAsync();
+            if (!isAdmin) return null;
+            var req = new { SourceVanity = sourceVanity, NewVanity = newVanity };
+            using var response = await _httpClient.PostAsJsonAsync("/api/UrlClone", req);
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<ShortUrlEntity>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+        return null;
+    }
+
+    public async Task<ShortUrlEntity> UrlReactivate(string vanity, string ownerUpn)
+    {
+        try
+        {
+            var currentUserUpn = await _userService.GetUserPrincipalNameAsync();
+            var isAdmin = await _userService.IsAdminAsync();
+            var isOwner = string.Equals(ownerUpn, currentUserUpn, StringComparison.OrdinalIgnoreCase);
+            var canArchive = isAdmin || (isOwner && _userService.CanRegularUsersArchiveRecords());
+            if (!canArchive) return null;
+
+            using var response = await _httpClient.PostAsJsonAsync("/api/UrlReactivate", vanity);
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<ShortUrlEntity>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
         return null;
     }
 }

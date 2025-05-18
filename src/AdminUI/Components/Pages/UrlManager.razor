@@ -31,12 +31,12 @@
             <FluentButton OnClick="@(ManualRefresh)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.ArrowSync())"><div class="hide-on-small-height-displays">Refresh</div></FluentButton>
 
             <div class="hide-on-small-sized-displays">
-                @if (filteredUrlList == null || !filteredUrlList.Any())
+                @if ((filteredUrlList == null || !filteredUrlList.Any()) && isAdmin)
                 {
                     <FluentButton OnClick="@(AddExampleData)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.DataHistogram())">Add example data</FluentButton>
                 }
 
-                @if (!string.IsNullOrWhiteSpace(importConnectionString))
+                @if (!string.IsNullOrWhiteSpace(importConnectionString) && isAdmin)
                 {
                     <FluentButton OnClick="@(ImportRecords)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.ArrowUpload())">Import records</FluentButton>
                 }
@@ -152,7 +152,6 @@
                     @{
                         var isOwner = string.Equals(context!.OwnerUpn, currentUserUpn, StringComparison.OrdinalIgnoreCase);
                         var canModify = isAdmin || isOwner;
-                        var canRegularUsersArchiveRecords = userService.CanRegularUsersArchiveRecords();
                         var canArchive = isAdmin || (isOwner && canRegularUsersArchiveRecords);
                     }
 
@@ -187,7 +186,15 @@
                                     <FluentMenuItem @onclick="@(async () => { await ArchiveShortUrl(context); })">
                                         <FluentIcon Value="@(new Icons.Regular.Size16.Archive())" Color="@Color.Neutral" Slot="start" />
                                         Archive
-                                    </FluentMenuItem> 
+                                    </FluentMenuItem>
+                                    <FluentDivider />
+                                    @if (isAdmin)
+                                    {
+                                        <FluentMenuItem @onclick="@(async () => await ConfirmDeleteShortUrl(context))">
+                                            <FluentIcon Value="@(new Icons.Regular.Size16.Delete())" Color="@Color.Neutral" Slot="start" />
+                                            Delete
+                                        </FluentMenuItem>
+                                    }
                                 </FluentMenu>
                             }
                             else 
@@ -249,14 +256,13 @@
     }
 </style>
 
-<script src="/js/helpers.js"></script>
-
 @code {
 
     private ListResponse urls = new ListResponse();
     private bool isAdmin = false;
     private string searchText = string.Empty;
     private string currentUserUpn = string.Empty;
+    private bool canRegularUsersArchiveRecords;
     private bool showOnlyMyRecords = false;
 
     private string importConnectionString;
@@ -288,6 +294,7 @@
 
         isAdmin = await userService.IsAdminAsync();
         currentUserUpn = await userService.GetUserPrincipalNameAsync();
+        canRegularUsersArchiveRecords = userService.CanRegularUsersArchiveRecords();
 
         // If we have cached data, use it immediately and avoid the loading state
         if (dataHasBeenLoadedBefore && cachedUrlList != null && cachedUrlList.Count > 0)
@@ -404,20 +411,20 @@
 
         shortUrlRequest = new ShortUrlRequest();
         var dialog = await DialogService.ShowDialogAsync<NewUrlDialog>(shortUrlRequest, new DialogParameters()
-            {
-                Id = "NewUrlDialog",
-                Title = "Create a new short URL record",
-                PreventDismissOnOverlayClick = true,
-                PreventScroll = true,
-                TrapFocus = true,
-                Width = viewportWidth > 600 ? "700px" : $"{viewportWidth}px",
+        {
+            Id = "NewUrlDialog",
+            Title = "Create a new short URL record",
+            PreventDismissOnOverlayClick = true,
+            ShowDismiss = false,
+            PreventScroll = true,
+            TrapFocus = true,
+            Width = viewportWidth > 600 ? "700px" : $"{viewportWidth}px",
         });
 
         var result = await dialog.Result;
         if (!result.Cancelled && result.Data != null)
         {
             var dialogData = (ShortUrlRequest)result.Data;
-
             var urlRequest = new ShortRequest
                 {
                     Title = dialogData.Title ?? string.Empty,
@@ -428,6 +435,24 @@
 
             try
             {
+                var existing = await urlManager.GetUrlByVanity(urlRequest.Vanity);
+                if (existing != null)
+                {
+                    var isOwner = string.Equals(existing.OwnerUpn, currentUserUpn, StringComparison.OrdinalIgnoreCase);
+                    var canArchive = isAdmin || (isOwner && canRegularUsersArchiveRecords);
+                    if ((existing.IsArchived ?? false) && canArchive)
+                    {
+                        // Vanity exists but is archived, offer to reactivate
+                        await ShowReactivateVanityDialog(urlRequest.Vanity, existing.OwnerUpn);
+                        return;
+                    }
+                    else
+                    {
+                        toastService.ShowError("A short URL with this vanity already exists.");
+                        return;
+                    }
+                }
+
                 var response = await urlManager.UrlCreate(urlRequest);
                 if (response.Item1)
                 {
@@ -467,25 +492,31 @@
         var viewportWidth = await JS.InvokeAsync<int>("getViewportWidth");
 
         var dialog = await DialogService.ShowDialogAsync<UpdateUrlDialog>(urlEntity, new DialogParameters()
-            {
-                Id = "UpdateUrlDialog",
-                Title = $"Update short URL record for '{urlEntity.Vanity}'",
-                PreventDismissOnOverlayClick = true,
-                PreventScroll = true,
-                TrapFocus = true,
-                Width = viewportWidth > 600 ? "700px" : $"{viewportWidth}px",
+        {
+            Id = "UpdateUrlDialog",
+            Title = $"Update short URL record for '{urlEntity.Vanity}'",
+            PreventDismissOnOverlayClick = true,
+            ShowDismiss = false,
+            PreventScroll = true,
+            TrapFocus = true,
+            Width = viewportWidth > 600 ? "700px" : $"{viewportWidth}px" 
         });
 
         var result = await dialog.Result;
         if (!result.Cancelled && result.Data != null)
         {
-            var dialogData = (ShortUrlEntity)result.Data;
-
-            var response = await urlManager.UrlUpdate(urlEntity);
-            if (response != null)
+            if (result.Data is ShortUrlEntity dialogData)
             {
-                await UpdateUIList();
-                toastService.ShowSuccess("Short URL updated successfully");
+                var response = await urlManager.UrlUpdate(urlEntity);
+                if (response != null)
+                {
+                    await UpdateUIList();
+                    toastService.ShowSuccess("Short URL updated successfully");
+                }
+            }
+            else if (result.Data is UpdateUrlDialog.RenameResult renameResult)
+            {
+                await RenameShortUrl(renameResult.OldEntity, renameResult.NewVanity);
             }
         }
     }
@@ -521,6 +552,60 @@
         else
         {
             toastService.ShowError("Not authorized to archive this URL");
+        }
+    }
+
+    private async Task ConfirmDeleteShortUrl(ShortUrlEntity urlEntity)
+    {
+        var parameters = new DeleteShortUrlDialog.DeleteShortUrlParameters
+        {
+            Message = $@"Deleting a short URL is not recommended. This will permanently remove the record from the system. 
+Supposed-to-be stable URLs will be broken, and the same vanity could be reused for a completely different purpose, which may be misleading for users who have bookmarked or shared the original link."
+        };
+        var dialog = await DialogService.ShowDialogAsync<DeleteShortUrlDialog>(parameters, new DialogParameters
+        {
+            Id = "DeleteShortUrlDialog",
+            Title = "Delete Short URL",
+            PreventDismissOnOverlayClick = true,
+            ShowDismiss = false,
+            PreventScroll = true,
+            TrapFocus = true
+        });
+        var result = await dialog.Result;
+        if (!result.Cancelled && result.Data is bool proceed && proceed)
+        {
+            var deleteResult = await urlManager.UrlDelete(urlEntity.Vanity);
+            if (deleteResult)
+            {
+                await UpdateUIList();
+                toastService.ShowSuccess("Short URL deleted successfully");
+            }
+            else
+            {
+                toastService.ShowError("Failed to delete short URL");
+            }
+        }
+    }
+
+    private async Task ShowReactivateVanityDialog(string vanity, string ownerUpn)
+    {
+        var parameters = new ReactivateVanityDialog.ReactivateVanityParameters
+        {
+            Vanity = vanity
+        };
+        var dialog = await DialogService.ShowDialogAsync<ReactivateVanityDialog>(parameters, new DialogParameters
+        {
+            Id = "ReactivateVanityDialog",
+            Title = "Reactivate Archived Vanity",
+            PreventDismissOnOverlayClick = true,
+            ShowDismiss = false,
+            PreventScroll = true,
+            TrapFocus = true
+        });
+        var result = await dialog.Result;
+        if (!result.Cancelled && result.Data is bool proceed && proceed)
+        {
+            await ReactivateVanity(vanity, ownerUpn);
         }
     }
 
@@ -651,6 +736,36 @@
             isLoading = false;
             importInProgress = false;
             StateHasChanged();
+        }
+    }
+
+    public async Task RenameShortUrl(ShortUrlEntity oldEntity, string newVanity)
+    {
+        if (!isAdmin) return;
+        var clone = await urlManager.UrlClone(oldEntity.Vanity, newVanity);
+        if (clone != null)
+        {
+            await urlManager.UrlDelete(oldEntity.Vanity);
+            await UpdateUIList();
+            toastService.ShowSuccess($"Short URL renamed to '{newVanity}'");
+        }
+        else
+        {
+            toastService.ShowError("Failed to rename short URL");
+        }
+    }
+
+    private async Task ReactivateVanity(string vanity, string ownerUpn)
+    {
+        var entity = await urlManager.UrlReactivate(vanity, ownerUpn);
+        if (entity != null)
+        {
+            await UpdateUIList();
+            toastService.ShowSuccess($"Vanity '{vanity}' reactivated successfully");
+        }
+        else
+        {
+            toastService.ShowError($"Failed to reactivate vanity '{vanity}'");
         }
     }
 }

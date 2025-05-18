@@ -15,4 +15,7 @@ public interface IAzStorageTableService
     Task<ShortUrlEntity> ArchiveShortUrlEntity(ShortUrlEntity urlEntity, string ownerUpn = null);
     Task<List<ClickStatsEntity>> GetAllStatsByVanity(string vanity, string ownerUpn = null);
     Task SaveClickStatsEntity(ClickStatsEntity newStats);
+    Task<bool> DeleteShortUrlEntity(string vanity);
+    Task<ShortUrlEntity> CloneShortUrlEntity(string sourceVanity, string newVanity);
+    Task<ShortUrlEntity> ReactivateShortUrlEntity(string vanity);
 }

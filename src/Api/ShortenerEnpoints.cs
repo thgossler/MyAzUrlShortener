@@ -4,6 +4,7 @@ using AzUrlShortener.Core.Messages;
 using AzUrlShortener.Core.Service;
 using AzUrlShortener.Core.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using System.Net;
 
 public static class ShortenerEnpoints
@@ -45,6 +46,17 @@ public static class ShortenerEnpoints
             .WithDescription("Provide Click Statistics by Day")
             .WithDisplayName("Url Click Statistics By Day");
 
+        endpoints.MapPost("/UrlDelete", UrlDelete)
+            .WithDescription("Delete a Url")
+            .WithDisplayName("Url Delete");
+
+        endpoints.MapPost("/UrlClone", UrlClone)
+            .WithDescription("Clone a Url")
+            .WithDisplayName("Url Clone");
+
+        endpoints.MapPost("/UrlReactivate", UrlReactivate)
+            .WithDescription("Reactivate a Url")
+            .WithDisplayName("Url Reactivate");
     }
 
     private static string GetWelcomeMessage()
@@ -209,9 +221,15 @@ public static class ShortenerEnpoints
 
             // Get the ownerUpn query parameter if it exists
             string ownerUpn = context.Request.Query["ownerUpn"];
+            // Get the includeArchived query parameter if it exists
+            bool includeArchived = false;
+            if (context.Request.Query.ContainsKey("includeArchived"))
+            {
+                bool.TryParse(context.Request.Query["includeArchived"], out includeArchived);
+            }
 
-            // Pass the ownerUpn to the List method
-            ShortUrlEntity url = await urlServices.Get(host, vanity, ownerUpn);
+            // Pass the ownerUpn and includeArchived to the Get method
+            ShortUrlEntity url = await urlServices.Get(host, vanity, ownerUpn, includeArchived);
             return TypedResults.Ok(url);
         }
         catch (Exception ex)
@@ -221,6 +239,59 @@ public static class ShortenerEnpoints
         }
     }
 
+    private static async Task<Results<Ok, NotFound<DetailedBadRequest>, InternalServerError<DetailedBadRequest>>>
+        UrlDelete([FromBody] string vanity, TableServiceClient tblClient, ILogger logger)
+    {
+        try
+        {
+            var urlServices = new UrlServices(logger, new AzStorageTableService(tblClient));
+            var result = await urlServices.Delete(vanity);
+            if (result)
+                return TypedResults.Ok();
+            return TypedResults.NotFound(new DetailedBadRequest { Message = "URL not found." });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex.Message);
+            return TypedResults.InternalServerError(new DetailedBadRequest { Message = ex.Message });
+        }
+    }
+
+    private static async Task<Results<Ok<ShortUrlEntity>, NotFound<DetailedBadRequest>, InternalServerError<DetailedBadRequest>>>
+        UrlClone([FromBody] CloneRequest req, TableServiceClient tblClient, ILogger logger)
+    {
+        try
+        {
+            var urlServices = new UrlServices(logger, new AzStorageTableService(tblClient));
+            var result = await urlServices.Clone(req.SourceVanity, req.NewVanity);
+            if (result != null)
+                return TypedResults.Ok(result);
+            return TypedResults.NotFound(new DetailedBadRequest { Message = "Source URL not found." });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex.Message);
+            return TypedResults.InternalServerError(new DetailedBadRequest { Message = ex.Message });
+        }
+    }
+
+    private static async Task<Results<Ok<ShortUrlEntity>, NotFound<DetailedBadRequest>, InternalServerError<DetailedBadRequest>>>
+        UrlReactivate([FromBody] string vanity, TableServiceClient tblClient, ILogger logger)
+    {
+        try
+        {
+            var urlServices = new UrlServices(logger, new AzStorageTableService(tblClient));
+            var result = await urlServices.Reactivate(vanity);
+            if (result != null)
+                return TypedResults.Ok(result);
+            return TypedResults.NotFound(new DetailedBadRequest { Message = "URL not found." });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex.Message);
+            return TypedResults.InternalServerError(new DetailedBadRequest { Message = ex.Message });
+        }
+    }
 
     private static string GetFullHostName(HttpContext context)
     {
@@ -248,4 +319,10 @@ public static class ShortenerEnpoints
 
         return host ?? string.Empty;
     }
+}
+
+public class CloneRequest
+{
+    public string SourceVanity { get; set; }
+    public string NewVanity { get; set; }
 }

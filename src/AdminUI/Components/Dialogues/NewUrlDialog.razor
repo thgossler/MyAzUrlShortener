@@ -9,6 +9,8 @@
 
 @rendermode InteractiveServer
 
+<div tabindex="-1" onkeydown:window="@HandleKeyDown">
+
 <FluentDialogHeader ShowDismiss="false" TabIndex="-1">
     <FluentStack VerticalAlignment="VerticalAlignment.Center">
         <FluentIcon Value="@(new Icons.Regular.Size24.WindowApps())" />
@@ -19,11 +21,9 @@
 </FluentDialogHeader>
 
 <FluentDialogBody>
-    <EditForm Model="@_shortUrl" FormName="new_note" onkeydown="@HandleKeyDown">
+    <EditForm Model="@_shortUrl" FormName="new_note">
         <DataAnnotationsValidator />
-
         <FluentStack Orientation="Orientation.Vertical" VerticalGapGap="10"  Width="100%">
-
             <div style="width: 100%;">
                 <FluentTextField @ref="_titleInput" Name="Title" Label="Title" @bind-Value="_shortUrl.Title" Immediate="true" ImmediateDelay="@delay" Required="true" style="width: 100%;" />
                 <FluentValidationMessage For="@(() => _shortUrl.Title)" />
@@ -41,13 +41,10 @@
 
             <div style="width: 100%;">
                 <SchedulesComponent Schedules="_editableSchedules" 
-                                   OnEdit="OnSchedulesEdit" />
+                                    OnEdit="OnSchedulesEdit" />
             </div>
-
         </FluentStack>
-
     </EditForm>
-
 </FluentDialogBody>
 
 <FluentDialogFooter>
@@ -55,6 +52,7 @@
     <FluentButton Appearance="Appearance.Neutral" OnClick="@CancelAsync">Cancel</FluentButton>
 </FluentDialogFooter>
 
+</div>
 
 @code {
     [Parameter]
@@ -104,6 +102,8 @@
             hasFocused = true;
             _titleInput?.FocusAsync();
         }
+
+        await base.OnAfterRenderAsync(firstRender);
     }
 
     private void ToggleDialogPrimaryActionButton(bool enable)
@@ -127,15 +127,15 @@
         await Dialog!.CancelAsync();
     }
 
-    private async Task HandleKeyDown(KeyboardEventArgs e)
+    private async void HandleKeyDown(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter" && _shortUrl.Validate())
-        {
-            await SaveAsync();
-        }
         if (e.Key == "Escape")
         {
             await CancelAsync();
+        }
+        else if (e.Key == "Enter" && _shortUrl.Validate() && !HasInvalidInput())
+        {
+            await SaveAsync();
         }
     }
 
@@ -148,7 +148,7 @@
     {
         return _editableSchedules != null &&
             _editableSchedules.Any(s =>
-                !Regex.Match(s.AlternativeUrl, "^http[s]://[0-9a-zA-Z]+.*", RegexOptions.IgnoreCase).Success
+                !Regex.Match(s.AlternativeUrl, "^http[s]*://[0-9a-zA-Z]+.*", RegexOptions.IgnoreCase).Success
                 || !IsValidCron(s.Cron)
                 || s.DurationMinutes <= 0
             );

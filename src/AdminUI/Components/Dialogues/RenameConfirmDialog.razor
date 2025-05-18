@@ -1,0 +1,96 @@
+@using Microsoft.FluentUI.AspNetCore.Components
+@inject IJSRuntime JSRuntime
+@implements IDialogContentComponent<RenameConfirmDialog.RenameVanityParameters>
+
+<div tabindex="-1" onkeydown:window="@HandleKeyDown">
+
+<FluentDialogHeader>
+    <FluentIcon Value="@(new Icons.Regular.Size24.Edit())" Style="color: #f44336;" />
+    <span>Rename Short URL</span>
+</FluentDialogHeader>
+
+<FluentDialogBody>
+    @if (!_isRenameConfirmed)
+    {
+        <p>Renaming a short URL is a critical operation. The old vanity will be deleted and a new record will be created. This may break existing links and allow the old vanity to be reused for a different purpose, which can be misleading.</p>
+        <p><b>Are you sure you want to proceed?</b></p>
+    }
+    else
+    {
+        <FluentTextField Id="newVanityInput" Label="New Vanity" @bind-Value="newVanity" Immediate="true" ImmediateDelay="250" Autofocus="true" style="width: 100%;" onkeydown="@HandleKeyDown" />
+    }
+</FluentDialogBody>
+
+<FluentDialogFooter>
+    @if (!_isRenameConfirmed)
+    {
+        <FluentButton Id="CancelButton" Appearance="Appearance.Accent" OnClick="Cancel">Cancel</FluentButton>
+        <FluentButton Appearance="Appearance.Neutral" Style="background-color: var(--color-danger, #f44336); color: white;" OnClick="Proceed">Proceed</FluentButton>
+    }
+    else
+    {
+        <FluentButton Appearance="Appearance.Neutral" Style="background-color: var(--color-danger, #f44336); color: white;" OnClick="Cancel">Cancel</FluentButton>
+        <FluentButton Appearance="Appearance.Accent" Disabled="@IsProceedRenameDisabled" OnClick="Proceed">Proceed</FluentButton>
+    }
+</FluentDialogFooter>
+
+</div>
+
+@code {
+    [CascadingParameter]
+    public FluentDialog Dialog { get; set; } = default!;
+
+    [Parameter]
+    public RenameVanityParameters Content { get; set; } = default!;
+
+    private bool _isRenameConfirmed;
+    private FluentButton _cancelButton;
+    private string newVanity = string.Empty;
+
+    public class RenameVanityParameters
+    {
+        public string Vanity { get; set; } = string.Empty;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("eval", $"document.getElementById('CancelButton').focus();");
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task Cancel()
+    {
+        await Dialog.CancelAsync();
+    }
+
+    private async Task Proceed()
+    {
+        if (!_isRenameConfirmed)
+        {
+            _isRenameConfirmed = true;
+            newVanity = Content.Vanity;
+            StateHasChanged();
+            _ = JSRuntime.InvokeVoidAsync("eval", "document.getElementById('newVanityInput').select();");
+            return;
+        }
+        await Dialog.CloseAsync(newVanity);
+    }
+
+    private async void HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            await Cancel();
+        }
+        else if (e.Key == "Enter")
+        {
+            await Proceed();
+        }
+    }
+
+    private bool IsProceedRenameDisabled => string.IsNullOrWhiteSpace(newVanity) || newVanity.Equals(Content.Vanity, StringComparison.OrdinalIgnoreCase);
+}
