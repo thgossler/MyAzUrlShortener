@@ -51,7 +51,7 @@
                 <div style="width: 100%;">
                     <FluentTextField Id="OwnerUpn" Name="OwnerUpn" Label="Owner UPN" @bind-Value="_shortUrl.OwnerUpn" Immediate="true" ImmediateDelay="250" style="width: 100%;" />
                     <FluentTooltip Anchor="OwnerUpn">
-                        User Principal Name of the URL owner. Only admins can change this.
+                        User Principal Name of the URL owner. Only administrator can change this.
                     </FluentTooltip>
                 </div>
             }
@@ -68,11 +68,11 @@
 <FluentDialogFooter>
     <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Style="width: 100%;">
         <div id="rename-button">
-            <FluentButton Appearance="Appearance.Neutral" Disabled="@(!_isAdmin)" OnClick="@ShowRenameDialog">Rename</FluentButton>
-            @if (!_isAdmin)
+            <FluentButton Appearance="Appearance.Neutral" Disabled="@(!_canRenameRecord)" OnClick="@ShowRenameDialog">Rename</FluentButton>
+            @if (!_canRenameRecord)
             {
                 <FluentTooltip Anchor="rename-button">
-                    Only administrators can rename the vanity of URL records
+                    Only administrators can rename URL records
                 </FluentTooltip>
             }
         </div>
@@ -103,6 +103,9 @@
     private FluentTextField _titleInput = default!;
     private bool hasFocused;
     private bool _isAdmin = false;
+    private bool _isOwner = false;
+    private bool _canRegularUsersDeleteRecords = false;
+    private bool _canRenameRecord = false;
     private List<Schedule> _originalSchedules = new();
     private List<Schedule> _editableSchedules = new();
     private static bool _isOtherDialogOpen = false;
@@ -135,6 +138,9 @@
             _shortUrl.Schedules = new List<Schedule>();
 
         _isAdmin = await userService.IsAdminAsync();
+        _isOwner = _shortUrl.OwnerUpn == await userService.GetUserPrincipalNameAsync();
+        _canRegularUsersDeleteRecords = userService.CanRegularUsersDeleteRecords();
+        _canRenameRecord = _isAdmin || (_isOwner && _canRegularUsersDeleteRecords);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

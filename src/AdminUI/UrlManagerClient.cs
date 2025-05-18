@@ -198,13 +198,29 @@ public class UrlManagerClient
         return null;
     }
 
-    public async Task<bool> UrlDelete(string vanity)
+    public async Task<bool> UrlDelete(ShortUrlEntity shortUrl)
     {
         try
         {
             var isAdmin = await _userService.IsAdminAsync();
-            if (!isAdmin) return false;
-            using var response = await _httpClient.PostAsJsonAsync("/api/UrlDelete", vanity);
+            var currentUpn = await _userService.GetUserPrincipalNameAsync();
+
+            if (!isAdmin)
+            {
+                // First check: user must be the owner
+                if (!string.Equals(shortUrl.OwnerUpn, currentUpn, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                // Second check: users must be allowed to delete their own records
+                if (!_userService.CanRegularUsersDeleteRecords())
+                {
+                    return false;
+                }
+            }
+
+            using var response = await _httpClient.PostAsJsonAsync("/api/UrlDelete", shortUrl.Vanity);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
@@ -214,13 +230,29 @@ public class UrlManagerClient
         return false;
     }
 
-    public async Task<ShortUrlEntity> UrlClone(string sourceVanity, string newVanity)
+    public async Task<ShortUrlEntity> UrlClone(ShortUrlEntity sourceShortUrl, string newVanity)
     {
         try
         {
             var isAdmin = await _userService.IsAdminAsync();
-            if (!isAdmin) return null;
-            var req = new { SourceVanity = sourceVanity, NewVanity = newVanity };
+            var currentUpn = await _userService.GetUserPrincipalNameAsync();
+
+            if (!isAdmin)
+            {
+                // First check: user must be the owner
+                if (!string.Equals(sourceShortUrl.OwnerUpn, currentUpn, StringComparison.OrdinalIgnoreCase))
+                {
+                    return null;
+                }
+
+                // Second check: users must be allowed to delete their own records
+                if (!_userService.CanRegularUsersDeleteRecords())
+                {
+                    return null;
+                }
+            }
+
+            var req = new { SourceVanity = sourceShortUrl.Vanity, NewVanity = newVanity };
             using var response = await _httpClient.PostAsJsonAsync("/api/UrlClone", req);
             if (response.IsSuccessStatusCode)
             {

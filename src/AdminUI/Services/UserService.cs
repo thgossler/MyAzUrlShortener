@@ -79,11 +79,25 @@ public class UserService
         return canViewAll;
     }
 
+    public bool CanRegularUsersViewAllStatistics()
+    {
+        bool canViewAll = false;
+        bool.TryParse(_configuration["AllowRegularUsersToViewAllStatistics"], out canViewAll);
+        return canViewAll;
+    }
+
     public bool CanRegularUsersArchiveRecords()
     {
         bool canArchive = false;
         bool.TryParse(_configuration["AllowRegularUsersToArchiveRecords"], out canArchive);
         return canArchive;
+    }
+
+    public bool CanRegularUsersDeleteRecords()
+    {
+        bool canDelete = false;
+        bool.TryParse(_configuration["AllowRegularUsersToDeleteRecords"], out canDelete);
+        return canDelete;
     }
 
     public async Task LogoutAsync()

@@ -73,7 +73,8 @@ public static class ShortenerEnpoints
                                 >> UrlCreate(ShortRequest request,
                                                 TableServiceClient tblClient,
                                                 HttpContext context,
-                                                ILogger logger)
+                                                ILogger logger,
+                                                IConfiguration config)
     {
         try
         {
@@ -108,7 +109,8 @@ public static class ShortenerEnpoints
                                     InternalServerError<DetailedBadRequest>>>
                                     UrlArchive(ShortUrlEntity shortUrl,
                                                 TableServiceClient tblClient,
-                                                ILogger logger)
+                                                ILogger logger,
+                                                IConfiguration config)
     {
         try
         {
@@ -129,7 +131,8 @@ public static class ShortenerEnpoints
                                     UrlUpdate(ShortUrlEntity shortUrl,
                                                 TableServiceClient tblClient,
                                                 HttpContext context,
-                                                ILogger logger)
+                                                ILogger logger,
+                                                IConfiguration config)
     {
         try
         {
@@ -153,7 +156,8 @@ public static class ShortenerEnpoints
                                     UrlClickStatsByDay(UrlClickStatsRequest statsRequest,
                                                 TableServiceClient tblClient,
                                                 HttpContext context,
-                                                ILogger logger)
+                                                ILogger logger,
+                                                IConfiguration config)
     {
         try
         {
@@ -161,7 +165,9 @@ public static class ShortenerEnpoints
             var host = GetFullHostName(context);
 
             // Get the ownerUpn query parameter if it exists
-            string ownerUpn = context.Request.Query["ownerUpn"];
+            string ownerUpn = config["AllowRegularUsersToViewAllStatistics"] == "False" ?
+                (string)context.Request.Query["ownerUpn"] : 
+                null;
 
             var result = await urlServices.ClickStatsByDay(statsRequest, host, ownerUpn);
             return TypedResults.Ok(result);
@@ -179,7 +185,8 @@ public static class ShortenerEnpoints
                             InternalServerError<DetailedBadRequest>>>
                             UrlList(TableServiceClient tblClient,
                                     HttpContext context,
-                                    ILogger logger)
+                                    ILogger logger,
+                                    IConfiguration config)
     {
         try
         {
@@ -207,7 +214,8 @@ public static class ShortenerEnpoints
                             UrlByVanity(TableServiceClient tblClient,
                                     HttpContext context,
                                     string vanity,
-                                    ILogger logger)
+                                    ILogger logger,
+                                    IConfiguration config)
     {
         try
         {

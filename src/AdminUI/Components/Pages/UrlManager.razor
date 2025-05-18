@@ -129,12 +129,18 @@
                     </TemplateColumn>
                     <TemplateColumn Title="Clicks" Align="Align.End" Sortable="true" SortBy="@sortByClicks">
                         <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" HorizontalAlignment="HorizontalAlignment.End">
-                            @context.Clicks
+                            @{
+                                var isOwner = string.Equals(context!.OwnerUpn, currentUserUpn, StringComparison.OrdinalIgnoreCase);
+                                var canViewStats = isAdmin || isOwner || canRegularUsersViewAllStatistics;
+                            }
+                            @if (canViewStats) {
+                                @context.Clicks
+                            }
+                            else
+                            {
+                                <span>N/A</span>
+                            }
                             <div id="stats-button-@context.RowKey">
-                                @{
-                                    var isOwner = string.Equals(context!.OwnerUpn, currentUserUpn, StringComparison.OrdinalIgnoreCase);
-                                    var canViewStats = isAdmin || isOwner;
-                                }
                                 <FluentButton OnClick="@(() => NavigateToStats(context.Vanity))"
                                 IconEnd="@(new Icons.Regular.Size16.ChartMultiple())"
                                 Title="View Statistics"
@@ -153,6 +159,7 @@
                             var isOwner = string.Equals(context!.OwnerUpn, currentUserUpn, StringComparison.OrdinalIgnoreCase);
                             var canModify = isAdmin || isOwner;
                             var canArchive = isAdmin || (isOwner && canRegularUsersArchiveRecords);
+                            var canDelete = isAdmin || (isOwner && canRegularUsersDeleteRecords);
                         }
 
                         <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
@@ -187,9 +194,9 @@
                                             <FluentIcon Value="@(new Icons.Regular.Size16.Archive())" Color="@Color.Neutral" Slot="start" />
                                             Archive
                                         </FluentMenuItem>
-                                        <FluentDivider />
-                                        @if (isAdmin)
+                                        @if (isAdmin || canDelete)
                                         {
+                                            <FluentDivider />
                                             <FluentMenuItem @onclick="@(async () => await ConfirmDeleteShortUrl(context))">
                                                 <FluentIcon Value="@(new Icons.Regular.Size16.Delete())" Color="@Color.Neutral" Slot="start" />
                                                 Delete
@@ -202,11 +209,11 @@
                                     <FluentTooltip Anchor="@($"archive-action-button-{context.RowKey}")">
                                         @if (!isOwner)
                                         {
-                                            <span>You cannot archive this URL because you didn't create it</span>
+                                            <span>You cannot remove this URL because you didn't create it</span>
                                         }
                                         else
                                         {
-                                            <span>Only administrators can archive URL records</span>
+                                            <span>Only administrators can remove URL records</span>
                                         }
                                     </FluentTooltip>
                                 }
@@ -262,7 +269,10 @@
     private bool isAdmin = false;
     private string searchText = string.Empty;
     private string currentUserUpn = string.Empty;
+    private bool canRegularUsersViewAllRecords;
+    private bool canRegularUsersViewAllStatistics;
     private bool canRegularUsersArchiveRecords;
+    private bool canRegularUsersDeleteRecords;
 
     private bool showOnlyMyRecords
     {
@@ -320,7 +330,10 @@
     {
         isAdmin = await userService.IsAdminAsync();
         currentUserUpn = await userService.GetUserPrincipalNameAsync();
+        canRegularUsersViewAllRecords = userService.CanRegularUsersViewAllRecords();
+        canRegularUsersViewAllStatistics = userService.CanRegularUsersViewAllStatistics();
         canRegularUsersArchiveRecords = userService.CanRegularUsersArchiveRecords();
+        canRegularUsersDeleteRecords = userService.CanRegularUsersDeleteRecords();
 
         importConnectionString = Configuration["ImportTableStorageConnectionString"] ?? string.Empty;
 
@@ -611,7 +624,7 @@ Supposed-to-be stable URLs will be broken, and the same vanity could be reused f
         var result = await dialog.Result;
         if (!result.Cancelled && result.Data is bool proceed && proceed)
         {
-            var deleteResult = await urlManager.UrlDelete(urlEntity.Vanity);
+            var deleteResult = await urlManager.UrlDelete(urlEntity);
             if (deleteResult)
             {
                 await UpdateUIList();
@@ -778,11 +791,23 @@ Supposed-to-be stable URLs will be broken, and the same vanity could be reused f
 
     public async Task RenameShortUrl(ShortUrlEntity oldEntity, string newVanity)
     {
-        if (!isAdmin) return;
-        var clone = await urlManager.UrlClone(oldEntity.Vanity, newVanity);
+        var isOwner = string.Equals(oldEntity.OwnerUpn, currentUserUpn, StringComparison.OrdinalIgnoreCase);
+        if (!isAdmin && (!isOwner || !canRegularUsersDeleteRecords))
+        {
+            if (!isOwner)
+            {
+                toastService.ShowError("You are not authorized to rename this URL because you didn't create it");
+            }
+            else
+            {
+                toastService.ShowError("Only administrators can rename URL records");
+            }
+            return;
+        }
+        var clone = await urlManager.UrlClone(oldEntity, newVanity);
         if (clone != null)
         {
-            await urlManager.UrlDelete(oldEntity.Vanity);
+            await urlManager.UrlDelete(oldEntity);
             await UpdateUIList();
             toastService.ShowSuccess($"Short URL renamed to '{newVanity}'");
         }

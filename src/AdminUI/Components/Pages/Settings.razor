@@ -23,7 +23,7 @@
 		<FluentCard Width="100%" Height="auto" AreaRestricted="false" Style="background-color: var(--neutral-layer-1);">
 			<h4>User Permissions</h4>
 			<FluentStack Orientation="Microsoft.FluentUI.AspNetCore.Components.Orientation.Vertical">
-				<FluentCheckbox Label="Allow regular users to view all URL records" Disabled="true" Checked="@regularUsersCanViewAll" />
+				<FluentCheckbox Label="Allow regular users to view all URL records" Disabled="true" Checked="@regularUsersCanViewAllRecords" />
 				<div class="mt-2 info-banner">
 					<FluentIcon Value="@(new Icons.Regular.Size16.Info())" Color="@Color.Accent" />
 					<span>This setting is controlled via environment configuration. To change, update the <code>AllowRegularUsersToViewAllRecords</code> key in your application settings.</span>
@@ -31,10 +31,26 @@
 
 				<FluentDivider Class="mt-3 mb-3" />
 
-				<FluentCheckbox Label="Allow regular users to archive their own URL records" Disabled="true" Checked="@regularUsersCanArchive" />
+				<FluentCheckbox Label="Allow regular users to view all URL statistics" Disabled="true" Checked="@regularUsersCanViewAllStatistics" />
+				<div class="mt-2 info-banner">
+					<FluentIcon Value="@(new Icons.Regular.Size16.Info())" Color="@Color.Accent" />
+					<span>This setting is controlled via environment configuration. To change, update the <code>AllowRegularUsersToViewAllStatistics</code> key in your application settings.</span>
+				</div>
+
+				<FluentDivider Class="mt-3 mb-3" />
+
+				<FluentCheckbox Label="Allow regular users to archive their own URL records" Disabled="true" Checked="@regularUsersCanArchiveRecords" />
 				<div class="mt-2 info-banner">
 					<FluentIcon Value="@(new Icons.Regular.Size16.Info())" Color="@Color.Accent" />
 					<span>This setting is controlled via environment configuration. To change, update the <code>AllowRegularUsersToArchiveRecords</code> key in your application settings.</span>
+				</div>
+
+				<FluentDivider Class="mt-3 mb-3" />
+
+				<FluentCheckbox Label="Allow regular users to delete their own URL records" Disabled="true" Checked="@regularUsersCanDeleteRecords" />
+				<div class="mt-2 info-banner">
+					<FluentIcon Value="@(new Icons.Regular.Size16.Info())" Color="@Color.Accent" />
+					<span>This setting is controlled via environment configuration. To change, update the <code>AllowRegularUsersToDeleteRecords</code> key in your application settings.</span>
 				</div>
 
 				<FluentDivider Class="mt-3 mb-3" />
@@ -47,14 +63,18 @@
 
 @code {
 	private bool isAdmin = false;
-	private bool regularUsersCanViewAll = false;
-	private bool regularUsersCanArchive = false;
+	private bool regularUsersCanViewAllRecords = false;
+	private bool regularUsersCanViewAllStatistics = false;
+	private bool regularUsersCanArchiveRecords = false;
+	private bool regularUsersCanDeleteRecords = false;
 
 	protected override async Task OnInitializedAsync()
 	{
 		isAdmin = await userService.IsAdminAsync();
-		regularUsersCanViewAll = userService.CanRegularUsersViewAllRecords();
-		regularUsersCanArchive = userService.CanRegularUsersArchiveRecords();
+		regularUsersCanViewAllRecords = userService.CanRegularUsersViewAllRecords();
+		regularUsersCanViewAllStatistics = userService.CanRegularUsersViewAllStatistics();
+		regularUsersCanArchiveRecords = userService.CanRegularUsersArchiveRecords();
+        regularUsersCanDeleteRecords = userService.CanRegularUsersDeleteRecords();
 	}
 
 	private void ManageUsers()

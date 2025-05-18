@@ -40,6 +40,8 @@ var backupSchedule = processParameterInput("BackupSchedule", true, "0 */1 * * *"
 var importTableStorageConnectionString = processParameterInput("ImportTableStorageConnectionString", true, "");
 var allowRegularUsersToViewAllRecords = processParameterInput("AllowRegularUsersToViewAllRecords", true, "true");
 var allowRegularUsersToArchiveRecords = processParameterInput("AllowRegularUsersToArchiveRecords", true, "false");
+var allowRegularUsersToViewAllStatistics = processParameterInput("AllowRegularUsersToViewAllStatistics", true, "false");
+var allowRegularUsersToDeleteRecords = processParameterInput("AllowRegularUsersToDeleteRecords", true, "false");
 var primaryColor = processParameterInput("PrimaryColor", true, "");
 var headerLogoUrl = processParameterInput("LogoUrl", true, "");
 var footerLeftHtml = processParameterInput("FooterLeftHtml", true, "");
@@ -71,6 +73,7 @@ var apiService = builder.AddProject<Projects.AzUrlShortener_Api>("api")
                         .WaitFor(functionApp)
                         .WithEnvironment("DefaultRedirectUrl", defaultRedirectUrl)
                         .WithEnvironment("CustomDomain", customDomain)
+                        .WithEnvironment("AllowRegularUsersToViewAllStatistics", allowRegularUsersToViewAllStatistics)
                         .WithExternalHttpEndpoints();
 
 // Admin UI Web App
@@ -86,7 +89,9 @@ builder.AddProject<Projects.AzUrlShortener_AdminUI>("admin-ui")
         .WithEnvironment("FooterCenterHtml", footerCenterHtml)
         .WithEnvironment("FooterRightHtml", footerRightHtml)
         .WithEnvironment("AllowRegularUsersToViewAllRecords", allowRegularUsersToViewAllRecords)
+        .WithEnvironment("AllowRegularUsersToViewAllStatistics", allowRegularUsersToViewAllStatistics)
         .WithEnvironment("AllowRegularUsersToArchiveRecords", allowRegularUsersToArchiveRecords)
+        .WithEnvironment("AllowRegularUsersToDeleteRecords", allowRegularUsersToDeleteRecords)
         .WithEnvironment("ImportTableStorageConnectionString", importTableStorageConnectionString);
 
 // Build and run the application

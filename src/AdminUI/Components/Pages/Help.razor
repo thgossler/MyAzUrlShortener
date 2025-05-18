@@ -15,65 +15,115 @@
 }
 else
 {
+    <FluentCard Width="100%" Height="auto" class="mb-4">
+        <h4>About URL Shortening</h4>
+        <p>A URL shortener converts long, complex web addresses into shorter, more manageable links that are easier to share, track, and manage. These shortened URLs redirect users to the original destination without altering the target content.</p>
+        <ul>
+            <li>Convenient sharing: Ideal for situations where long URLs are impractical or cannot be used effectively</li>
+            <li>Memorability: Short URLs are easier to recall and reuse, making them useful as simple, bookmark-like links</li>
+            <li>Link management: Enables stable short URLs whose destinations can be updated later without changing the shared link</li>
+            <li>Tracking and analytics: Provides insights into link usage such as number of clicks over time</li>
+        </ul>
+        <p>The purpose of this application is to help users efficiently create and maintain short URL records.</p>
+    </FluentCard>    
+    
     <div>
         @if (isAdmin)
         {
-            <h3>Administrator View</h3>
             <FluentCard Width="100%" Height="auto" class="mb-4">
                 <h4>Your Permissions</h4>
                 <p>As an administrator, you can:</p>
                 <ul>
                     <li>View all short URL records in the system</li>
-                    <li>Create, edit, and archive any short URL record</li>
+                    <li>View statistics of all short URL records in the system</li>
+                    <li>Create, edit, archive and delete any short URL record</li>
                     <li>Access user management features</li>
-                    <li>See configuration statuses in the Settings page</li>
+                    <li>See configuration status in the Settings page</li>
                 </ul>
             </FluentCard>
 
             <FluentCard Width="100%" Height="auto" class="mb-4">
                 <h4>Regular User Permissions</h4>
-                <p>Regular users' permissions are determined by system configuration:</p>
+                <p>Regular user permissions are determined by system configuration:</p>
                 <ul>
-                    <li>Regular users can always create, edit, and archive their own URL records</li>
+                    <li>Regular users can always create and modify their own URL records</li>
                     <li>
-                        URL record visibility:
-                        @if (regularUsersCanViewAll)
+                        @if (regularUsersCanViewAllRecords)
                         {
-                            <strong>Currently, regular users can view ALL records in the system</strong>
+                            <span>Per configuration, regular users can <span style="color: var(--accent-fill-rest); font-weight:bold;">view ALL records</span> in the system</span>
                         }
                         else
                         {
-                            <strong>Currently, regular users can only view their OWN records</strong>
+                            <span>Per configuration, regular users can only <span style="color: var(--accent-fill-rest); font-weight:bold;">view OWN records</span></span>
                         }
+                        <span style="font-style: italic"> (to change this setting, update the "AllowRegularUsersToViewAllRecords" key in your application settings)</span>
                     </li>
-                    <li>To change this setting, update the <code>AllowRegularUsersToViewAllRecords</code> key in your application settings</li>
+                    <li>
+                        @if (regularUsersCanViewAllStatistics)
+                        {
+                            <span>Per configuration, regular users can view <span style="color: var(--accent-fill-rest); font-weight:bold;">statistics for ALL records</span> in the system</span>
+                        }
+                        else
+                        {
+                            <span>Per configuration, regular users can only view <span style="color: var(--accent-fill-rest); font-weight:bold;">statistics for OWN records</span></span>
+                        }
+                        <span style="font-style: italic"> (to change this setting, update the "AllowRegularUsersToViewAllStatistics" key in your application settings)</span>
+                    </li>
+                    <li>
+                        @if (regularUsersCanArchive)
+                        {
+                            <span>Per configuration, regular users can <span style="color: var(--accent-fill-rest); font-weight:bold;">archive their own records</span></span>
+                        }
+                        else
+                        {
+                            <span>Per configuration, regular users can <span style="color: var(--accent-fill-rest); font-weight:bold;">NOT archive records</span></span>
+                        }
+                        <span style="font-style: italic"> (to change this setting, update the "AllowRegularUsersToArchiveRecords" key in your application settings)</span>
+                    </li>
+                    <li>
+                        @if (regularUsersCanDelete)
+                        {
+                            <span>Per configuration, regular users can <span style="color: var(--accent-fill-rest); font-weight:bold;">delete their own records</span></span>
+                        }
+                        else
+                        {
+                            <span>Per configuration, regular users can <span style="color: var(--accent-fill-rest); font-weight:bold;">NOT delete records</span></span>
+                        }
+                        <span style="font-style: italic"> (to change this setting, update the "AllowRegularUsersToDeleteRecords" key in your application settings)</span>
+                    </li>
                 </ul>
             </FluentCard>
         }
         else if (isUser)
         {
-            <h3>User Help</h3>
             <FluentCard Width="100%" Height="auto" class="mb-4">
                 <h4>Your Permissions</h4>
                 <p>You can:</p>
                 <ul>
-                    <li>Create new short URL records</li>
-                    <li>View usage statistics for your URLs</li>
-                    @if (regularUsersCanViewAll)
+                    <li>Create new and modify your own short URL records</li>
+                    @if (regularUsersCanViewAllRecords)
                     {
-                        <li>View all short URL records in the system (but you can only modify your own)</li>
+                        <li>View all short URL records</li>
                     }
                     else
                     {
-                        <li>View only the short URL records you have created</li>
+                        <li>View your own short URL records</li>
+                    }
+                    @if (regularUsersCanViewAllStatistics)
+                    {
+                        <li>View click statistics for all short URL records</li>
+                    }
+                    else
+                    {
+                        <li>View click statistics for your own short URL records</li>
                     }
                     @if (regularUsersCanArchive)
                     {
-                        <li>Edit and archive short URL records you have created</li>
+                        <li>Archive your own short URL records (inactive and hidden, but still existing)</li>
                     }
-                    else
+                    @if (regularUsersCanDelete)
                     {
-                        <li>Edit short URL records you have created (only admins can archive)</li>
+                        <li>Delete your own short URL records</li>
                     }
                 </ul>
             </FluentCard>
@@ -85,11 +135,11 @@ else
 
         <FluentCard Width="100%" Height="auto" class="mb-4">
             <h4>URL Scheduling</h4>
-            <p>By adding one or more schedules to a record, the target URL can be automatically changed at a later time - either once or on a recurring basis, if needed.</p>
+            <p>By associating one or more schedules with a record, the target URL can be automatically updated at a specified time - either as a one-time action or on a recurring basis, if required.</p>
             <ul>
-                <li>One-time schedules: Change a URL at a specific date and time</li>
-                <li>Recurring schedules: Change a URL on a repeating pattern (daily, weekly, etc.)</li>
-                <li>Schedules can be added when creating a URL or by editing an existing one</li>
+                <li>One-time schedules: Update a URL at a designated date and time</li>
+                <li>Recurring schedules: Update a URL on a regular interval (daily, weekly, etc.)</li>
+                <li>Schedules can be configured during URL creation or by editing an existing entry</li>
             </ul>
         </FluentCard>
     </div>
@@ -99,15 +149,19 @@ else
     private bool isLoading = true;
     private bool isAdmin = false;
     private bool isUser = false;
-    private bool regularUsersCanViewAll = false;
+    private bool regularUsersCanViewAllRecords = false;
+    private bool regularUsersCanViewAllStatistics = false;
     private bool regularUsersCanArchive = false;
+    private bool regularUsersCanDelete = false;
 
     protected override async Task OnInitializedAsync()
     {
         isAdmin = await userService.IsAdminAsync();
         isUser = await userService.IsUserAsync();
-        regularUsersCanViewAll = userService.CanRegularUsersViewAllRecords();
+        regularUsersCanViewAllRecords = userService.CanRegularUsersViewAllRecords();
+        regularUsersCanViewAllStatistics = userService.CanRegularUsersViewAllStatistics();
         regularUsersCanArchive = userService.CanRegularUsersArchiveRecords();
+        regularUsersCanDelete = userService.CanRegularUsersDeleteRecords();
         isLoading = false;
     }
 }
