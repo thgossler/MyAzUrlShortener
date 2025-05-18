@@ -21,7 +21,7 @@
 </FluentDialogHeader>
 
 <FluentDialogBody>
-    <EditForm Model="@_shortUrl" FormName="new_note">
+    <EditForm Model="@_shortUrl" FormName="new_note" onkeydown="@HandleKeyDown"> 
         <DataAnnotationsValidator />
         <FluentStack Orientation="Orientation.Vertical" VerticalGapGap="10"  Width="100%">
             <div style="width: 100%;">
@@ -30,7 +30,7 @@
             </div>
 
             <div style="width: 100%;">
-                <FluentTextField Name="Url" Label="Url" @bind-Value="_shortUrl.Url" Immediate="true" ImmediateDelay="@delay" Required="true" style="width: 100%;" />
+                <FluentTextField Name="Url" Label="Url" Placeholder="https://..." @bind-Value="_shortUrl.Url" Immediate="true" ImmediateDelay="@delay" Required="true" style="width: 100%;" />
                 <FluentValidationMessage For="@(() => _shortUrl.Url)" />
             </div>
 
@@ -56,7 +56,7 @@
 
 @code {
     [Parameter]
-    public ShortUrlRequest Content { get; set; } = default!;
+    public ShortUrlRequest Content { get; set; } = default!; 
 
     [CascadingParameter]
     public FluentDialog Dialog { get; set; } = default!;
@@ -84,6 +84,10 @@
     protected override void OnInitialized()
     {
         _shortUrl = Content;
+
+        // Initialize Url with "https://" if not set
+        if (string.IsNullOrWhiteSpace(_shortUrl.Url))
+            _shortUrl.Url = "https://";
         
         // Deep copy original schedules
         _originalSchedules = _shortUrl.Schedules?.Select(DeepCopySchedule).ToList() ?? new List<Schedule>();

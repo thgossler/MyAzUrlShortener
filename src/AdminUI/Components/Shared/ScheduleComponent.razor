@@ -72,6 +72,12 @@
     protected override void OnInitialized()
     {
         DialogService = _dialogService;
+        // Initialize AlternativeUrl with "https://" if it is null or empty
+        if (schedule != null && string.IsNullOrWhiteSpace(schedule.AlternativeUrl))
+        {
+            schedule.AlternativeUrl = "https://";
+        }
+        base.OnInitialized();
     }
 
     private void StartDateTimeReconcile(DateTime value)

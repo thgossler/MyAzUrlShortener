@@ -279,5 +279,41 @@ public class UrlServices
     {
         return await _tableService.ReactivateShortUrlEntity(vanity);
     }
-}
 
+    /// <summary>
+    /// Verifies that a given URL exists by performing an HTTP HEAD request.
+    /// Returns true if the URL responds with a non-error status (not 4xx/5xx),
+    /// and false if the URL does not exist or is unreachable.
+    /// Redirects (3xx) are considered valid.
+    /// </summary>
+    public async Task<bool> VerifyUrlExistsAsync(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            return false;
+
+        try
+        {
+            using var httpClient = new HttpClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(10);
+            using var request = new HttpRequestMessage(HttpMethod.Head, url);
+            using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            // Accept 2xx and 3xx (redirects)
+            return ((int)response.StatusCode >= 200 && (int)response.StatusCode < 400);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogWarning(ex, $"URL verification failed for {url}");
+            return false;
+        }
+        catch (TaskCanceledException)
+        {
+            _logger.LogWarning($"URL verification timed out for {url}");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Unexpected error verifying URL: {url}");
+            return false;
+        }
+    }
+}
