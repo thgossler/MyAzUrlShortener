@@ -99,6 +99,7 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
+builder.Services.AddSingleton<SharedStateService>();
 builder.Services.AddScoped<UserService>();
 
 builder.Services.AddRazorComponents()

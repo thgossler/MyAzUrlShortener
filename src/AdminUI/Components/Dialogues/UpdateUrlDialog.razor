@@ -105,9 +105,6 @@
     private bool _isAdmin = false;
     private List<Schedule> _originalSchedules = new();
     private List<Schedule> _editableSchedules = new();
-    private bool showRenameConfirmDialog = false;
-    private bool showNewVanityDialog = false;
-    private bool _newVanityDialogWasShown = false;
     private static bool _isOtherDialogOpen = false;
 
     private Schedule DeepCopySchedule(Schedule s)

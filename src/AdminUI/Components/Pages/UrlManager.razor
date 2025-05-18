@@ -8,14 +8,14 @@
 @using AzUrlShortener.AdminUI.Components.Dialogues
 @using AzUrlShortener.AdminUI.Services
 @using Azure.Data.Tables
+@inject IConfiguration Configuration
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@inject SharedStateService SharedStateService
 @inject UrlManagerClient urlManager
 @inject UserService userService
-@inject IJSRuntime JSRuntime
 @inject IDialogService DialogService
 @inject IToastService toastService
-@inject NavigationManager NavigationManager
-@inject IConfiguration Configuration
-@inject IJSRuntime JS
 
 @rendermode InteractiveServer
 
@@ -57,7 +57,7 @@
                         <div class="filter-controls">
                             <FluentCheckbox @bind-Value="showOnlyMyRecords" 
                                 Label="Only my records"
-                                @onchange="OnShowOnlyMyRecordsChanged" 
+                                @bind-Value:after="OnShowOnlyMyRecordsChanged" 
                                 Style="min-width: max-content" />
                         </div>
                     }
@@ -87,150 +87,150 @@
         </div>
     }
 
-    <div class="grid-container">
-        <FluentDataGrid Id="grdUrls" @ref="_dataGrid"
-                Class="sticky-header-grid"
-                Items="@filteredUrlList"
-                ResizableColumns=true
-                GridTemplateColumns="60px auto auto auto auto 120px 120px 120px"
-                Pagination="@pagination"
-                AutoItemsPerPage=false
-                RowSize="DataGridRowSize.Medium"
-                ShowHover=true>
-            <ChildContent>
-                <TemplateColumn Sortable="false">
-                    <FluentButton OnClick="@(async () => await CopyToClipboardAsync(context!.ShortUrl))" IconEnd="@(new Icons.Regular.Size16.Copy())" Title="Copy" />
-                </TemplateColumn>
-                <TemplateColumn Title="Vanity" Sortable="true" SortBy="@sortByVanities" Style="min-width: 100px">
-                    <div class="truncate-with-tooltip" title="@context!.Vanity">
-                        <FluentAnchor Href="@context!.ShortUrl" Target="_blank" Appearance="Appearance.Hypertext">@context!.Vanity</FluentAnchor>
-                    </div>
-                </TemplateColumn>
-                <TemplateColumn Title="Title" Sortable="true" Style="min-width: 130px">
-                    <div class="truncate-with-tooltip" title="@context!.Title">
-                        @context!.Title
-                    </div>
-                </TemplateColumn>
-                <TemplateColumn Title="Url" Sortable="true" Style="min-width: 150px">
-                    <div class="truncate-with-tooltip" title="@context!.Url">
-                        <FluentAnchor Href="@context!.Url" Target="_blank" Appearance="Appearance.Hypertext">@context!.Url</FluentAnchor>
-                    </div>
-                </TemplateColumn>
-                @if (isAdmin)
-                {
-                    <TemplateColumn Title="Owner" Sortable="true" Style="min-width: 130px">
-                        <div class="truncate-with-tooltip" title="@context!.OwnerUpn">
-                            <FluentAnchor Href="@($"mailto:{context!.OwnerUpn}?subject=URL Shortener record '{context!.ShortUrl}'")" Appearance="Appearance.Hypertext">@context!.OwnerUpn</FluentAnchor>
+        <div class="grid-container">
+            <FluentDataGrid Id="grdUrls" @ref="_dataGrid"
+                    Class="sticky-header-grid"
+                    Items="@filteredUrlList"
+                    ResizableColumns=true
+                    GridTemplateColumns="60px auto auto auto auto 120px 120px 120px"
+                    Pagination="@pagination"
+                    AutoItemsPerPage=false
+                    RowSize="DataGridRowSize.Medium"
+                    ShowHover=true>
+                <ChildContent>
+                    <TemplateColumn Sortable="false">
+                        <FluentButton OnClick="@(async () => await CopyToClipboardAsync(context!.ShortUrl))" IconEnd="@(new Icons.Regular.Size16.Copy())" Title="Copy" />
+                    </TemplateColumn>
+                    <TemplateColumn Title="Vanity" Sortable="true" SortBy="@sortByVanities" Style="min-width: 100px">
+                        <div class="truncate-with-tooltip" title="@context!.Vanity">
+                            <FluentAnchor Href="@context!.ShortUrl" Target="_blank" Appearance="Appearance.Hypertext">@context!.Vanity</FluentAnchor>
                         </div>
                     </TemplateColumn>
-                }
-                <TemplateColumn Title="Schedule(s)" Sortable="true" SortBy="@sortBySchedules">
-                    @(context!.Schedules?.Count ?? 0)
-                </TemplateColumn>
-                <TemplateColumn Title="Clicks" Align="Align.End" Sortable="true" SortBy="@sortByClicks">
-                    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" HorizontalAlignment="HorizontalAlignment.End">
-                        @context.Clicks
-                        <div id="stats-button-@context.RowKey">
-                            @{
-                                var isOwner = string.Equals(context!.OwnerUpn, currentUserUpn, StringComparison.OrdinalIgnoreCase);
-                                var canViewStats = isAdmin || isOwner;
-                            }
-                            <FluentButton OnClick="@(() => NavigateToStats(context.Vanity))"
-                            IconEnd="@(new Icons.Regular.Size16.ChartMultiple())"
-                            Title="View Statistics"
-                            Disabled="@(!canViewStats)" />
-                            @if (!canViewStats)
-                            {
-                                <FluentTooltip Anchor="@($"stats-button-{context.RowKey}")">
-                                    You cannot view statistics for this URL because you didn't create it
-                                </FluentTooltip>
-                            }
+                    <TemplateColumn Title="Title" Sortable="true" Style="min-width: 130px">
+                        <div class="truncate-with-tooltip" title="@context!.Title">
+                            @context!.Title
                         </div>
-                    </FluentStack>
-                </TemplateColumn>
-                <TemplateColumn Sortable="false">
-                    @{
-                        var isOwner = string.Equals(context!.OwnerUpn, currentUserUpn, StringComparison.OrdinalIgnoreCase);
-                        var canModify = isAdmin || isOwner;
-                        var canArchive = isAdmin || (isOwner && canRegularUsersArchiveRecords);
+                    </TemplateColumn>
+                    <TemplateColumn Title="Url" Sortable="true" Style="min-width: 150px">
+                        <div class="truncate-with-tooltip" title="@context!.Url">
+                            <FluentAnchor Href="@context!.Url" Target="_blank" Appearance="Appearance.Hypertext">@context!.Url</FluentAnchor>
+                        </div>
+                    </TemplateColumn>
+                    @if (isAdmin)
+                    {
+                        <TemplateColumn Title="Owner" Sortable="true" Style="min-width: 130px">
+                            <div class="truncate-with-tooltip" title="@context!.OwnerUpn">
+                                <FluentAnchor Href="@($"mailto:{context!.OwnerUpn}?subject=URL Shortener record '{context!.ShortUrl}'")" Appearance="Appearance.Hypertext">@context!.OwnerUpn</FluentAnchor>
+                            </div>
+                        </TemplateColumn>
                     }
+                    <TemplateColumn Title="Schedule(s)" Sortable="true" SortBy="@sortBySchedules">
+                        @(context!.Schedules?.Count ?? 0)
+                    </TemplateColumn>
+                    <TemplateColumn Title="Clicks" Align="Align.End" Sortable="true" SortBy="@sortByClicks">
+                        <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" HorizontalAlignment="HorizontalAlignment.End">
+                            @context.Clicks
+                            <div id="stats-button-@context.RowKey">
+                                @{
+                                    var isOwner = string.Equals(context!.OwnerUpn, currentUserUpn, StringComparison.OrdinalIgnoreCase);
+                                    var canViewStats = isAdmin || isOwner;
+                                }
+                                <FluentButton OnClick="@(() => NavigateToStats(context.Vanity))"
+                                IconEnd="@(new Icons.Regular.Size16.ChartMultiple())"
+                                Title="View Statistics"
+                                Disabled="@(!canViewStats)" />
+                                @if (!canViewStats)
+                                {
+                                    <FluentTooltip Anchor="@($"stats-button-{context.RowKey}")">
+                                        You cannot view statistics for this URL because you didn't create it
+                                    </FluentTooltip>
+                                }
+                            </div>
+                        </FluentStack>
+                    </TemplateColumn>
+                    <TemplateColumn Sortable="false">
+                        @{
+                            var isOwner = string.Equals(context!.OwnerUpn, currentUserUpn, StringComparison.OrdinalIgnoreCase);
+                            var canModify = isAdmin || isOwner;
+                            var canArchive = isAdmin || (isOwner && canRegularUsersArchiveRecords);
+                        }
 
-                    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
-                        <div id="edit-button-@context.RowKey">
-                            <FluentButton OnClick="@(() => EditShortUrl(context))"
-                            IconEnd="@(new Icons.Regular.Size16.Edit())"
-                            Title="Edit"
-                            Disabled="@(!canModify)" />
-                            @if (!canModify)
-                            {
-                                <FluentTooltip Anchor="@($"edit-button-{context.RowKey}")">
-                                    You cannot modify this URL because you didn't create it
-                                </FluentTooltip>
-                            }
-                        </div>
+                        <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                            <div id="edit-button-@context.RowKey">
+                                <FluentButton OnClick="@(() => EditShortUrl(context))"
+                                IconEnd="@(new Icons.Regular.Size16.Edit())"
+                                Title="Edit"
+                                Disabled="@(!canModify)" />
+                                @if (!canModify)
+                                {
+                                    <FluentTooltip Anchor="@($"edit-button-{context.RowKey}")">
+                                        You cannot modify this URL because you didn't create it
+                                    </FluentTooltip>
+                                }
+                            </div>
 
-                        <div id="archive-menu-@context.RowKey">
-                            <FluentButton Id="@($"archive-action-button-{context.RowKey}")" 
-                                          Appearance="Appearance.Outline" 
-                                          IconEnd="@(new Icons.Regular.Size16.Archive())" 
-                                          Title="Archive" 
-                                          Disabled="@(!canArchive)"
-                                          OnClick="@(() => ArchiveMenuStates[context.RowKey] = true)" />
-                            @if (canArchive)
-                            {
-                                <FluentMenu Anchor="@($"archive-action-button-{context.RowKey}")" 
-                                            UseMenuService="true" 
-                                            VerticalThreshold="170"
-                                            @bind-Open="ArchiveMenuStates[context.RowKey]"
-                                            Anchored="true">
-                                    <FluentMenuItem @onclick="@(async () => { await ArchiveShortUrl(context); })">
-                                        <FluentIcon Value="@(new Icons.Regular.Size16.Archive())" Color="@Color.Neutral" Slot="start" />
-                                        Archive
-                                    </FluentMenuItem>
-                                    <FluentDivider />
-                                    @if (isAdmin)
-                                    {
-                                        <FluentMenuItem @onclick="@(async () => await ConfirmDeleteShortUrl(context))">
-                                            <FluentIcon Value="@(new Icons.Regular.Size16.Delete())" Color="@Color.Neutral" Slot="start" />
-                                            Delete
+                            <div id="archive-menu-@context.RowKey">
+                                <FluentButton Id="@($"archive-action-button-{context.RowKey}")" 
+                                              Appearance="Appearance.Outline" 
+                                              IconEnd="@(new Icons.Regular.Size16.Archive())" 
+                                              Title="Archive" 
+                                              Disabled="@(!canArchive)"
+                                              OnClick="@(() => ArchiveMenuStates[context.RowKey] = true)" />
+                                @if (canArchive)
+                                {
+                                    <FluentMenu Anchor="@($"archive-action-button-{context.RowKey}")" 
+                                                UseMenuService="true" 
+                                                VerticalThreshold="170"
+                                                @bind-Open="ArchiveMenuStates[context.RowKey]"
+                                                Anchored="true">
+                                        <FluentMenuItem @onclick="@(async () => { await ArchiveShortUrl(context); })">
+                                            <FluentIcon Value="@(new Icons.Regular.Size16.Archive())" Color="@Color.Neutral" Slot="start" />
+                                            Archive
                                         </FluentMenuItem>
-                                    }
-                                </FluentMenu>
-                            }
-                            else 
-                            {
-                                <FluentTooltip Anchor="@($"archive-action-button-{context.RowKey}")">
-                                    @if (!isOwner)
-                                    {
-                                        <span>You cannot archive this URL because you didn't create it</span>
-                                    }
-                                    else
-                                    {
-                                        <span>Only administrators can archive URL records</span>
-                                    }
-                                </FluentTooltip>
-                            }
+                                        <FluentDivider />
+                                        @if (isAdmin)
+                                        {
+                                            <FluentMenuItem @onclick="@(async () => await ConfirmDeleteShortUrl(context))">
+                                                <FluentIcon Value="@(new Icons.Regular.Size16.Delete())" Color="@Color.Neutral" Slot="start" />
+                                                Delete
+                                            </FluentMenuItem>
+                                        }
+                                    </FluentMenu>
+                                }
+                                else 
+                                {
+                                    <FluentTooltip Anchor="@($"archive-action-button-{context.RowKey}")">
+                                        @if (!isOwner)
+                                        {
+                                            <span>You cannot archive this URL because you didn't create it</span>
+                                        }
+                                        else
+                                        {
+                                            <span>Only administrators can archive URL records</span>
+                                        }
+                                    </FluentTooltip>
+                                }
+                            </div>
+                        </FluentStack>
+                    </TemplateColumn>
+                </ChildContent>
+                <LoadingContent>
+                        <div class="custom-loading-content">
+                            <FluentProgressRing /> Loading data...
                         </div>
-                    </FluentStack>
-                </TemplateColumn>
-            </ChildContent>
-            <LoadingContent>
-                <div class="custom-loading-content">
-                    <FluentProgressRing /> Loading data...
-                </div>
-            </LoadingContent>
-            <EmptyContent>
-                <div class="custom-empty-content">
-                    <FluentIcon Value="@(new Icons.Filled.Size16.Info())" Color="@Color.Accent" />&nbsp; No short URLs found.
-                </div>
-            </EmptyContent>
-        </FluentDataGrid>
-    </div>
+                </LoadingContent>
+                <EmptyContent>
+                    <div class="custom-empty-content">
+                        <FluentIcon Value="@(new Icons.Filled.Size16.Info())" Color="@Color.Accent" />&nbsp; No short URLs found.
+                    </div>
+                </EmptyContent>
+            </FluentDataGrid>
+        </div>
 
-    <div class="paginator-container">
-        <FluentPaginator State="@pagination">
-        </FluentPaginator>
-    </div>
+        <div class="paginator-container">
+            <FluentPaginator State="@pagination">
+            </FluentPaginator>
+        </div>
 </div>
 
 <style>
@@ -263,7 +263,14 @@
     private string searchText = string.Empty;
     private string currentUserUpn = string.Empty;
     private bool canRegularUsersArchiveRecords;
-    private bool showOnlyMyRecords = false;
+
+    private bool showOnlyMyRecords
+    {
+        get => SharedStateService.ShowOnlyMyRecords;
+        set => SharedStateService.ShowOnlyMyRecords = value;
+    }
+
+    private const string ShowOnlyMyRecordsKey = "showOnlyMyRecords";
 
     private string importConnectionString;
     private bool importInProgress = false;
@@ -292,6 +299,17 @@
     {
         importConnectionString = Configuration["ImportTableStorageConnectionString"] ?? string.Empty;
 
+        // Load persisted checkbox state from local storage FIRST
+        try
+        {
+            var storedValue = await JSRuntime.InvokeAsync<string>("localStorage.getItem", ShowOnlyMyRecordsKey);
+            if (!string.IsNullOrEmpty(storedValue) && bool.TryParse(storedValue, out var parsed))
+            {
+                SharedStateService.ShowOnlyMyRecords = parsed;
+            }
+        }
+        catch (Exception) { }
+
         isAdmin = await userService.IsAdminAsync();
         currentUserUpn = await userService.GetUserPrincipalNameAsync();
         canRegularUsersArchiveRecords = userService.CanRegularUsersArchiveRecords();
@@ -311,10 +329,15 @@
         }
     }
 
-    private void OnShowOnlyMyRecordsChanged(ChangeEventArgs args)
+    private async Task OnShowOnlyMyRecordsChanged()
     {
-        showOnlyMyRecords = !showOnlyMyRecords;
-        FilterUrls();
+        // Persist the new value to local storage
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", ShowOnlyMyRecordsKey, SharedStateService.ShowOnlyMyRecords.ToString().ToLowerInvariant());
+        }
+        catch { }
+        FilterUrls(); 
     }
 
     private void OnSearchInput()
@@ -407,7 +430,7 @@
 
     private async Task CreateShortUrl()
     {
-        var viewportWidth = await JS.InvokeAsync<int>("getViewportWidth");
+        var viewportWidth = await JSRuntime.InvokeAsync<int>("getViewportWidth");
 
         shortUrlRequest = new ShortUrlRequest();
         var dialog = await DialogService.ShowDialogAsync<NewUrlDialog>(shortUrlRequest, new DialogParameters()
@@ -489,7 +512,7 @@
             return;
         }
 
-        var viewportWidth = await JS.InvokeAsync<int>("getViewportWidth");
+        var viewportWidth = await JSRuntime.InvokeAsync<int>("getViewportWidth");
 
         var dialog = await DialogService.ShowDialogAsync<UpdateUrlDialog>(urlEntity, new DialogParameters()
         {

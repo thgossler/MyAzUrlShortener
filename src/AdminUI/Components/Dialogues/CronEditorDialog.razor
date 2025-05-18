@@ -4,27 +4,25 @@
 @inject IJSRuntime JS
 
 <div tabindex="0" onkeydown:window="HandleDialogKeyDown">
-    <FluentDialog>
-        <FluentDialogHeader ShowDismiss="false" TabIndex="-1">
-            <FluentStack VerticalAlignment="VerticalAlignment.Center">
-                <FluentIcon Value="@(new Icons.Regular.Size24.WindowApps())" />
-                <FluentLabel Typo="Typography.PaneHeader">
-                    @Dialog?.Instance?.Parameters?.Title
-                </FluentLabel>
-            </FluentStack>
-        </FluentDialogHeader>
+    <FluentDialogHeader ShowDismiss="false" TabIndex="-1">
+        <FluentStack VerticalAlignment="VerticalAlignment.Center">
+            <FluentIcon Value="@(new Icons.Regular.Size24.WindowApps())" />
+            <FluentLabel Typo="Typography.PaneHeader">
+                @Dialog?.Instance?.Parameters?.Title
+            </FluentLabel>
+        </FluentStack>
+    </FluentDialogHeader>
 
-        <div class="cron-editor-dialog">
-            <div style="width: 100%; padding: 10px;">
-                <CrontabEditorComponent @ref="cronEditor" />
-            </div>
-
-            <FluentDialogFooter>
-                <FluentButton Appearance="Appearance.Accent" OnClick="@SaveAsync">OK</FluentButton>
-                <FluentButton Appearance="Appearance.Neutral" OnClick="@CancelAsync">Cancel</FluentButton>
-            </FluentDialogFooter>
+    <div class="cron-editor-dialog">
+        <div style="width: 100%; padding: 10px;">
+            <CrontabEditorComponent @ref="cronEditor" />
         </div>
-    </FluentDialog>
+
+        <FluentDialogFooter>
+            <FluentButton Appearance="Appearance.Accent" OnClick="@SaveAsync">OK</FluentButton>
+            <FluentButton Appearance="Appearance.Neutral" OnClick="@CancelAsync">Cancel</FluentButton>
+        </FluentDialogFooter>
+    </div>
 </div>
 
 @code {
