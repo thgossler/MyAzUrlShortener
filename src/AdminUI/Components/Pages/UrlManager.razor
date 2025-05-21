@@ -301,6 +301,9 @@
 
     private DotNetObjectReference<UrlManager>? _dotNetRef;
 
+    private bool _dialogOpen = false;
+    private bool _suppressNextEsc = false;
+
     IQueryable<ShortUrlEntity> urlList;
     IQueryable<ShortUrlEntity> filteredUrlList;
     FluentDataGrid<ShortUrlEntity> _dataGrid;
@@ -317,7 +320,12 @@
     [JSInvokable]
     public void OnEscPressed()
     {
-        if (!string.IsNullOrEmpty(searchText))
+        if (_suppressNextEsc)
+        {
+            _suppressNextEsc = false;
+            return;
+        }
+        if (!_dialogOpen && !string.IsNullOrEmpty(searchText))
         {
             searchText = string.Empty;
             FilterUrls();
@@ -516,6 +524,7 @@
         var viewportWidth = await JSRuntime.InvokeAsync<int>("getViewportWidth");
 
         shortUrlRequest = new ShortUrlRequest();
+        _dialogOpen = true;
         var dialog = await DialogService.ShowDialogAsync<NewUrlDialog>(shortUrlRequest, new DialogParameters()
         {
             Id = "NewUrlDialog",
@@ -528,6 +537,8 @@
         });
 
         var result = await dialog.Result;
+        _dialogOpen = false;
+        _suppressNextEsc = true;
         if (!result.Cancelled && result.Data != null)
         {
             var dialogData = (ShortUrlRequest)result.Data;
@@ -597,6 +608,7 @@
 
         var viewportWidth = await JSRuntime.InvokeAsync<int>("getViewportWidth");
 
+        _dialogOpen = true;
         var dialog = await DialogService.ShowDialogAsync<UpdateUrlDialog>(urlEntity, new DialogParameters()
         {
             Id = "UpdateUrlDialog",
@@ -609,6 +621,8 @@
         });
 
         var result = await dialog.Result;
+        _dialogOpen = false;
+        _suppressNextEsc = true;
         if (!result.Cancelled && result.Data != null)
         {
             if (result.Data is ShortUrlEntity dialogData)
@@ -668,6 +682,7 @@
             Message = $@"Deleting a short URL is not recommended. This will permanently remove the record from the system. 
 Supposed-to-be stable URLs will be broken, and the same vanity could be reused for a completely different purpose, which may be misleading for users who have bookmarked or shared the original link."
         };
+        _dialogOpen = true;
         var dialog = await DialogService.ShowDialogAsync<DeleteShortUrlDialog>(parameters, new DialogParameters
         {
             Id = "DeleteShortUrlDialog",
@@ -678,6 +693,8 @@ Supposed-to-be stable URLs will be broken, and the same vanity could be reused f
             TrapFocus = true
         });
         var result = await dialog.Result;
+        _dialogOpen = false;
+        _suppressNextEsc = true;
         if (!result.Cancelled && result.Data is bool proceed && proceed)
         {
             var deleteResult = await urlManager.UrlDelete(urlEntity);
@@ -699,6 +716,7 @@ Supposed-to-be stable URLs will be broken, and the same vanity could be reused f
         {
             Vanity = vanity
         };
+        _dialogOpen = true;
         var dialog = await DialogService.ShowDialogAsync<ReactivateVanityDialog>(parameters, new DialogParameters
         {
             Id = "ReactivateVanityDialog",
@@ -709,6 +727,8 @@ Supposed-to-be stable URLs will be broken, and the same vanity could be reused f
             TrapFocus = true
         });
         var result = await dialog.Result;
+        _dialogOpen = false;
+        _suppressNextEsc = true;
         if (!result.Cancelled && result.Data is bool proceed && proceed)
         {
             await ReactivateVanity(vanity, ownerUpn);
