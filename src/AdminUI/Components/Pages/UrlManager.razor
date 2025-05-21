@@ -28,7 +28,7 @@
 
         <div class="actions-row">
             <FluentButton OnClick="@(CreateShortUrl)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.Add())">Add</FluentButton>
-            <FluentButton OnClick="@(ManualRefresh)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.ArrowSync())"><div class="hide-on-small-height-displays">Refresh</div></FluentButton>
+            <FluentButton OnClick="@(() => ManualRefresh())" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.ArrowSync())"><div class="hide-on-small-height-displays">Refresh</div></FluentButton>
 
             <div class="hide-on-small-sized-displays">
                 @if ((filteredUrlList == null || !filteredUrlList.Any()) && isAdmin)
@@ -294,6 +294,9 @@
 
     private Dictionary<string, bool> ArchiveMenuStates = new Dictionary<string, bool>();
 
+    private int? _pendingPageIndex = null;
+    private double? _pendingScrollTop = null;
+
     IQueryable<ShortUrlEntity> urlList;
     IQueryable<ShortUrlEntity> filteredUrlList;
     FluentDataGrid<ShortUrlEntity> _dataGrid;
@@ -374,12 +377,19 @@
         FilterUrls();
     }
 
-    private async Task RefreshGrid()
+    private async Task RefreshGrid(bool preservePage = false)
     {
         try
         {
             isLoading = true;
             StateHasChanged();
+
+            // Save current page and scroll if needed
+            if (preservePage && pagination != null)
+            {
+                _pendingPageIndex = pagination.CurrentPageIndex;
+                _pendingScrollTop = await JSRuntime.InvokeAsync<double?>("getDataGridScrollTop", "grdUrls");
+            }
 
             urlList = await urlManager.GetUrls();
 
@@ -389,7 +399,7 @@
                 cachedUrlList = urlList.ToList();
             }
 
-            FilterUrls();
+            FilterUrls(false); // Don't reset page here
         }
         catch (Exception ex)
         {
@@ -399,16 +409,27 @@
         {
             isLoading = false;
             StateHasChanged();
+            // Restore page and scroll if needed
+            if (preservePage && _pendingPageIndex.HasValue)
+            {
+                pagination.SetCurrentPageIndexAsync(_pendingPageIndex.Value);
+                _pendingPageIndex = null;
+            }
+            if (preservePage && _pendingScrollTop.HasValue)
+            {
+                await JSRuntime.InvokeVoidAsync("setDataGridScrollTop", "grdUrls", _pendingScrollTop.Value);
+                _pendingScrollTop = null;
+            }
         }
     }
 
-    private async Task ManualRefresh()
+    private async Task UpdateUIList()
     {
-        await RefreshGrid();
-        toastService.ShowInfo("URL list refreshed");
+        await RefreshGrid(true); // preserve page and scroll
+        StateHasChanged();
     }
 
-    private void FilterUrls()
+    private void FilterUrls(bool resetPage = true)
     {
         if (urlList == null)
         {
@@ -447,14 +468,11 @@
             ArchiveMenuStates[record.RowKey] = false;
         }
 
-        // Reset pagination to first page when filtering
-        pagination.SetCurrentPageIndexAsync(0);
-    }
-
-    private async Task UpdateUIList()
-    {
-        await RefreshGrid();
-        StateHasChanged();
+        // Only reset pagination to first page when filtering/searching
+        if (resetPage)
+        {
+            pagination.SetCurrentPageIndexAsync(0);
+        }
     }
 
     private async Task CreateShortUrl()
@@ -831,5 +849,11 @@ Supposed-to-be stable URLs will be broken, and the same vanity could be reused f
         {
             toastService.ShowError($"Failed to reactivate vanity '{vanity}'");
         }
+    }
+
+    private async Task ManualRefresh()
+    {
+        await RefreshGrid(true); // preserve page and scroll
+        toastService.ShowInfo("URL list refreshed");
     }
 }
