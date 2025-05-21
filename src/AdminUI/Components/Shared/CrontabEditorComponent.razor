@@ -7,25 +7,25 @@
 <div style="max-height: 600px; overflow-y: auto; padding-right: 10px;">
     <FluentStack Orientation="Orientation.Horizontal" Wrap="true">
         <FluentTextField @ref="_initialFocusControl" @bind-Value="MinuteInput" 
-        Immediate="true" ImmediateDelay="300"
+        Immediate="true" ImmediateDelay="350"
         Label="Minute" Placeholder="*/0-59"
         Style="width:60px; margin-right:10px;" 
         Error="@MinuteError" />
 
         <FluentTextField @bind-Value="HourInput" 
-        Immediate="true" ImmediateDelay="300"
+        Immediate="true" ImmediateDelay="350"
         Label="Hour" Placeholder="*/0-23"
         Style="width:60px;" 
         Error="@HourError" />
 
         <FluentTextField @bind-Value="DayOfMonthInput" 
-        Immediate="true" ImmediateDelay="300"
+        Immediate="true" ImmediateDelay="350"
         Label="Day of Month" Placeholder="*/1-31,..."
         Style="width:100px; margin-right:10px;" 
         Error="@DayOfMonthError" />
 
         <FluentTextField @bind-Value="MonthInput" 
-        Immediate="true" ImmediateDelay="300"
+        Immediate="true" ImmediateDelay="350"
         Label="Month" Placeholder="*/1-12,..."
         Style="width:100px; margin-right:10px;" 
         Error="@MonthError" />
@@ -46,7 +46,7 @@
         <h4>Cron Expression</h4>
         <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" Wrap="true">
             <FluentTextField @bind-Value="CrontabExpression" 
-            Immediate="true" ImmediateDelay="300"
+            Immediate="true" ImmediateDelay="350"
             Style="width:250px; margin-right:10px;" Placeholder="* * * * *" 
             @onfocus="() => _cronExpressionHasFocus = true" 
             @onblur="() => _cronExpressionHasFocus = false" />

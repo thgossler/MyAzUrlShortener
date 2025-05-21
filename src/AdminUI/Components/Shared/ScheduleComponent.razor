@@ -22,13 +22,13 @@
         </div>
     </FluentStack>
     <div style="width: 100%;">
-        <FluentTextField Label="Alternative URL" Name="AlternativeUrl" Placeholder="https://..." Immediate="true" ImmediateDelay="300" @bind-Value="schedule.AlternativeUrl" @bind-Value:after="OnScheduleFieldChanged" style="width: 90%;" />
+        <FluentTextField Label="Alternative URL" Name="AlternativeUrl" Placeholder="https://..." Immediate="true" ImmediateDelay="350" @bind-Value="schedule.AlternativeUrl" @bind-Value:after="OnScheduleFieldChanged" style="width: 90%;" />
     </div>
     <div>
         <FluentLabel Typo="Typography.H6" Color="Color.FillInverse" Style="margin-bottom: 8px">Recurrences within overall period</FluentLabel>
         <FluentStack Orientation="Orientation.Vertical" HorizontalGap="10">
             <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10">
-                <FluentTextField @ref="_cronTextField" Name="Cron" Label="Cron expression" Placeholder="* * * * *" Immediate="true" ImmediateDelay="300" @bind-Value="schedule.Cron" @bind-Value:after="OnScheduleFieldChanged" />
+                <FluentTextField @ref="_cronTextField" Name="Cron" Label="Cron expression" Placeholder="* * * * *" Immediate="true" ImmediateDelay="350" @bind-Value="schedule.Cron" @bind-Value:after="OnScheduleFieldChanged" />
                 <FluentButton Appearance="Appearance.Accent" OnClick="OpenCronDialog">Edit</FluentButton>
                 <FluentButton Appearance="Appearance.Accent" OnClick="ResetCronExpression">Reset</FluentButton>
             </FluentStack>

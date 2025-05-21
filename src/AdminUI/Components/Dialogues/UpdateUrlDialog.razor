@@ -30,12 +30,12 @@
         <FluentStack Orientation="Orientation.Vertical" VerticalGapGap="10"  Width="100%">
 
             <div style="width: 100%;">
-                <FluentTextField @ref="_titleInput" Name="Title" Label="Title" @bind-Value="_shortUrl.Title" Immediate="true" ImmediateDelay="250" Required="true" style="width: 100%;" />
+                <FluentTextField @ref="_titleInput" Name="Title" Label="Title" @bind-Value="_shortUrl.Title" Immediate="true" ImmediateDelay="350" Required="true" style="width: 100%;" />
                 <FluentValidationMessage For="@(() => _shortUrl.Title)" />
             </div>
 
             <div style="width: 100%;">
-                <FluentTextField Name="Url" Label="Url" @bind-Value="_shortUrl.Url" Immediate="true" ImmediateDelay="250" Required="true" style="width: 100%;" />
+                <FluentTextField Name="Url" Label="Url" @bind-Value="_shortUrl.Url" Immediate="true" ImmediateDelay="350" Required="true" style="width: 100%;" />
                 <FluentValidationMessage For="@(() => _shortUrl.Url)" />
             </div>
 
@@ -49,7 +49,7 @@
             @if (_isAdmin)
             {
                 <div style="width: 100%;">
-                    <FluentTextField Id="OwnerUpn" Name="OwnerUpn" Label="Owner UPN" @bind-Value="_shortUrl.OwnerUpn" Immediate="true" ImmediateDelay="250" style="width: 100%;" />
+                    <FluentTextField Id="OwnerUpn" Name="OwnerUpn" Label="Owner UPN" @bind-Value="_shortUrl.OwnerUpn" Immediate="true" ImmediateDelay="350" style="width: 100%;" />
                     <FluentTooltip Anchor="OwnerUpn">
                         User Principal Name of the URL owner. Only administrator can change this.
                     </FluentTooltip>

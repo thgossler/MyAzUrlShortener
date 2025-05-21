@@ -65,7 +65,7 @@
                         @bind-Value="searchText"
                         @bind-Value:after="OnSearchInput"
                         Immediate="true"
-                        ImmediateDelay="500"
+                        ImmediateDelay="350"
                         Icon="@(new Icons.Regular.Size16.Search())" />
                 </FluentStack>
             </div>
@@ -106,12 +106,12 @@
                             <FluentAnchor Href="@context!.ShortUrl" Target="_blank" Appearance="Appearance.Hypertext">@context!.Vanity</FluentAnchor>
                         </div>
                     </TemplateColumn>
-                    <TemplateColumn Title="Title" Sortable="true" Style="min-width: 130px">
+                    <TemplateColumn Title="Title" Sortable="true" SortBy="@sortByTitle" Style="min-width: 130px">
                         <div class="truncate-with-tooltip" title="@context!.Title">
                             @context!.Title
                         </div>
                     </TemplateColumn>
-                    <TemplateColumn Title="Url" Sortable="true" Style="min-width: 150px">
+                    <TemplateColumn Title="Url" Sortable="true" SortBy="@sortByUrl" Style="min-width: 150px">
                         <div class="truncate-with-tooltip" title="@context!.Url">
                             <FluentAnchor Href="@context!.Url" Target="_blank" Appearance="Appearance.Hypertext">@context!.Url</FluentAnchor>
                         </div>
@@ -304,6 +304,8 @@
     GridSort<ShortUrlEntity> sortByClicks = GridSort<ShortUrlEntity>.ByDescending(p => p.Clicks);
     GridSort<ShortUrlEntity> sortBySchedules = GridSort<ShortUrlEntity>.ByDescending(p => p.Schedules.Count);
     GridSort<ShortUrlEntity> sortByVanities = GridSort<ShortUrlEntity>.ByAscending(p => p.RowKey);
+    GridSort<ShortUrlEntity> sortByTitle = GridSort<ShortUrlEntity>.ByAscending(p => p.Title);
+    GridSort<ShortUrlEntity> sortByUrl = GridSort<ShortUrlEntity>.ByAscending(p => p.Url);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
