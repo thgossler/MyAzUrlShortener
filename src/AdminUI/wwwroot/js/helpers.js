@@ -33,3 +33,21 @@ window.setDataGridScrollTop = function (gridId, scrollTop) {
     var tbody = grid.querySelector('tbody');
     if (tbody) tbody.scrollTop = scrollTop;
 };
+
+// Listen for ESC keydown anywhere on the page and call a .NET method
+window.registerEscKeyHandler = function (dotNetHelper) {
+    function handler(e) {
+        if (e.key === 'Escape') {
+            dotNetHelper.invokeMethodAsync('OnEscPressed');
+        }
+    }
+    window.__escKeyHandler = handler;
+    document.addEventListener('keydown', handler);
+};
+
+window.unregisterEscKeyHandler = function () {
+    if (window.__escKeyHandler) {
+        document.removeEventListener('keydown', window.__escKeyHandler);
+        window.__escKeyHandler = null;
+    }
+};

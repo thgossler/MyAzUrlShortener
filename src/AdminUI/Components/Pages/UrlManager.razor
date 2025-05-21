@@ -19,6 +19,8 @@
 
 @rendermode InteractiveServer
 
+@implements IAsyncDisposable
+
 <PageTitle>Manage URLs</PageTitle>
 
 <div class="page-container">
@@ -297,6 +299,8 @@
     private int? _pendingPageIndex = null;
     private double? _pendingScrollTop = null;
 
+    private DotNetObjectReference<UrlManager>? _dotNetRef;
+
     IQueryable<ShortUrlEntity> urlList;
     IQueryable<ShortUrlEntity> filteredUrlList;
     FluentDataGrid<ShortUrlEntity> _dataGrid;
@@ -310,26 +314,16 @@
     GridSort<ShortUrlEntity> sortByTitle = GridSort<ShortUrlEntity>.ByAscending(p => p.Title);
     GridSort<ShortUrlEntity> sortByUrl = GridSort<ShortUrlEntity>.ByAscending(p => p.Url);
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    [JSInvokable]
+    public void OnEscPressed()
     {
-        if (firstRender)
+        if (!string.IsNullOrEmpty(searchText))
         {
-            try
-            {
-                // If we have cached data, use it immediately and avoid the loading state
-                if (dataHasBeenLoadedBefore && cachedUrlList != null && cachedUrlList.Count > 0)
-                {
-                    urlList = cachedUrlList.AsQueryable();
-                    FilterUrls();
-                    StateHasChanged();
-                }
-            }
-            catch (Exception) { }
+            searchText = string.Empty;
+            FilterUrls();
+            StateHasChanged();
         }
-
-        await base.OnAfterRenderAsync(firstRender);
     }
-
 
     protected override async Task OnInitializedAsync()
     {
@@ -353,12 +347,54 @@
         }
         catch (Exception) { }
 
-        if (!dataHasBeenLoadedBefore || cachedUrlList == null || cachedUrlList.Count == 0)
+        // Ensure initial data load if cache is empty
+        if (cachedUrlList == null || cachedUrlList.Count == 0)
         {
-            isLoading = true;
             await RefreshGrid();
-            dataHasBeenLoadedBefore = true;
         }
+        else
+        {
+            urlList = cachedUrlList.AsQueryable();
+            FilterUrls();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("unregisterEscKeyHandler");
+        }
+        catch (Exception)
+        {
+        }
+        _dotNetRef?.Dispose();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                // If we have cached data, use it immediately and avoid the loading state
+                if (dataHasBeenLoadedBefore && cachedUrlList != null && cachedUrlList.Count > 0)
+                {
+                    urlList = cachedUrlList.AsQueryable();
+                    FilterUrls();
+                    StateHasChanged();
+                }
+                // Register global ESC key handler only once, after first render
+                if (_dotNetRef == null)
+                {
+                    _dotNetRef = DotNetObjectReference.Create(this);
+                    await JSRuntime.InvokeVoidAsync("registerEscKeyHandler", _dotNetRef);
+                }
+            }
+            catch (Exception) { }
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
     }
 
     private async Task OnShowOnlyMyRecordsChanged()
@@ -732,6 +768,10 @@ Supposed-to-be stable URLs will be broken, and the same vanity could be reused f
                 }
             }
 
+            // Clear cache to force fresh reload
+            cachedUrlList = null;
+            dataHasBeenLoadedBefore = false;
+
             await UpdateUIList();
             toastService.ShowSuccess($"{successCount} example URLs created successfully");
         }
@@ -795,6 +835,11 @@ Supposed-to-be stable URLs will be broken, and the same vanity could be reused f
                 }
             }
             toastService.ShowSuccess($"{importedCount} records imported successfully");
+
+            // Clear cache to force fresh reload
+            cachedUrlList = null;
+            dataHasBeenLoadedBefore = false;
+
             await RefreshGrid();
         }
         catch (Exception ex)
