@@ -41,6 +41,11 @@ namespace AzUrlShortener.Functions
         /// <returns>
         /// A <see cref="McpResponseData"/> containing all search results and total count.
         /// </returns>
+        /// <remarks>
+        /// When this function is deployed, Azure Functions creates an "mcp_extension" system key.
+        /// Clients must include that key as the "code" query parameter (e.g. ?code=<key>) on the 
+        /// SSE endpoint (/runtime/webhooks/mcp/sse) to authorize MCP tool invocations.
+        /// </remarks>
         [Function(nameof(GetShortUrlRecords))]
         public async Task<McpResponseData> GetShortUrlRecords(
             [McpToolTrigger("search_shorturl_records", "Searches for short URL records based on provided parameters.")] ToolInvocationContext context,
