@@ -1,16 +1,21 @@
 {
-    "version": "2.0",
-    "logging": {
-        "applicationInsights": {
-            "samplingSettings": {
-                "isEnabled": true,
-                "excludedTypes": "Request"
-            }
-        }
-    },
-    "extensions": {
-      "http": {
-        "routePrefix": ""
+  "version": "2.0",
+  "logging": {
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": true,
+        "excludedTypes": "Request"
       }
     }
+  },
+  "extensions": {
+    "http": {
+      "routePrefix": ""
+    },
+    "mcp": {
+      "instructions": "To search for short URL records, call the MCP tool \"search_shorturl_records\" with the following parameters:\\n- vanity (string, optional): The exact vanity string to search for (case-insensitive). If provided, performs a direct lookup.\\n- searchTerm (string, optional): A full-text search term applied to vanity, title, and URL fields (case-insensitive).\\n- includeArchived (string, optional, default: \"false\"): Set to \"true\" to include archived URLs in the results; otherwise, archived URLs are excluded.\\n- pageSize (string, optional, default: \"100\"): The number of results to return per page.\\n- page (string, optional, default: \"1\"): The 1-based page number of results to return.\\n- vanityStartsWith (string, optional): Filters results to only those where the vanity name starts with the specified string. Use for prefix searches.\\n\\nExample payloads:\\n{\\n  \"vanity\": \"my-short-url\",\\n  \"searchTerm\": \"\",\\n  \"includeArchived\": \"\",\\n  \"pageSize\": \"\",\\n  \"page\": \"\",\\n  \"vanityStartsWith\": \"\"\\n}\\n\\n{\\n  \"vanity\": \"\",\\n  \"searchTerm\": \"\",\\n  \"includeArchived\": \"true\",\\n  \"pageSize\": \"50\",\\n  \"page\": \"1\",\\n  \"vanityStartsWith\": \"m\"\\n}\\n\\nThe response will include:\\n- results: A JSON array of matching short URL records, e.g. { \"shortUrl\": \"https://myurlshortener.com/myVanity\", \"vanity\": \"myVanity\", \"title\": \"A Short URL title\", \"activeUrl\": \"https://the-currently-active-target-url.com/xyz?param=hello\", \"isArchived\": \"false\", \"timestamp\": \"<timestamp of the record>\", \"eTag\": \"<etag of the record>\" }.\\n- totalCount: The total number of matching records.\\n- page: The current page number.\\n- pageSize: The number of results per page.",
+      "serverName": "ShortUrlSearchMcpServer",
+      "serverVersion": "0.0.1"
+    }
+  }
 }
