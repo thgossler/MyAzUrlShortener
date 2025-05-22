@@ -28,17 +28,18 @@ namespace AzUrlShortener.Functions
         }
 
         /// <summary>
-        /// Searches for short URL records based on provided parameters.
+        /// Searches for short URL records based on provided parameters, with optional sorting and result count limiting.
         /// </summary>
         /// <param name="context">The tool invocation context for MCP integration.</param>
         /// <param name="vanity">The exact vanity string to search for (case-insensitive). If provided, performs a direct lookup.</param>
         /// <param name="searchTerm">A full-text search term applied to vanity, title, and URL fields (case-insensitive).</param>
         /// <param name="includeArchived">If true, includes archived URLs in the results; otherwise, excludes them.</param>
-        /// <param name="pageSize">The number of results to return per page (default is 100).</param>
-        /// <param name="page">The 1-based page number of results to return.</param>
-        /// <param name="vanityStartsWith">A prefix for the vanity string to search for (case-insensitive). If provided, performs a prefix scan.</param>
+        /// <param name="vanityStartsWith">Filters results to only those where the vanity name starts with the specified string (case-insensitive). Use for prefix searches.</param>
+        /// <param name="sortBy">The property to sort by (e.g., 'timestamp', 'vanity', 'title').</param>
+        /// <param name="sortOrder">Sort order: 'asc' for ascending, 'desc' for descending. Default is 'desc'.</param>
+        /// <param name="maxResultCount">Maximum number of results to return. Can also be used for queries of first N results. Default is 100.</param>
         /// <returns>
-        /// A <see cref="McpResponseData"/> containing paged search results, total count, and paging metadata.
+        /// A <see cref="McpResponseData"/> containing all search results and total count.
         /// </returns>
         [Function(nameof(GetShortUrlRecords))]
         public async Task<McpResponseData> GetShortUrlRecords(
@@ -46,16 +47,16 @@ namespace AzUrlShortener.Functions
             [McpToolProperty("vanity", "string", "The exact vanity string to search for (case-insensitive). If provided, performs a direct lookup.")] string vanity = null,
             [McpToolProperty("searchTerm", "string", "A full-text search term applied to vanity, title, and URL fields (case-insensitive).")] string searchTerm = null,
             [McpToolProperty("includeArchived", "string", "If true, includes archived URLs in the results; otherwise, excludes them.")] string includeArchived = "false",
-            [McpToolProperty("pageSize", "string", "The number of results to return per page (default is 100).")] string pageSize = "100",
-            [McpToolProperty("page", "string", "The 1-based page number of results to return.")] string page = "1",
-            [McpToolProperty("vanityStartsWith", "string", "Filters results to only those where the vanity name starts with the specified string (case-insensitive). Use for prefix searches.")] string vanityStartsWith = null)
+            [McpToolProperty("vanityStartsWith", "string", "Filters results to only those where the vanity name starts with the specified string (case-insensitive). Use for prefix searches.")] string vanityStartsWith = null,
+            [McpToolProperty("sortBy", "string", "The property to sort by (e.g., 'timestamp', 'vanity', 'title').")] string sortBy = "timestamp",
+            [McpToolProperty("sortOrder", "string", "Sort order: 'asc' for ascending, 'desc' for descending. Default is 'desc'.")] string sortOrder = "desc",
+            [McpToolProperty("maxResultCount", "string", "Maximum number of results to return. Can also be used for queries of first N results. Default is 100.")] string maxResultCount = "100")
         {
-            _logger.LogInformation("Processing GetShortUrlRecords request (optimized for large datasets)");
+            _logger.LogInformation("Processing GetShortUrlRecords request (optimized for large datasets, paging removed)");
 
             // Parse string parameters to their actual types
             bool includeArchivedBool = bool.TryParse(includeArchived, out var b) && b;
-            int pageSizeInt = int.TryParse(pageSize, out var ps) ? ps : 100;
-            int pageInt = int.TryParse(page, out var p) ? p : 1;
+            int maxResultCountInt = int.TryParse(maxResultCount, out var mrc) ? mrc : 100;
 
             var table = _tblClient.GetTableClient("UrlsDetails");
             List<ShortUrlSearchResult> allResults = new List<ShortUrlSearchResult>();
@@ -124,22 +125,38 @@ namespace AzUrlShortener.Functions
                         }
                     }
                     allResults.Add(ToResult(entity));
+                    if (allResults.Count >= maxResultCountInt)
+                        break;
                 }
             }
 
-            // Paging logic (1-based page)
-            int totalCount = allResults.Count;
-            int skip = (pageInt - 1) * pageSizeInt;
-            var pageResults = allResults.Skip(skip).Take(pageSizeInt).ToList();
+            // Sorting logic
+            if (!string.IsNullOrWhiteSpace(sortBy))
+            {
+                Func<ShortUrlSearchResult, object> keySelector = sortBy.ToLowerInvariant() switch
+                {
+                    "timestamp" => r => r.Timestamp ?? DateTimeOffset.MinValue,
+                    "vanity" => r => r.Vanity ?? string.Empty,
+                    "title" => r => r.Title ?? string.Empty,
+                    _ => r => r.Timestamp ?? DateTimeOffset.MinValue,
+                };
+                if (sortOrder?.ToLowerInvariant() == "asc")
+                {
+                    allResults = allResults.OrderBy(keySelector).ToList();
+                }
+                else
+                {
+                    allResults = allResults.OrderByDescending(keySelector).ToList();
+                }
+            }
 
+            int totalCount = allResults.Count;
             var response = new McpResponseData
             {
                 Data =
                 {
-                    ["results"] = JsonSerializer.Serialize(pageResults),
+                    ["results"] = JsonSerializer.Serialize(allResults),
                     ["totalCount"] = totalCount.ToString(),
-                    ["page"] = pageInt.ToString(),
-                    ["pageSize"] = pageSizeInt.ToString(),
                 },
             };
             return response;
