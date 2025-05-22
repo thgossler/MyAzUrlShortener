@@ -45,6 +45,21 @@ namespace AzUrlShortener.Functions
         /// When this function is deployed, Azure Functions creates an "mcp_extension" system key.
         /// Clients must include that key as the "code" query parameter (e.g. ?code=<key>) on the 
         /// SSE endpoint (/runtime/webhooks/mcp/sse) to authorize MCP tool invocations.
+        /// In VS Code GitHub Copilot, the key can also be configured as request header like that:
+        /// "mcp": {
+        ///    "inputs": [{
+        ///        "type": "promptString",
+        ///        "id": "functions-mcp-extension-system-key",
+        ///        "description": "Azure Functions MCP Extension System Key",
+        ///        "password": true
+        ///    }],
+        ///    "servers": {
+        ///        "search_shorturl_records": {
+        ///            "type": "sse",
+        ///            "url": "https://<functionFqdn>/runtime/webhooks/mcp/sse",
+        ///            "headers": {
+        ///                "x-functions-key": "${input:functions-mcp-extension-system-key}"
+        /// } } } }
         /// </remarks>
         [Function(nameof(GetShortUrlRecords))]
         public async Task<McpResponseData> GetShortUrlRecords(
