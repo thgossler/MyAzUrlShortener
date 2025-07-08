@@ -25,12 +25,12 @@
     @if (!_isRenameConfirmed)
     {
         <FluentButton Id="CancelButton" Appearance="Appearance.Accent" OnClick="Cancel">Cancel</FluentButton>
-        <FluentButton Appearance="Appearance.Neutral" Style="background-color: var(--color-danger, #f44336); color: white;" OnClick="Proceed">Proceed</FluentButton>
+        <FluentButton Appearance="Appearance.Neutral" OnClick="Proceed">Proceed</FluentButton>
     }
     else
     {
-        <FluentButton Appearance="Appearance.Neutral" Style="background-color: var(--color-danger, #f44336); color: white;" OnClick="Cancel">Cancel</FluentButton>
-        <FluentButton Appearance="Appearance.Accent" Disabled="@IsProceedRenameDisabled" OnClick="Proceed">Proceed</FluentButton>
+        <FluentButton Appearance="Appearance.Neutral" OnClick="Cancel">Cancel</FluentButton>
+        <FluentButton Appearance="Appearance.Accent" BackgroundColor="var(--color-danger, #f44336)" Color="White" Disabled="@IsProceedRenameDisabled" OnClick="Proceed">Proceed</FluentButton>
     }
 </FluentDialogFooter>
 
