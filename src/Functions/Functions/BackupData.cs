@@ -1,8 +1,10 @@
+using Azure;
 using Azure.Data.Tables;
 using Azure.Storage.Blobs;
 using AzUrlShortener.Core.Domain;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 
@@ -80,16 +82,37 @@ namespace AzUrlShortener.Functions
             try
             {
                 var sourceTableClient = sourceTableServiceClient.GetTableClient(tableName);
+
+                // Check if the table exists first
                 var entities = new List<T>();
-                await foreach (var entity in sourceTableClient.QueryAsync<T>())
+
+                try
                 {
-                    entities.Add(entity);
+                    // Try to get the first entity to check if table exists and has data
+                    await foreach (var entity in sourceTableClient.QueryAsync<T>(maxPerPage: 1))
+                    {
+                        entities.Add(entity);
+                        break; // We just want to check if there's at least one entity
+                    }
+                }
+                catch (RequestFailedException ex) when (ex.Status == 404)
+                {
+                    _logger.LogInformation($"Table {logTableFriendlyName} does not exist. Skipping backup for this table.");
+                    return;
                 }
 
+                // If we didn't get any entities from the test query, the table is empty
                 if (entities.Count == 0)
                 {
                     _logger.LogInformation($"No entities found in {logTableFriendlyName} table. Skipping backup for this table.");
                     return;
+                }
+
+                // Clear the test entities and get all entities for backup
+                entities.Clear();
+                await foreach (var entity in sourceTableClient.QueryAsync<T>())
+                {
+                    entities.Add(entity);
                 }
 
                 var jsonContent = JsonSerializer.Serialize(entities, new JsonSerializerOptions { WriteIndented = true });
@@ -101,6 +124,10 @@ namespace AzUrlShortener.Functions
                 }
                 
                 _logger.LogInformation($"Backup completed for {logTableFriendlyName}. {entities.Count} entities backed up to blob: {blobContainerClient.Uri}/{blobName}");
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404)
+            {
+                _logger.LogInformation($"Table {logTableFriendlyName} does not exist. Skipping backup for this table.");
             }
             catch (Exception ex)
             {
