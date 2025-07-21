@@ -51,3 +51,31 @@ window.unregisterEscKeyHandler = function () {
         window.__escKeyHandler = null;
     }
 };
+
+window.getViewportWidth = () => {
+    return window.innerWidth;
+};
+
+window.getViewportHeight = () => {
+    return window.innerHeight;
+};
+
+window.getNavMenuWidth = () => {
+    try {
+        return document.getElementsByClassName('body-content')[0].getBoundingClientRect().x;
+    } catch (e) {
+        return 200;
+    }
+};
+
+window.registerViewportResizeHandler = function(dotNetHelper) {
+    if (window.__viewportResizeHandler) {
+        window.removeEventListener('resize', window.__viewportResizeHandler);
+        window.removeEventListener('orientationchange', window.__viewportResizeHandler);
+    }
+    window.__viewportResizeHandler = function() {
+        dotNetHelper.invokeMethodAsync('OnViewportResize', window.innerWidth, window.innerHeight);
+    };
+    window.addEventListener('resize', window.__viewportResizeHandler);
+    window.addEventListener('orientationchange', window.__viewportResizeHandler);
+};

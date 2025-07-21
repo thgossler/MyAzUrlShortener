@@ -7,7 +7,6 @@
 @using AzUrlShortener.AdminUI.Components
 @using AzUrlShortener.AdminUI.Components.Dialogues
 @using AzUrlShortener.AdminUI.Services
-@using Azure.Data.Tables
 @inject IConfiguration Configuration
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
@@ -40,7 +39,7 @@
 
                 @if (!string.IsNullOrWhiteSpace(importConnectionString) && isAdmin)
                 {
-                    <FluentButton OnClick="@(ImportRecords)" Disabled="@importInProgress" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.ArrowUpload())">Import records</FluentButton>
+                    <FluentButton OnClick="@(ImportRecords)" Disabled="@(importInProgress || importTriggeredAndNotFailed)" Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.ArrowUpload())">Import records</FluentButton>
                 }
             </div>
 
@@ -267,8 +266,15 @@
 
 @code {
 
+
+
+
+
+
+
     private ListResponse urls = new ListResponse();
     private bool isAdmin = false;
+    private bool importTriggeredAndNotFailed = false;
     private string searchText = string.Empty;
     private string currentUserUpn = string.Empty;
     private bool canRegularUsersViewAllRecords;
@@ -740,6 +746,7 @@ Supposed-to-be stable URLs will be broken, and the same vanity could be reused f
         try
         {
             isLoading = true;
+            importInProgress = true;
             StateHasChanged();
 
             // Example 1: GitHub
@@ -802,6 +809,7 @@ Supposed-to-be stable URLs will be broken, and the same vanity could be reused f
         finally
         {
             isLoading = false;
+            importInProgress = false;
             StateHasChanged();
         }
     }
@@ -814,47 +822,40 @@ Supposed-to-be stable URLs will be broken, and the same vanity could be reused f
             isLoading = true;
             StateHasChanged();
 
-            toastService.ShowInfo("Importing records from configured storage...");
+            toastService.ShowInfo("Importing records from the configured storage...");
 
-            var sourceTableClient = new TableServiceClient(importConnectionString);
-            sourceTableClient.CreateTableIfNotExists("UrlsDetails");
-            var sourceTable = sourceTableClient.GetTableClient("UrlsDetails");
-
-            var sourceEntities = new List<ShortUrlEntity>();
-            var queryResults = sourceTable.QueryAsync<ShortUrlEntity>(e => e.RowKey != "KEY");
-            await foreach (var entity in queryResults)
+            var importRequest = new ImportRequest
             {
-                if (!(entity.IsArchived ?? false))
+                SourceConnectionString = importConnectionString,
+                IncludeArchived = false,
+                OverwriteExisting = false
+            };
+
+            var response = await urlManager.Import(importRequest);
+
+            if (!response.Success)
+            {
+                var errorMessage = $"Import failed. URLs imported: {response.UrlsImported}, " +
+                    $"ClickStats imported: {response.ClickStatsImported}, " +
+                    $"Failed: {response.RecordsFailed}";
+
+                if (response.Errors.Any())
                 {
-                    sourceEntities.Add(entity);
-                }
-            }
-
-            var currentUserUpn = await userService.GetUserPrincipalNameAsync();
-
-            var importedCount = 0;
-            foreach (var entity in sourceEntities)
-            {
-                var urlRequest = new ShortRequest
+                    errorMessage += $". Errors: {string.Join("; ", response.Errors.Take(3))}";
+                    if (response.Errors.Count > 3)
                     {
-                        Title = entity.Title ?? string.Empty,
-                        Url = entity.Url,
-                        Vanity = entity.Vanity,
-                        Clicks = entity.Clicks,
-                        Schedules = null
-                    };
+                        errorMessage += $" (and {response.Errors.Count - 3} more)";
+                    }
+                }
 
-                try
-                {
-                    var response = await urlManager.UrlCreate(urlRequest);
-                    importedCount++;
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Failed to import {entity.Vanity}: {ex.Message}");
-                }
+                toastService.ShowError(errorMessage);
             }
-            toastService.ShowSuccess($"{importedCount} records imported successfully");
+            else {
+                if (response.Errors.Count > 0 && response.Errors[0].Contains("going on")) {
+                    toastService.ShowInfo("Import is still going on in the background...");
+                }
+                importTriggeredAndNotFailed = true;
+            }
 
             // Clear cache to force fresh reload
             cachedUrlList = null;

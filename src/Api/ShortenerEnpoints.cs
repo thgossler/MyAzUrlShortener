@@ -57,6 +57,10 @@ public static class ShortenerEnpoints
         endpoints.MapPost("/UrlReactivate", UrlReactivate)
             .WithDescription("Reactivate a Url")
             .WithDisplayName("Url Reactivate");
+
+        endpoints.MapPost("/Import", Import)
+            .WithDescription("Import UrlsDetails and ClickStats from another storage account")
+            .WithDisplayName("Import Records");
     }
 
     private static string GetWelcomeMessage()
@@ -298,6 +302,39 @@ public static class ShortenerEnpoints
         {
             logger.LogError(ex.Message);
             return TypedResults.InternalServerError(new DetailedBadRequest { Message = ex.Message });
+        }
+    }
+
+    private static async Task<Results<
+                                    Ok<ImportResponse>,
+                                    BadRequest<DetailedBadRequest>,
+                                    InternalServerError<DetailedBadRequest>>>
+                                    Import(ImportRequest importRequest,
+                                           TableServiceClient tblClient,
+                                           ILogger logger,
+                                           IConfiguration config)
+    {
+        try
+        {
+            var urlServices = new UrlServices(logger, new AzStorageTableService(tblClient));
+            var result = await urlServices.Import(importRequest);
+            
+            if (result.Success)
+            {
+                return TypedResults.Ok(result);
+            }
+            else
+            {
+                return TypedResults.BadRequest<DetailedBadRequest>(new DetailedBadRequest 
+                { 
+                    Message = $"Import failed with {result.RecordsFailed} failures. Errors: {string.Join("; ", result.Errors)}"
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An unexpected error was encountered during import.");
+            return TypedResults.InternalServerError<DetailedBadRequest>(new DetailedBadRequest { Message = ex.Message });
         }
     }
 

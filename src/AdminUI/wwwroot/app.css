@@ -336,7 +336,7 @@ code {
     max-width: 100%;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 670px) {
     .main {
         min-height: calc(100dvh - 120px);
         flex-direction: column !important;

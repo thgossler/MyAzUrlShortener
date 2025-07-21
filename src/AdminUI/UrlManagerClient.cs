@@ -288,4 +288,70 @@ public class UrlManagerClient
         }
         return null;
     }
+
+    /// <summary>
+    /// Imports UrlsDetails and ClickStats entities from another storage account
+    /// </summary>
+    /// <param name="importRequest">The import request</param>
+    /// <returns>Import response with statistics</returns>
+    public async Task<ImportResponse> Import(ImportRequest importRequest)
+    {
+        try
+        {
+            // Only admins can import
+            var isAdmin = await _userService.IsAdminAsync();
+            if (!isAdmin)
+            {
+                return new ImportResponse
+                {
+                    RecordsFailed = 1,
+                    Errors = new List<string> { "Only administrators can import records" }
+                };
+            }
+
+            if (string.IsNullOrWhiteSpace(importRequest.SourceConnectionString))
+            {
+                return new ImportResponse
+                {
+                    RecordsFailed = 1,
+                    Errors = new List<string> { "Source connection string is required" }
+                };
+            }
+
+            using var response = await _httpClient.PostAsJsonAsync("/api/Import", importRequest);
+            if (response.IsSuccessStatusCode)
+            {
+                var importResponse = await response.Content.ReadFromJsonAsync<ImportResponse>();
+                return importResponse ?? new ImportResponse { RecordsFailed = 1, Errors = new List<string> { "Failed to parse response" } };
+            }
+            else
+            {
+                var errorDetails = await response.Content.ReadFromJsonAsync<DetailedBadRequest>();
+                return new ImportResponse
+                {
+                    RecordsFailed = 1,
+                    Errors = new List<string> { errorDetails?.Message ?? "Import failed" }
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+
+            if (ex.GetType() == typeof(Polly.Timeout.TimeoutRejectedException))
+            {
+                return new ImportResponse
+                {
+                    RecordsFailed = 0,
+                    Errors = new List<string> { "Import operation is still going on" }
+                };
+            }
+
+            return new ImportResponse
+            {
+                RecordsFailed = 1,
+                Errors = new List<string> { ex.Message }
+            };
+        }
+    }
 }

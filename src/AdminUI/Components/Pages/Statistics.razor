@@ -40,13 +40,27 @@
         @if (showMismatchWarning && trackedClicks > 0)
         {
             <div class="warning-message">
-                <p>Note: The chart below only shows @trackedClicks clicks with known dates.</p>
+                <p>Note: The chart below only shows @trackedClicks clicks with known dates of the total clicks within the selected time range.</p>
             </div>
         }
     </div>
 
+    <div class="time-range-container" style="margin-bottom: 16px;">
+        <label for="timeRangeSelect" style="margin-top: 4px; margin-right: 8px; font-weight: 500;">Time Range:</label>
+        <FluentSelect TOption="string" id="timeRangeSelect" @bind-Value="selectedTimeRange" Style="min-width: 180px;" @onchange="OnTimeRangeChanged">
+            <FluentOption TOption="string" Value="Last7Days">Last 7 days</FluentOption>
+            <FluentOption TOption="string" Value="Last30Days">Last 30 days</FluentOption>
+            <FluentOption TOption="string" Value="Last90Days">Last 90 days</FluentOption>
+            <FluentOption TOption="string" Value="Last6Months">Last 6 months</FluentOption>
+            <FluentOption TOption="string" Value="Last12Months">Last 12 months</FluentOption>
+            <FluentOption TOption="string" Value="All">All</FluentOption>
+        </FluentSelect>
+    </div> 
+
     <div id="stats">
-        <BarChart @ref="barChart" />
+        <BarChart @ref="barChart" @key="chartKey" 
+                  Height="@(viewportHeight - 450 > 0 ? viewportHeight - 450 : 400)"
+                  Width="@(viewportWidth - navMenuWidth - 50 > 0 ? viewportWidth - navMenuWidth - 50 : 450)" />
     </div>
 
     <div>
@@ -58,7 +72,7 @@
     [Parameter]
 #nullable enable
     public string? vanity { get; set; }
-#nullable disable
+#nullable disable 
 
     private string subTitle = "";
     private ChartData chartData = new ChartData();
@@ -68,13 +82,59 @@
     private int totalClicks = 0;
     private int trackedClicks = 0;
     private bool showMismatchWarning = false;
+    private string selectedTimeRange = "Last30Days";
+    private string chartKey = Guid.NewGuid().ToString();
+    private int viewportWidth = 800;
+    private int viewportHeight = 600;
+    private int navMenuWidth = 300;
+    private DotNetObjectReference<Statistics>? _dotNetRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await UpdateViewportSizeAsync();
+            await RenderChartAsync();
+            await RegisterResizeHandlerAsync();
+        }
+        await base.OnAfterRenderAsync(firstRender); 
+    }
+
+    private async Task UpdateViewportSizeAsync()
+    {
+        viewportWidth = await JSRuntime.InvokeAsync<int>("getViewportWidth");
+        viewportHeight = await JSRuntime.InvokeAsync<int>("getViewportHeight");
+        navMenuWidth = await JSRuntime.InvokeAsync<int>("getNavMenuWidth");
+        StateHasChanged();
+    }
+
+    private async Task RegisterResizeHandlerAsync()
+    {
+        // Remove any previous DotNetObjectReference to avoid memory leaks
+        if (_dotNetRef != null)
+        {
+            _dotNetRef.Dispose();
+        }
+        _dotNetRef = DotNetObjectReference.Create(this);
+        await JSRuntime.InvokeVoidAsync("registerViewportResizeHandler", _dotNetRef);
+    }
+
+    [JSInvokable]
+    public async Task OnViewportResize(int width, int height)
+    {
+        viewportWidth = width;
+        viewportHeight = height; 
+        navMenuWidth = await JSRuntime.InvokeAsync<int>("getNavMenuWidth");
+        chartKey = Guid.NewGuid().ToString();
+        await RenderChartAsync();
+        StateHasChanged();
+    }
 
     private async Task<ChartData> UpdateUIList()
     {
         subTitle = (!String.IsNullOrEmpty(vanity)) ? $"Clicks for vanity: {vanity}" : "Clicks for all vanities";
         try
         {
-            // For vanity URLs, we can get the total clicks either from url or from the UrlList
             if (!String.IsNullOrEmpty(vanity))
             {
                 var url = await urlManager.GetUrlByVanity(vanity);
@@ -85,18 +145,44 @@
             }
             else
             {
-                // For all URLs, we can get the total clicks from the UrlList
                 var urlList = await urlManager.GetUrls();
                 totalClicks = urlList?.Sum(u => u.Clicks) ?? 0;
             }
             StateHasChanged();
 
-            // Get the click stats response
             var response = await urlManager.UrlClickStatsByDay(new UrlClickStatsRequest(vanity));
-            if (response != null)
+            if (response != null && response.Items.Any())
             {
-                // Calculate the total clicks from the items in the response
-                trackedClicks = response.Items.Sum(x => x.Count);
+                // Filter items by selected time range
+                var endDate = DateTimeOffset.Now.Date;
+                DateTimeOffset minDate = response.Items.Min(x => x.DateClicked.Date);
+                DateTimeOffset rangeStart = minDate;
+                switch (selectedTimeRange)
+                {
+                    case "Last7Days":
+                        rangeStart = endDate.AddDays(-6);
+                        break;
+                    case "Last30Days":
+                        rangeStart = endDate.AddDays(-29);
+                        break;
+                    case "Last90Days":
+                        rangeStart = endDate.AddDays(-89);
+                        break;
+                    case "Last6Months":
+                        rangeStart = endDate.AddMonths(-6);
+                        break;
+                    case "Last12Months":
+                        rangeStart = endDate.AddMonths(-12);
+                        break;
+                    case "All":
+                    default:
+                        rangeStart = minDate;
+                        break;
+                }
+                if (rangeStart < minDate) rangeStart = minDate;
+                var filteredItems = response.Items.Where(x => x.DateClicked.Date >= rangeStart && x.DateClicked.Date <= endDate).ToList();
+
+                trackedClicks = filteredItems.Sum(x => x.Count); 
 
                 if (totalClicks > trackedClicks)
                 {
@@ -108,19 +194,32 @@
                 }
                 StateHasChanged();
 
+                // Build a dictionary of date -> count for filtered items
+                var clickDict = filteredItems
+                    .GroupBy(x => x.DateClicked.Date)
+                    .ToDictionary(g => g.Key, g => g.Sum(x => x.Count));
+
+                var labels = GetDateRange(rangeStart);
+                var dataPoints = new List<double?>();
+                foreach (var label in labels)
+                {
+                    var date = DateTimeOffset.Parse(label).Date;
+                    dataPoints.Add(clickDict.TryGetValue(date, out var count) ? (double?)count : 0);
+                }
+
                 var data = new ChartData()
-                    {
-                        Labels = GetDateRange(response.Items.Min(x => x.DateClicked)),
-                        Datasets = new List<IChartDataset>()
+                {
+                    Labels = labels,
+                    Datasets = new List<IChartDataset>()
                     {
                         new BarChartDataset
                         {
                             Label = "Clicks by Day",
-                            Data = response.Items.Select(x => (double?)x.Count).ToList(),
+                            Data = dataPoints,
                             BackgroundColor = new List<string>{ "rgb(150, 91, 227)" },
                         }
-                    }
-                    };
+                    },
+                };
                 return data;
             }
         }
@@ -129,15 +228,6 @@
             Console.WriteLine(ex.ToString());
         }
         return null;
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await RenderChartAsync();
-        }
-        await base.OnAfterRenderAsync(firstRender);
     }
 
     private async Task RenderChartAsync()
@@ -165,14 +255,54 @@
         await barChart.InitializeAsync(chartData, options);
     }
 
+    private async Task OnTimeRangeChanged(ChangeEventArgs e)
+    {
+        selectedTimeRange = e.Value?.ToString() ?? "Last90Days";
+        chartKey = Guid.NewGuid().ToString();
+        await RenderChartAsync(); 
+    }
+
     private List<string> GetDateRange(DateTimeOffset startDate)
     {
         var endDate = DateTimeOffset.Now;
+        DateTimeOffset rangeStart = startDate;
+        switch (selectedTimeRange)
+        {
+            case "Last7Days":
+                rangeStart = endDate.AddDays(-6);
+                break;
+            case "Last30Days":
+                rangeStart = endDate.AddDays(-29);
+                break;
+            case "Last90Days":
+                rangeStart = endDate.AddDays(-89);
+                break;
+            case "Last6Months":
+                rangeStart = endDate.AddMonths(-6).Date;
+                break;
+            case "Last12Months":
+                rangeStart = endDate.AddMonths(-12).Date;
+                break;
+            case "All":
+            default:
+                rangeStart = startDate;
+                break;
+        }
+        if (rangeStart < startDate) rangeStart = startDate;
         List<string> dateRange = new List<string>();
-        for (var date = startDate; date <= endDate; date = date.AddDays(1))
+        for (var date = rangeStart; date <= endDate; date = date.AddDays(1))
         {
             dateRange.Add(date.ToString("yyyy-MM-dd"));
         }
         return dateRange;
+    }
+
+    public void Dispose()
+    {
+        if (_dotNetRef != null)
+        {
+            _dotNetRef.Dispose();
+            _dotNetRef = null;
+        }
     }
 }

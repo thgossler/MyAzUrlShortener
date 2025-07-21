@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Net;
 using System.Text.RegularExpressions;
+using Azure.Data.Tables;
 
 namespace AzUrlShortener.Core.Services;
 
@@ -18,6 +19,138 @@ public class UrlServices
     {
         _logger = logger;
         _tableService = storageTableService;
+    }
+
+    /// <summary>
+    /// Imports UrlsDetails and ClickStats entities directly from source tables to destination tables
+    /// </summary>
+    /// <param name="importRequest">The import request containing source connection string and options</param>
+    /// <returns>Import response with statistics</returns>
+    public async Task<ImportResponse> Import(ImportRequest importRequest)
+    {
+        var response = new ImportResponse();
+        
+        try
+        {
+            _logger.LogInformation("Starting import operation from source connection string");
+
+            if (string.IsNullOrWhiteSpace(importRequest.SourceConnectionString))
+            {
+                response.Errors.Add("Source connection string is required");
+                response.RecordsFailed = 1;
+                return response;
+            }
+
+            // Initialize source table clients
+            var sourceTableClient = new TableServiceClient(importRequest.SourceConnectionString);
+            
+            try
+            {
+                await sourceTableClient.CreateTableIfNotExistsAsync("UrlsDetails");
+                await sourceTableClient.CreateTableIfNotExistsAsync("ClickStats");
+            }
+            catch (Exception ex)
+            {
+                response.Errors.Add($"Failed to access source tables: {ex.Message}");
+                response.RecordsFailed = 1;
+                return response;
+            }
+
+            var sourceUrlsTable = sourceTableClient.GetTableClient("UrlsDetails");
+            var sourceStatsTable = sourceTableClient.GetTableClient("ClickStats");
+
+            // Import UrlsDetails
+            await ImportUrlsDetails(sourceUrlsTable, importRequest, response);
+
+            // Import ClickStats
+            await ImportClickStats(sourceStatsTable, importRequest, response);
+
+            _logger.LogInformation($"Import completed. URLs: {response.UrlsImported}, ClickStats: {response.ClickStatsImported}, Skipped: {response.RecordsSkipped}, Failed: {response.RecordsFailed}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error during import operation");
+            response.Errors.Add($"Unexpected error: {ex.Message}");
+            response.RecordsFailed++;
+        }
+
+        return response;
+    }
+
+    private async Task ImportUrlsDetails(TableClient sourceTable, ImportRequest importRequest, ImportResponse response)
+    {
+        try
+        {
+            _logger.LogInformation("Starting UrlsDetails import");
+
+            var queryResults = sourceTable.QueryAsync<ShortUrlEntity>(e => e.RowKey != "KEY");
+            await foreach (var entity in queryResults)
+            {
+                try
+                {
+                    // Skip archived entities unless explicitly requested
+                    if (!importRequest.IncludeArchived && (entity.IsArchived ?? false))
+                    {
+                        response.RecordsSkipped++;
+                        continue;
+                    }
+
+                    // Import the entity directly
+                    await _tableService.SaveShortUrlEntity(entity);
+                    response.UrlsImported++;
+
+                    _logger.LogInformation($"Imported URL: {entity.Vanity}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"Failed to import URL entity {entity.Vanity}: {ex.Message}");
+                    response.Errors.Add($"Failed to import URL {entity.Vanity}: {ex.Message}");
+                    response.RecordsFailed++;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during UrlsDetails import");
+            response.Errors.Add($"Error importing UrlsDetails: {ex.Message}");
+            response.RecordsFailed++;
+        }
+    }
+
+    private async Task ImportClickStats(TableClient sourceTable, ImportRequest importRequest, ImportResponse response)
+    {
+        try
+        {
+            _logger.LogInformation("Starting ClickStats import");
+
+            var queryResults = sourceTable.QueryAsync<ClickStatsEntity>();
+            await foreach (var entity in queryResults)
+            {
+                try
+                {
+                    // Import the click stats entity directly
+                    await _tableService.SaveClickStatsEntity(entity);
+                    response.ClickStatsImported++;
+
+                    if (response.ClickStatsImported % 1000 == 0)
+                    {
+                        _logger.LogInformation($"Imported {response.ClickStatsImported} click stats so far...");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"Failed to import ClickStats entity {entity.RowKey}: {ex.Message}");
+                    response.Errors.Add($"Failed to import ClickStats {entity.RowKey}: {ex.Message}");
+                    response.RecordsFailed++;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during ClickStats import");
+            response.Errors.Add($"Error importing ClickStats: {ex.Message}");
+            response.RecordsFailed++;
+        }
     }
 
     public async Task<ShortUrlEntity> Archive(ShortUrlEntity input)
