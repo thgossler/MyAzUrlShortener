@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Redirecting...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <script>
+    /* ------------- CONFIGURATION ------------- */
+    const TARGET_DOMAIN = "shshrt.link";
+    const DELAY_SECONDS = 3;
+    /* ----------------------------------------- */
+
+    function buildTargetUrl() {
+      const { pathname, search, hash } = window.location;
+      return "https://" + TARGET_DOMAIN + pathname + search + hash;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const msgEl = document.getElementById("msg");
+      let remaining = DELAY_SECONDS;
+
+      msgEl.textContent = `You will be redirected to ${TARGET_DOMAIN} in ${remaining} seconds...`;
+
+      const ticker = setInterval(() => {
+        remaining -= 1;
+        if (remaining > 0) {
+          msgEl.textContent = `You will be redirected to ${TARGET_DOMAIN} in ${remaining} second` +
+            (remaining === 1 ? "" : "s") + "...";
+        } else {
+          clearInterval(ticker);
+        }
+      }, 1000);
+
+      setTimeout(() => {
+        window.location.replace(buildTargetUrl());
+      }, DELAY_SECONDS * 1000);
+    });
+  </script>
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, sans-serif;
+      background: #f7f8fa;
+      color: #333;
+    }
+    #msg {
+      font-size: 1.25rem;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="msg">Preparing redirect...</div>
+</body>
+</html>
