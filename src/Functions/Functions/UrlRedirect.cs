@@ -29,14 +29,24 @@ namespace AzUrlShortener.Functions
         {
             var UrlServices = new UrlServices(_logger, new AzStorageTableService(_tblClient));
 
-            _logger.LogDebug($"Redirecting {shortUrl}...");
+#if DEBUG
+            _logger.LogDebug($"Resolving short URL '{shortUrl}'...");
+#endif
             var redirectUrl = await UrlServices.Redirect(shortUrl);
 
-            var res = req.CreateResponse(HttpStatusCode.Redirect);
-            res.Headers.Add("Location", redirectUrl);
+            HttpResponseData result;
+            if (string.IsNullOrWhiteSpace(redirectUrl)) {
+                result = req.CreateResponse(HttpStatusCode.NotFound);
+            }
+            else {
+                result = req.CreateResponse(HttpStatusCode.Redirect);
+                result.Headers.Add("Location", redirectUrl);
+            }
 
-            _logger.LogDebug("Done");
-            return res;
+#if DEBUG
+            _logger.LogDebug("Sending response...");
+#endif
+            return result;
         }
     }
 }

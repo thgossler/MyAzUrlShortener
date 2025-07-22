@@ -161,40 +161,51 @@ public class UrlServices
 
     public async Task<string> Redirect(string shortUrl)
     {
-        string defaultUrl = Environment.GetEnvironmentVariable("DefaultRedirectUrl") ?? "https://azure.com";
+        string defaultUrl = "https://azure.com";
 
-        if (string.IsNullOrWhiteSpace(shortUrl))
-        {
-            return defaultUrl;
-        }
+        try {
+            defaultUrl = Environment.GetEnvironmentVariable("DefaultRedirectUrl") ?? defaultUrl;
 
-        try
-        {
-            var tempUrl = new ShortUrlEntity(string.Empty, shortUrl);
-            var newUrl = await _tableService.GetShortUrlEntity(tempUrl);
-
-            if (newUrl == null)
-            {
-                _logger.LogInformation("Unknown vanity, resorting to fallback");
+            if (string.IsNullOrWhiteSpace(shortUrl)) {
                 return defaultUrl;
             }
 
-            _logger.LogInformation($"Found it: {newUrl.Url}");
-            newUrl.Clicks++;
+            try {
+                var tempUrl = new ShortUrlEntity(string.Empty, shortUrl);
 
-            // Run both operations in parallel
-            var clickTask = _tableService.SaveClickStatsEntity(new ClickStatsEntity(newUrl.Vanity));
-            var updateTask = _tableService.SaveShortUrlEntity(newUrl);
+                var newUrl = await _tableService.GetShortUrlEntity(tempUrl);
+                if (newUrl == null) {
+                    _logger.LogInformation($"Short URL '{shortUrl}' not found");
+                    return null;
+                }
 
-            // Only wait for tasks to complete if needed for error handling
-            //await Task.WhenAll(clickTask, updateTask);
+                _logger.LogInformation($"Found short URL '{newUrl.Url}'");
+                newUrl.Clicks++;
 
-            return WebUtility.UrlDecode(newUrl.ActiveUrl);
+                // Run both operations in parallel
+                var clickTask = _tableService.SaveClickStatsEntity(new ClickStatsEntity(newUrl.Vanity));
+                var updateTask = _tableService.SaveShortUrlEntity(newUrl);
+
+                // Only wait for tasks to complete if needed for error handling
+                //await Task.WhenAll(clickTask, updateTask);
+
+                return WebUtility.UrlDecode(newUrl.ActiveUrl);
+            }
+            catch (RequestFailedException rfex) {
+                if (rfex.Message.Contains("does not exist")) {
+                    _logger.LogInformation($"Short URL '{shortUrl}' not found");
+                    return null;
+                }
+                _logger.LogError(rfex, "Storage request failed");
+                return null;
+            }
+            catch (Exception ex) {
+                _logger.LogError(ex, "Error occurred resolving short URL");
+                return null;
+            }
         }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Problem accessing storage: {ex.Message}", ex);
-            return defaultUrl;
+        catch (Exception) {
+            return null;
         }
     }
 
