@@ -27,7 +27,7 @@ builder.AddServiceDefaults();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-builder.AddAzureTableClient("table-client");
+builder.AddAzureTableServiceClient("table-client");
 
 using var listener = AzureEventSourceListener.CreateConsoleLogger();
 

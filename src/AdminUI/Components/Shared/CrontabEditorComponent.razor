@@ -232,7 +232,7 @@
 
     public async Task SetInitialInputFocusAsync()
     {
-        _initialFocusControl?.FocusAsync();
+        await Task.Run(() => _initialFocusControl?.FocusAsync());
     }
 
     private void ParseUnifiedCronExpression()

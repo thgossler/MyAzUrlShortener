@@ -27,7 +27,7 @@ AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
     return null;
 };
 
-builder.AddAzureTableClient("table-client");
+builder.AddAzureTableServiceClient("table-client");
 
 builder.ConfigureFunctionsWebApplication();
 
