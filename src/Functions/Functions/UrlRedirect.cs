@@ -51,7 +51,7 @@ namespace AzUrlShortener.Functions
             }
         }
 
-        private static void CleanupCache(object? state)
+        private static void CleanupCache(object state)
         {
             try
             {

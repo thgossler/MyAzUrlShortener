@@ -305,7 +305,7 @@
     private int? _pendingPageIndex = null;
     private double? _pendingScrollTop = null;
 
-    private DotNetObjectReference<UrlManager>? _dotNetRef;
+    private DotNetObjectReference<UrlManager> _dotNetRef;
 
     private bool _dialogOpen = false;
     private bool _suppressNextEsc = false;
@@ -462,7 +462,7 @@
             // Restore page and scroll if needed
             if (preservePage && _pendingPageIndex.HasValue)
             {
-                pagination.SetCurrentPageIndexAsync(_pendingPageIndex.Value);
+                _ = pagination.SetCurrentPageIndexAsync(_pendingPageIndex.Value);
                 _pendingPageIndex = null;
             }
             if (preservePage && _pendingScrollTop.HasValue)
