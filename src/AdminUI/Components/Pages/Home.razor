@@ -1,4 +1,6 @@
-﻿@page "/"
+@page "/"
+
+@inject IConfiguration Configuration
 
 <PageTitle>Home</PageTitle>
 
@@ -8,9 +10,19 @@
     <p class="lead">Effortlessly shorten, schedule, and track your URLs!</p>
 </div>
 
+<!-- Bookmark Hint -->
+<div class="container">
+    <div class="warning-message my-3">
+        <strong>Bookmark this:</strong>
+        For reliable access, bookmark the management portal at
+        <a href="https://shshrt.link/manageurls" target="_blank" rel="noopener noreferrer">https://shshrt.link/manageurls</a>
+        instead of the current browser URL. The host domain may change.
+    </div>
+</div>
+
 <!-- Main Content -->
 <div class="container my-5">
-    <h2>About This Application</h2>
+    <h3>About This Application</h3>
     <p>This web application streamlines the management of short URLs, transforming lengthy web addresses into concise, shareable links.</p>
 
     <h4>Why You Need It</h4>
@@ -22,20 +34,62 @@
 
     <h4>Key Features</h4>
     <ul>
-        <li>Simple URL shortening: Convert long URLs into short, manageable links.</li>
-        <li>User authentication: Secure access to the application with user roles.</li>
-        <li>URL management: Create, update, and delete short URLs as needed.</li>
+        <li>URL shortening: Convert long URLs into short, manageable links.</li>
+        <li>Easy authentication: Secure access to the application with your work account.</li>
+        <li>Short URL management: Create, update, and delete short URLs as needed.</li>
         <li>Scheduling: Set up one-time or recurring redirects for your short URLs.</li>
         <li>Performance tracking: Monitor click metrics to assess link engagement.</li>
+        <li>Security: Self-hosted, i.e. no third-party have access to usage information.</li>
     </ul>
-
-    <p>
-        <strong>Hint:</strong> Because this URL shortener is fully self-hosted, no third-party services ever gain access to usage or statistics information,
-        ensuring privacy for internal company use.
-    </p>
 
     <p class="mt-4">
         By simplifying long URLs and providing scheduling and tracking capabilities, this tool significantly reduces
         the collective hassle of neglected bookmarks and broken redirects.
     </p>
+
+    <h3 style="margin-top: 30px;">Legal and Usage Policy</h3>
+    <ul>
+        <li>
+            This tool is provided strictly for lawful use and for company purposes only. Any illegal, abusive, or unauthorized
+            use is prohibited.
+        </li>
+        @if (!string.IsNullOrWhiteSpace(privacyPolicyUrl))
+        {
+            <li>
+                In general, the following <a href="@privacyPolicyUrl" target="_blank" rel="noopener noreferrer">privacy policy</a> applies.
+            </li>
+        }
+        <li>
+            This page uses cookies solely for secure authentication and does not collect or process personal information.
+        </li>
+        <li>
+            Do not include personal information (PII) in target URLs or in vanity strings. Only use non-sensitive, business-related
+            information.
+        </li>
+    </ul>
+
+    <h3 class="mt-4" style="margin-top: 30px;">Vanity Naming Convention</h3>
+    <p>
+        Use the naming pattern <code>&lt;context&gt;-&lt;vanity&gt;</code> to make links recognizable and durable. The
+        <em>context</em> should be stable for a long time, because vanities are not supposed to change once created.
+        For example, prefix teamplay-specific vanities with <code>tp-</code>.
+    </p>
+    <p>
+        <ul>
+            <li>Examples: <code>tp-onboarding</code>, <code>it-vpn-guide</code>, <code>hr-benefits-2025</code>.</li>
+            <li>Choose a long-lived, team or domain-oriented context (e.g., <code>tp</code>, <code>DnA</code>, <code>IT</code>, <code>HR</code>).</li>
+            <li>Keep the vanity descriptive and short; avoid dates unless truly necessary.</li>
+        </ul>
+        <br /><br />
+    </p>
 </div>
+
+@code {
+    private string privacyPolicyUrl;
+
+    protected override Task OnInitializedAsync()
+    {
+        privacyPolicyUrl = Configuration["PrivacyPolicyUrl"] ?? string.Empty;
+        return Task.CompletedTask;
+    }
+}
