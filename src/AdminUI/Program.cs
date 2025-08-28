@@ -1,6 +1,9 @@
+using System.Reflection;
+
 using AzUrlShortener.AdminUI;
-using AzUrlShortener.AdminUI.Services;
 using AzUrlShortener.AdminUI.Components;
+using AzUrlShortener.AdminUI.Services;
+
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
@@ -10,6 +13,23 @@ using Microsoft.FluentUI.AspNetCore.Components.Components.Tooltip;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Ensure assembly resolution for System.Memory.Data in container environments
+AppDomain.CurrentDomain.AssemblyResolve += (sender, args) => {
+    var assemblyName = new AssemblyName(args.Name);
+    if (assemblyName.Name == "System.Memory.Data") {
+        // Try to load the available version
+        try {
+            return Assembly.LoadFrom("System.Memory.Data.dll");
+        }
+        catch {
+            // Fallback to any loaded version
+            return AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(a => a.GetName().Name == "System.Memory.Data");
+        }
+    }
+    return null;
+};
 
 var tenantId = builder.Configuration["UserAuthEntraTenantId"];
 var clientId = builder.Configuration["UserAuthEntraClientAppId"];

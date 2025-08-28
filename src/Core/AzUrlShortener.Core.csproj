@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -8,5 +8,7 @@
     <PackageReference Include="Aspire.Azure.Data.Tables" Version="9.3.1" />
     <PackageReference Include="cronos" Version="0.11.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.6" />
+    <PackageReference Include="System.Memory.Data" Version="8.0.1" />
+    <PackageReference Include="System.Text.Json" Version="9.0.7" />
   </ItemGroup>
 </Project>

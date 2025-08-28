@@ -1,0 +1,19 @@
+{
+  "configProperties": {
+    "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false,
+    "Microsoft.AspNetCore.Hosting.WebHostDefaults.SuppressStatusMessages": true,
+    "System.Runtime.Loader.UseRidGraph": true,
+    "System.GC.Server": true,
+    "System.GC.Concurrent": true,
+    "System.Runtime.TieredCompilation": true,
+    "System.Runtime.TieredPGO": true
+  },
+  "runtimeOptions": {
+    "tfm": "net9.0",
+    "rollForward": "LatestMinor",
+    "configProperties": {
+      "System.Reflection.NullabilityInfoContext.IsSupported": true,
+      "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false
+    }
+  }
+}

@@ -1,10 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
     <OutputType>Exe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <PublishSingleFile>false</PublishSingleFile>
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
@@ -18,6 +20,8 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.5" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.3.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.0.2" />
+    <PackageReference Include="System.Memory.Data" Version="8.0.1" />
+    <PackageReference Include="System.Text.Json" Version="9.0.7" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ServiceDefaults\AzUrlShortener.ServiceDefaults.csproj" />
@@ -30,6 +34,10 @@
     <None Update="local.settings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+    <None Update="runtimeconfig.template.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </None>
   </ItemGroup>
   <ItemGroup>
