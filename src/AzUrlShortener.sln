@@ -40,6 +40,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{2FBF
 	ProjectSection(SolutionItems) = preProject
 		add_redirect.ps1 = add_redirect.ps1
 		azd_uninit.ps1 = azd_uninit.ps1
+		deploy.ps1 = deploy.ps1
 	EndProjectSection
 EndProject
 Global
