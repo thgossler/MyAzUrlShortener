@@ -92,8 +92,8 @@
             <FluentDataGrid Id="grdUrls" @ref="_dataGrid"
                     Class="sticky-header-grid"
                     Items="@filteredUrlList"
-                    ResizableColumns=false
-                    GridTemplateColumns="70px auto auto auto auto 120px 120px 120px"
+                    ResizableColumns=true
+                    GridTemplateColumns="100px auto auto auto auto 120px 120px 120px"
                     Pagination="@pagination"
                     AutoItemsPerPage=false
                     RowSize="DataGridRowSize.Medium"
@@ -265,6 +265,11 @@
         box-shadow: none !important;
         display: flex;
         align-items: center;
+    }
+
+    .sticky-header-grid th[col-index="1"] .resize-handle,
+    .sticky-header-grid th[col-index="1"] .actual-resize-handle {
+        display: none !important;
     }
 
     .sticky-header-grid tbody {

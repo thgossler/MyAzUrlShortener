@@ -821,6 +821,17 @@ code {
     overflow: auto;
 }
 
+.url-manager-page .sticky-header-grid th[col-index="1"] .resize-handle,
+.url-manager-page .sticky-header-grid th[col-index="1"] .actual-resize-handle {
+    display: none !important;
+}
+
+.url-manager-page .sticky-header-grid tbody tr td:first-child:not([colspan]) {
+    width: 100px !important;
+    min-width: 100px !important;
+    max-width: 100px !important;
+}
+
 .content:has(.url-manager-page),
 .body-content:has(.url-manager-page) {
     overflow: hidden !important;
