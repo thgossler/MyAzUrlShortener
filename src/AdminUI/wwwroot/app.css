@@ -28,6 +28,27 @@ body {
     background: var(--neutral-fill-layer-rest);
 }
 
+.global-disclaimer {
+    position: sticky;
+    top: 0;
+    z-index: 1100;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--warning-stroke-rest, #d4a72c);
+    background: var(--warning-fill-rest, #fff4ce);
+    color: var(--warning-foreground-rest, #3b2e00);
+    font-size: 0.875rem;
+    line-height: 1.35;
+    text-align: center;
+}
+
+[data-theme="dark"] .global-disclaimer {
+    border-bottom-color: #8f6f00;
+    background: #3c3000;
+    color: #ffe7a3;
+}
+
 h1 {
     font-size: x-large;
 }

@@ -20,6 +20,13 @@
 <FluentTooltipProvider @rendermode="RenderMode.InteractiveServer" />
 <FluentToastProvider @rendermode="RenderMode.InteractiveServer" />
 
+@if (!string.IsNullOrWhiteSpace(topDisclaimerHtml))
+{
+    <div class="global-disclaimer" role="note" aria-live="polite">
+        @((MarkupString)SanitizeHtml(topDisclaimerHtml))
+    </div>
+}
+
 <FluentLayout>
     <FluentHeader>
         <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10" Style="align-items: center">
@@ -90,6 +97,7 @@
     private string footerLeftHtml = "";
     private string footerCenterHtml = "";
     private string footerRightHtml = "";
+    private string topDisclaimerHtml = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -101,6 +109,7 @@
         footerLeftHtml = Configuration["FooterLeftHtml"] ?? "<a href=\"https://github.com/thgossler/MyAzUrlShortener\">GitHub</a>";
         footerCenterHtml = Configuration["FooterCenterHtml"] ?? "";
         footerRightHtml = Configuration["FooterRightHtml"] ?? "MIT License";
+        topDisclaimerHtml = Configuration["TopDisclaimerHtml"] ?? topDisclaimerHtml;
 
         // Replace $(Year) placeholder with the current year 
         footerRightHtml = footerRightHtml.Replace("$YEAR", DateTime.Now.Year.ToString());

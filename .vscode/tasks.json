@@ -76,6 +76,25 @@
 			"command": "host start",
 			"isBackground": true,
 			"problemMatcher": "$func-dotnet-watch"
+		},
+		{
+			"label": "watch (apphost)",
+			"command": "dotnet",
+			"args": [
+				"watch",
+				"--project",
+				"src/AppHost",
+				"run"
+			],
+			"type": "process",
+			"isBackground": true,
+			"problemMatcher": "$msCompile",
+			"options": {
+				"cwd": "${workspaceFolder}",
+				"env": {
+					"DOTNET_WATCH_RESTART_ON_RUDE_EDIT": "true"
+				}
+			}
 		}
 	]
 }
