@@ -22,7 +22,7 @@
 
 <PageTitle>Manage URLs</PageTitle>
 
-<div class="page-container">
+<div class="page-container url-manager-page">
     <div class="header-section">
         <h1>Manage URLs</h1>
         <h4 class="hide-on-small-sized-displays">Add, edit and archive short URL records</h4>
@@ -92,7 +92,7 @@
             <FluentDataGrid Id="grdUrls" @ref="_dataGrid"
                     Class="sticky-header-grid"
                     Items="@filteredUrlList"
-                    ResizableColumns=true
+                    ResizableColumns=false
                     GridTemplateColumns="70px auto auto auto auto 120px 120px 120px"
                     Pagination="@pagination"
                     AutoItemsPerPage=false
@@ -246,8 +246,25 @@
         position: sticky;
         top: 0;
         z-index: 1;
-        background-color: var(--neutral-layer-floating);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        background-color: transparent;
+        vertical-align: middle;
+        box-shadow: none;
+    }
+
+    .sticky-header-grid tr[row-type="header"] th button,
+    .sticky-header-grid tr[row-type="header"] th [role="button"] {
+        background: transparent !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .sticky-header-grid tr[row-type="header"] th > * {
+        background: transparent !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        display: flex;
+        align-items: center;
     }
 
     .sticky-header-grid tbody {

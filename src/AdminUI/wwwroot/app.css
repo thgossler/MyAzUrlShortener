@@ -497,6 +497,17 @@ fluent-button[appearance="accent"]::part(control) {
     border: 1px solid rgb(var(--ui-3)) !important;
 }
 
+fluent-button[appearance="accent"] svg,
+fluent-button[appearance="accent"]::part(content) svg {
+    color: #ffffff !important;
+    fill: #ffffff !important;
+}
+
+fluent-button[appearance="accent"] svg * {
+    fill: currentColor !important;
+    stroke: currentColor !important;
+}
+
 fluent-button[appearance="accent"]:hover::part(control) {
     background: rgb(var(--ui-2)) !important;
     border-color: rgb(var(--ui-2)) !important;
@@ -690,10 +701,12 @@ code {
 .page-container {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 100px);
+    height: 100%;
     width: 100%;
     margin: 0;
     padding: 0;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .header-section {
@@ -705,9 +718,9 @@ code {
     flex: 1 1 auto;
     overflow: auto;
     width: 100%;
-    height: calc(100vh - 300px);
+    height: auto;
     position: relative;
-    min-height: 100px;
+    min-height: 0;
 }
 
 .paginator-container {
@@ -729,6 +742,89 @@ code {
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+.search-container fluent-search {
+    height: 26px !important;
+    min-height: 26px !important;
+    max-height: 26px !important;
+    overflow: hidden;
+}
+
+.search-container fluent-search::part(root),
+.search-container fluent-search::part(input-wrapper),
+.search-container fluent-search::part(control),
+.search-container fluent-search::part(start),
+.search-container fluent-search::part(end) {
+    border-radius: 0 !important;
+}
+
+.search-container fluent-search::part(root),
+.search-container fluent-search::part(input-wrapper),
+.search-container fluent-search::part(start),
+.search-container fluent-search::part(end) {
+    min-height: 26px !important;
+    height: 26px !important;
+    max-height: 26px !important;
+    display: flex;
+    align-items: center;
+    overflow: hidden !important;
+}
+
+.search-container fluent-search::part(start),
+.search-container fluent-search::part(end) {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+[data-theme="dark"] .search-container fluent-search::part(root),
+[sh-color="dark"] .search-container fluent-search::part(root),
+[data-theme="dark"] .search-container fluent-search::part(input-wrapper),
+[sh-color="dark"] .search-container fluent-search::part(input-wrapper),
+[data-theme="dark"] .search-container fluent-search::part(control),
+[sh-color="dark"] .search-container fluent-search::part(control),
+[data-theme="dark"] .search-container fluent-search::part(start),
+[sh-color="dark"] .search-container fluent-search::part(start),
+[data-theme="dark"] .search-container fluent-search::part(end),
+[sh-color="dark"] .search-container fluent-search::part(end) {
+    background: rgb(var(--base-3)) !important;
+}
+
+.search-container fluent-search::part(control) {
+    min-height: 26px !important;
+    height: 26px !important;
+    max-height: 26px !important;
+    line-height: 26px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.url-manager-page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.url-manager-page .header-section,
+.url-manager-page .paginator-container,
+.url-manager-page .info-banner {
+    flex: 0 0 auto;
+}
+
+.url-manager-page .grid-container {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+}
+
+.content:has(.url-manager-page),
+.body-content:has(.url-manager-page) {
+    overflow: hidden !important;
+    min-height: 0;
 }
 
 .filter-controls {
