@@ -36,7 +36,7 @@ After a few seconds, you should now be in your version of the AzUrlShortener pro
 1. Let's initialize your environment with the following command:
 
 	```bash
-	azd init'
+	azd init
       or
 	azd init -s '<subscriptionId>' -l '<location>' -e '<environmentName>'
       e.g.
@@ -46,13 +46,20 @@ After a few seconds, you should now be in your version of the AzUrlShortener pro
 	- You will be asked "How do you want to initialize your app?" Select  **Use code in the current directory**.
 	- azd will says it will generates files for using "Azure Container Apps". Select **Confirm and continue initializing my app**
 	- Give a name to your environment (ex: azUrlShortener-prod). This will be used as Azure resource group name.
-1. If you haven't already, log in to your Azure account with 
+1. Authenticate with Azure Developer CLI.
 
-    ```
-    azd auth login
-      or
-    azd auth login --tenant-id '<entraTenantId>'
-    ```
+	 If you work with multiple tenants, use this sequence to avoid stale-token issues (`ERROR: Login expired` / `AADSTS700082`):
+
+		```bash
+		azd auth logout
+		azd auth login --tenant-id '<entraTenantId>'
+		azd auth login --check-status --output json
+		```
+
+	 Notes:
+	 - `azd up` does not have a `--tenant-id` option.
+	 - The tenant is selected during `azd auth login`.
+	 - The subscription and location used by `azd up` come from your azd environment (`.azure/<environmentName>/.env`).
 
 1. To avoid affecting custom domains when deploying Azure Container Apps use the following command. This mostly useful if you are re-deploying, or updating an existing application. If you don't have any custom domain assign to the Azure Container Apps, you can still execute the command, but it's optional.
    
@@ -62,25 +69,37 @@ After a few seconds, you should now be in your version of the AzUrlShortener pro
 
 1. To ensure that the following command is deploying the application in Release mode, execute:
 
+    ```bash
+    export AZD_DOTNET_CONFIGURATION=Release
     ```
-	set AZD_DOTNET_CONFIGURATION=Release
-	```
+
+   (PowerShell equivalent: `$env:AZD_DOTNET_CONFIGURATION = "Release"`)
 
 1. Provision all required Azure resources and deploy the application with the following command:
 
 	```bash
-	azd up
-      or
-    azd up -e '<environmentName>'
-      e.g.
-    azd up -e 'dev'
+	azd env select <environmentName>
+	azd env set AZURE_SUBSCRIPTION_ID '<subscriptionId>'
+	azd env set AZURE_LOCATION '<location>'
+	AZURE_TENANT_ID='<entraTenantId>' AZURE_SUBSCRIPTION_ID='<subscriptionId>' azd up -e <environmentName>
 	```
 
-	You will be asked where to deploy Azure Subscription and location select what make sense for you. You will be asked for more information, default are used from appsettings.json is provided, e.g.:
+	Example:
+
+	```bash
+	azd env select prod
+	azd env set AZURE_SUBSCRIPTION_ID '693b4f92-8e56-....-b7f2-74770ba7842a'
+	azd env set AZURE_LOCATION 'westeurope'
+	AZURE_TENANT_ID='cfd26b50-fb8f-44cf-87b2-d5df3d15d884' AZURE_SUBSCRIPTION_ID='693b4f92-8e56-....-b7f2-74770ba7842a' azd up -e prod
+	```
+
+	You will be asked where to deploy (Azure subscription and location). You will also be asked for more information. If provided, defaults are taken from appsettings.json, for example:
 	- **The Custom domain**: This should be the complete (including the https part) domain name for your short URLs ex: https://c5m.ca.
 	- **Default Redirect Url**: This is the URL used if the vanity doesn't exist, or if no vanity is used. It must include the https part.
 	- **Entra ID application registration** details
 	- Other optional parameter for influencing the Admin UI behavior
+
+1. If you still get `Login expired` after a successful login, run `azd auth logout` and `azd auth login --tenant-id ...` again, then retry `azd up`.
 
 1. Get the application URL
 
