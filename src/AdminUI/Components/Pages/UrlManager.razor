@@ -242,13 +242,22 @@
 </div>
 
 <style>
+    .sticky-header-grid thead,
+    .sticky-header-grid tr[row-type="header"] {
+        background-color: rgb(var(--base-2)) !important;
+    }
+
     .sticky-header-grid tr[row-type="header"] th {
         position: sticky;
         top: 0;
-        z-index: 1;
-        background-color: transparent;
+        z-index: 6;
+        background-color: rgb(var(--base-2)) !important;
+        background-clip: padding-box;
+        height: 44px;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
         vertical-align: middle;
-        box-shadow: none;
+        box-shadow: 0 10px 14px -12px rgba(0, 0, 0, 0.95), 0 1px 0 rgba(var(--ui-1), var(--opacity-200));
     }
 
     .sticky-header-grid tr[row-type="header"] th button,
@@ -263,6 +272,15 @@
         background: transparent !important;
         border-radius: 0 !important;
         box-shadow: none !important;
+        display: flex;
+        height: 100% !important;
+        min-height: 100% !important;
+        align-items: center;
+    }
+
+    .sticky-header-grid tr[row-type="header"] th .col-title,
+    .sticky-header-grid tr[row-type="header"] th .col-title-text {
+        height: 100%;
         display: flex;
         align-items: center;
     }
@@ -770,35 +788,18 @@ Supposed-to-be stable URLs will be broken, and the same vanity could be reused f
             isLoading = true;
             importInProgress = true;
             StateHasChanged();
-
-            // Example 1: GitHub
-            var githubRequest = new ShortRequest
+            int exampleCount = 30;
+            string batchSuffix = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString()[^4..];
+            var examples = Enumerable.Range(1, exampleCount)
+                .Select(index => new ShortRequest
                 {
-                    Title = "GitHub",
-                    Url = "https://github.com",
-                    Vanity = "gh",
+                    Title = $"Example URL {index}",
+                    Url = $"https://example.com/resource/{index}",
+                    Vanity = $"ex{batchSuffix}{index:00}",
                     Schedules = Array.Empty<Schedule>()
-                };
+                })
+                .ToArray();
 
-            // Example 2: Microsoft
-            var microsoftRequest = new ShortRequest
-                {
-                    Title = "Microsoft",
-                    Url = "https://microsoft.com",
-                    Vanity = "ms",
-                    Schedules = Array.Empty<Schedule>()
-                };
-
-            // Example 3: Stack Overflow
-            var stackOverflowRequest = new ShortRequest
-                {
-                    Title = "Stack Overflow",
-                    Url = "https://stackoverflow.com",
-                    Vanity = "so",
-                    Schedules = Array.Empty<Schedule>()
-                };
-
-            var examples = new[] { githubRequest, microsoftRequest, stackOverflowRequest };
             var successCount = 0;
 
             foreach (var example in examples)
@@ -822,7 +823,7 @@ Supposed-to-be stable URLs will be broken, and the same vanity could be reused f
             dataHasBeenLoadedBefore = false;
 
             await UpdateUIList();
-            toastService.ShowSuccess($"{successCount} example URLs created successfully");
+            toastService.ShowSuccess($"{successCount} example URLs created successfully.");
         }
         catch (Exception ex)
         {
