@@ -64,13 +64,13 @@ namespace AzUrlShortener.Functions
         [Function(nameof(GetShortUrlRecords))]
         public async Task<McpResponseData> GetShortUrlRecords(
             [McpToolTrigger("search_shorturl_records", "Searches for short URL records based on provided parameters.")] ToolInvocationContext context,
-            [McpToolProperty("vanity", "string", "The exact vanity string to search for (case-insensitive). If provided, performs a direct lookup.")] string vanity = null,
-            [McpToolProperty("searchTerm", "string", "A full-text search term applied to vanity, title, and URL fields (case-insensitive).")] string searchTerm = null,
-            [McpToolProperty("includeArchived", "string", "If true, includes archived URLs in the results; otherwise, excludes them.")] string includeArchived = "false",
-            [McpToolProperty("vanityStartsWith", "string", "Filters results to only those where the vanity name starts with the specified string (case-insensitive). Use for prefix searches.")] string vanityStartsWith = null,
-            [McpToolProperty("sortBy", "string", "The property to sort by (e.g., 'timestamp', 'vanity', 'title').")] string sortBy = "timestamp",
-            [McpToolProperty("sortOrder", "string", "Sort order: 'asc' for ascending, 'desc' for descending. Default is 'desc'.")] string sortOrder = "desc",
-            [McpToolProperty("maxResultCount", "string", "Maximum number of results to return. Can also be used for queries of first N results. Default is 100.")] string maxResultCount = "100")
+            [McpToolProperty("vanity", "The exact vanity string to search for (case-insensitive). If provided, performs a direct lookup.", false)] string vanity = null,
+            [McpToolProperty("searchTerm", "A full-text search term applied to vanity, title, and URL fields (case-insensitive).", false)] string searchTerm = null,
+            [McpToolProperty("includeArchived", "If true, includes archived URLs in the results; otherwise, excludes them.", false)] string includeArchived = "false",
+            [McpToolProperty("vanityStartsWith", "Filters results to only those where the vanity name starts with the specified string (case-insensitive). Use for prefix searches.", false)] string vanityStartsWith = null,
+            [McpToolProperty("sortBy", "The property to sort by (e.g., 'timestamp', 'vanity', 'title').", false)] string sortBy = "timestamp",
+            [McpToolProperty("sortOrder", "Sort order: 'asc' for ascending, 'desc' for descending. Default is 'desc'.", false)] string sortOrder = "desc",
+            [McpToolProperty("maxResultCount", "Maximum number of results to return. Can also be used for queries of first N results. Default is 100.", false)] string maxResultCount = "100")
         {
             _logger.LogInformation("Processing GetShortUrlRecords request (optimized for large datasets, paging removed)");
 

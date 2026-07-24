@@ -9,7 +9,7 @@
 
 @rendermode InteractiveServer
 
-<div tabindex="-1" onkeydown:window="@HandleKeyDown">
+<div tabindex="-1" @onkeydown:window="HandleKeyDown">
 
 <FluentDialogHeader ShowDismiss="false" TabIndex="-1">
     <FluentStack VerticalAlignment="VerticalAlignment.Center">
@@ -21,7 +21,7 @@
 </FluentDialogHeader>
 
 <FluentDialogBody>
-    <EditForm Model="@_shortUrl" FormName="new_note" onkeydown="@HandleKeyDown"> 
+    <EditForm Model="@_shortUrl" FormName="new_note" @onkeydown="HandleKeyDown"> 
         <DataAnnotationsValidator />
         <FluentStack Orientation="Orientation.Vertical" VerticalGapGap="10"  Width="100%">
             <div style="width: 100%;">
@@ -131,7 +131,7 @@
         await Dialog!.CancelAsync();
     }
 
-    private async void HandleKeyDown(KeyboardEventArgs e)
+    private async Task HandleKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Escape")
         {

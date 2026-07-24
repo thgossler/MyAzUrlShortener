@@ -1,7 +1,6 @@
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Azure.Functions.Worker.Extensions.Mcp;
 using System.Reflection;
 
 var builder = FunctionsApplication.CreateBuilder(args);
@@ -30,8 +29,6 @@ AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
 builder.AddAzureTableServiceClient("table-client");
 
 builder.ConfigureFunctionsWebApplication();
-
-builder.EnableMcpToolMetadata();
 
 // Application Insights isn't enabled by default. See https://aka.ms/AAt8mw4.
 // builder.Services

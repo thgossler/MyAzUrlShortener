@@ -12,7 +12,7 @@
 
 @rendermode InteractiveServer
 
-<div tabindex="-1" onkeydown:window="@HandleKeyDown">
+<div tabindex="-1" @onkeydown:window="HandleKeyDown">
 
 <FluentDialogHeader ShowDismiss="false" TabIndex="-1">
     <FluentStack VerticalAlignment="VerticalAlignment.Center">
@@ -24,7 +24,7 @@
 </FluentDialogHeader>
 
 <FluentDialogBody>
-    <EditForm Model="@_shortUrl" FormName="updateUrlForm" onkeydown="@HandleKeyDown">
+    <EditForm Model="@_shortUrl" FormName="updateUrlForm" @onkeydown="HandleKeyDown">
         <DataAnnotationsValidator />
 
         <FluentStack Orientation="Orientation.Vertical" VerticalGapGap="10"  Width="100%">

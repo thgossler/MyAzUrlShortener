@@ -2,7 +2,7 @@
 @inject IJSRuntime JSRuntime
 @implements IDialogContentComponent<RenameConfirmDialog.RenameVanityParameters>
 
-<div tabindex="-1" onkeydown:window="@HandleKeyDown">
+<div tabindex="-1" @onkeydown:window="HandleKeyDown">
 
 <FluentDialogHeader>
     <FluentIcon Value="@(new Icons.Regular.Size24.Edit())" Style="color: #f44336;" />
@@ -17,7 +17,7 @@
     }
     else
     {
-        <FluentTextField Id="newVanityInput" Label="New Vanity" @bind-Value="newVanity" Immediate="true" ImmediateDelay="350" Autofocus="true" style="width: 100%;" onkeydown="@HandleKeyDown" />
+        <FluentTextField Id="newVanityInput" Label="New Vanity" @bind-Value="newVanity" Immediate="true" ImmediateDelay="350" Autofocus="true" style="width: 100%;" @onkeydown="HandleKeyDown" />
     }
 </FluentDialogBody>
 
@@ -79,7 +79,7 @@
         await Dialog.CloseAsync(newVanity);
     }
 
-    private async void HandleKeyDown(KeyboardEventArgs e)
+    private async Task HandleKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Escape")
         {
