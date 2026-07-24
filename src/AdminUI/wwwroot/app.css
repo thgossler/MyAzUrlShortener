@@ -600,6 +600,63 @@ fluent-search::part(control) {
     background: rgba(var(--ui-3), var(--opacity-150));
 }
 
+@media (prefers-color-scheme: dark) {
+    html:not([data-theme]):not([sh-color]) fluent-layout,
+    html:not([data-theme]):not([sh-color]) .main,
+    html:not([data-theme]):not([sh-color]) .body-content,
+    html:not([data-theme]):not([sh-color]) .content {
+        background: #141414;
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    html:not([data-theme]):not([sh-color]) .navmenu,
+    html:not([data-theme]):not([sh-color]) header.header,
+    html:not([data-theme]):not([sh-color]) fluent-header,
+    html:not([data-theme]):not([sh-color]) fluent-footer {
+        background: #1c1c1c !important;
+        border-color: rgba(255, 255, 255, 0.14);
+    }
+
+    html:not([data-theme]):not([sh-color]) .shui-brand-logo-fallback,
+    html:not([data-theme]):not([sh-color]) .shui-brand-title,
+    html:not([data-theme]):not([sh-color]) .shui-locale-pill,
+    html:not([data-theme]):not([sh-color]) .shui-utility-link,
+    html:not([data-theme]):not([sh-color]) header.header .theme-icon,
+    html:not([data-theme]):not([sh-color]) header.header p,
+    html:not([data-theme]):not([sh-color]) header.header span,
+    html:not([data-theme]):not([sh-color]) .user-profile-elements svg,
+    html:not([data-theme]):not([sh-color]) .user-profile-elements fluent-button[appearance="stealth"],
+    html:not([data-theme]):not([sh-color]) .user-profile-elements fluent-button[appearance="stealth"]::part(control),
+    html:not([data-theme]):not([sh-color]) .user-profile-elements fluent-button[appearance="stealth"]::part(content) {
+        color: rgba(255, 255, 255, 0.9) !important;
+        fill: rgba(255, 255, 255, 0.9) !important;
+    }
+
+    html:not([data-theme]):not([sh-color]) .theme-toggle-btn,
+    html:not([data-theme]):not([sh-color]) .shui-header-searchbox::part(control),
+    html:not([data-theme]):not([sh-color]) .shui-locale-pill {
+        background: #262626;
+        border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    html:not([data-theme]):not([sh-color]) #main-menu a:hover {
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    html:not([data-theme]):not([sh-color]) #main-menu a.active,
+    html:not([data-theme]):not([sh-color]) #main-menu a[aria-current="page"] {
+        background: rgba(var(--ui-3), var(--opacity-150));
+    }
+
+    html:not([data-theme]):not([sh-color]) #sun-icon {
+        display: block;
+    }
+
+    html:not([data-theme]):not([sh-color]) #moon-icon {
+        display: none;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

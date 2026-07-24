@@ -38,6 +38,10 @@ fluent-button[appearance="accent"]::part(control):disabled {
         return localStorage.getItem(THEME_STORAGE_KEY);
     }
 
+    function getPreferredTheme() {
+        return getCurrentTheme() || getSystemTheme();
+    }
+
     function setTheme(theme, storeInLocalStorage = false) {
         const systemTheme = getSystemTheme();
 
@@ -53,6 +57,8 @@ fluent-button[appearance="accent"]::part(control):disabled {
         // Keep both attributes in sync so Fluent and SHUI-style tokens switch together.
         document.documentElement.setAttribute('data-theme', theme);
         document.documentElement.setAttribute('sh-color', theme);
+        document.documentElement.style.colorScheme = theme;
+        document.documentElement.style.backgroundColor = theme === 'dark' ? '#333333' : '#FFFFFF';
 
         // Find and update the fluent-design-theme element if it exists
         const fluentThemeElement = document.querySelector('fluent-design-theme');
@@ -144,19 +150,31 @@ fluent-button[appearance="accent"]::part(control):disabled {
 
     // MutationObserver to watch for dynamic changes to the DOM
     function setupMutationObserver() {
+        const htmlObserver = new MutationObserver(function () {
+            const preferredTheme = getPreferredTheme();
+            const currentDataTheme = document.documentElement.getAttribute('data-theme');
+            const currentShColor = document.documentElement.getAttribute('sh-color');
+
+            if (currentDataTheme !== preferredTheme || currentShColor !== preferredTheme) {
+                setTheme(preferredTheme, false);
+            }
+        });
+
+        htmlObserver.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme', 'sh-color']
+        });
+
         // Watch for when the fluent-design-theme element appears or changes
         const observer = new MutationObserver(function (mutations) {
             mutations.forEach(function (mutation) {
                 if (mutation.type === 'childList') {
                     const fluentThemeElement = document.querySelector('fluent-design-theme');
                     if (fluentThemeElement) {
-                        const savedTheme = getCurrentTheme();
-                        if (savedTheme && fluentThemeElement.getAttribute('mode') !== savedTheme) {
+                        const preferredTheme = getPreferredTheme();
+                        if (fluentThemeElement.getAttribute('mode') !== preferredTheme) {
                             // Re-apply theme if necessary, without re-storing
-                            setTheme(savedTheme, false);
-                        } else if (!savedTheme) {
-                            // If no saved theme, apply system theme
-                            setTheme(getSystemTheme(), false);
+                            setTheme(preferredTheme, false);
                         }
                     }
                 }
@@ -169,20 +187,30 @@ fluent-button[appearance="accent"]::part(control):disabled {
     function setupBlazorNavigation() {
         if (window.Blazor) {
             window.addEventListener('click', function (e) {
-                // Detect anchor clicks or navigation
-                if (e.target.tagName === 'A' ||
-                    e.target.closest('a') ||
-                    e.target.dataset.navLink) {
-                    setTimeout(function () {
-                        const savedTheme = getCurrentTheme();
-                        if (savedTheme) {
-                            setTheme(savedTheme, false);
-                        } else {
-                            setTheme(getSystemTheme(), false);
-                        }
-                    }, 100);
+                const anchor = e.target.closest ? e.target.closest('a') : null;
+
+                if (anchor && anchor.classList.contains('shui-brand-link')) {
+                    const targetUrl = new URL(anchor.href, window.location.origin);
+                    const targetPath = targetUrl.pathname.replace(/\/+$/, '') || '/';
+                    const currentPath = window.location.pathname.replace(/\/+$/, '') || '/';
+
+                    if (targetUrl.origin === window.location.origin && targetPath === currentPath) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setTheme(getPreferredTheme(), false);
+                        return;
+                    }
                 }
-            });
+
+                // Detect anchor clicks or navigation
+                if ((e.target.tagName === 'A' || anchor || e.target.dataset.navLink)) {
+                    const preferredTheme = getPreferredTheme();
+                    setTheme(preferredTheme, false);
+                    requestAnimationFrame(function () {
+                        setTheme(preferredTheme, false);
+                    });
+                }
+            }, true);
         }
     }
 
@@ -205,18 +233,7 @@ fluent-button[appearance="accent"]::part(control):disabled {
             // After Blazor starts, ensure theme is applied
             window.Blazor.addEventListener('afterStarted', function () {
                 setTimeout(function () {
-                    const savedTheme = getCurrentTheme();
-                    const systemTheme = getSystemTheme();
-
-                    if (savedTheme) {
-                        // Check if saved theme matches system theme
-                        if (savedTheme === systemTheme) {
-                            localStorage.removeItem(THEME_STORAGE_KEY);
-                        }
-                        setTheme(savedTheme, false);
-                    } else {
-                        setTheme(systemTheme, false);
-                    }
+                    setTheme(getPreferredTheme(), false);
                 }, 50);
             });
         }

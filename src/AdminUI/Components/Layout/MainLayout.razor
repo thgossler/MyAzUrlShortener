@@ -30,7 +30,7 @@
 <FluentLayout>
     <FluentHeader>
         <div class="shui-header-shell">
-            <a href="/" class="shui-brand-link" aria-label="URL Shortener home">
+            <a href="/" class="shui-brand-link" aria-label="URL Shortener home" @onclick="NavigateHome" @onclick:preventDefault="true">
                 @if (!string.IsNullOrEmpty(logoUrl))
                 {
                     <span class="shui-brand-logo-tile">
@@ -150,5 +150,15 @@
         html = Regex.Replace(html, @"on\w+\s*=\s*""[^""]*""", "", RegexOptions.IgnoreCase);
 
         return html;
+    }
+
+    private void NavigateHome()
+    {
+        if (string.IsNullOrEmpty(NavigationManager.ToBaseRelativePath(NavigationManager.Uri).Trim('/')))
+        {
+            return;
+        }
+
+        NavigationManager.NavigateTo("/");
     }
 }
