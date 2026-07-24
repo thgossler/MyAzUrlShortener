@@ -12,17 +12,27 @@
 @using BlazorBootstrap
 @using Microsoft.FluentUI.AspNetCore.Components.Extensions
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Logging
 @inject IJSRuntime JSRuntime
 @inject UrlManagerClient urlManager
 @inject NavigationManager NavigationManager
+@inject ILogger<Statistics> Logger
 
 @rendermode InteractiveServer
+@implements IDisposable
 
 <PageTitle>Statistics</PageTitle>
 
 <h1>Statistics</h1>
 
 <h4>@subTitle</h4>
+
+@if (!string.IsNullOrWhiteSpace(statisticsError))
+{
+    <div class="warning-message" role="alert">
+        <p>@statisticsError</p>
+    </div>
+}
 
 @if (!string.IsNullOrWhiteSpace(vanity))
 {
@@ -88,6 +98,7 @@
     private int viewportHeight = 600;
     private int navMenuWidth = 300;
     private DotNetObjectReference<Statistics> _dotNetRef;
+    private string statisticsError = string.Empty;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -102,36 +113,63 @@
 
     private async Task UpdateViewportSizeAsync()
     {
-        viewportWidth = await JSRuntime.InvokeAsync<int>("getViewportWidth");
-        viewportHeight = await JSRuntime.InvokeAsync<int>("getViewportHeight");
-        navMenuWidth = await JSRuntime.InvokeAsync<int>("getNavMenuWidth");
-        StateHasChanged();
+        try
+        {
+            viewportWidth = await JSRuntime.InvokeAsync<int>("getViewportWidth");
+            viewportHeight = await JSRuntime.InvokeAsync<int>("getViewportHeight");
+            navMenuWidth = await JSRuntime.InvokeAsync<int>("getNavMenuWidth");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to update viewport size in Statistics page. Using fallback dimensions.");
+            viewportWidth = 1200;
+            viewportHeight = 800;
+            navMenuWidth = 260;
+        }
     }
 
     private async Task RegisterResizeHandlerAsync()
     {
-        // Remove any previous DotNetObjectReference to avoid memory leaks
-        if (_dotNetRef != null)
+        try
         {
-            _dotNetRef.Dispose();
+            // Remove any previous DotNetObjectReference to avoid memory leaks
+            if (_dotNetRef != null)
+            {
+                _dotNetRef.Dispose();
+            }
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("registerViewportResizeHandler", _dotNetRef);
         }
-        _dotNetRef = DotNetObjectReference.Create(this);
-        await JSRuntime.InvokeVoidAsync("registerViewportResizeHandler", _dotNetRef);
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to register viewport resize handler in Statistics page.");
+        }
     }
 
     [JSInvokable]
     public async Task OnViewportResize(int width, int height)
     {
-        viewportWidth = width;
-        viewportHeight = height; 
-        navMenuWidth = await JSRuntime.InvokeAsync<int>("getNavMenuWidth");
-        chartKey = Guid.NewGuid().ToString();
-        await RenderChartAsync();
-        StateHasChanged();
+        try
+        {
+            viewportWidth = width;
+            viewportHeight = height;
+            navMenuWidth = await JSRuntime.InvokeAsync<int>("getNavMenuWidth");
+            chartKey = Guid.NewGuid().ToString();
+            await RenderChartAsync();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to handle viewport resize in Statistics page.");
+        }
     }
 
     private async Task<ChartData> UpdateUIList()
     {
+        showMismatchWarning = false;
+        trackedClicks = 0;
+        statisticsError = string.Empty;
         subTitle = (!String.IsNullOrEmpty(vanity)) ? $"Clicks for vanity: {vanity}" : "Clicks for all vanities";
         try
         {
@@ -222,44 +260,88 @@
                 };
                 return data;
             }
+
+            // No data available is a valid state: return an empty chart dataset.
+            return CreateEmptyChartData();
         }
         catch (System.Exception ex)
         {
-            Console.WriteLine(ex.ToString());
+            Logger.LogWarning(ex, "Failed to load statistics data.");
+            statisticsError = "Statistics data is currently unavailable. Please try again later.";
+            return CreateEmptyChartData();
         }
-        return null;
     }
 
     private async Task RenderChartAsync()
     {
-        chartData = await UpdateUIList();
-
-        if (chartData != null && chartData.Datasets != null)
+        try
         {
-            dayCount = "Days: " + chartData.Labels.Count.ToString();
+            chartData = await UpdateUIList();
+            if (chartData == null)
+            {
+                chartData = CreateEmptyChartData();
+            }
+
+            if (chartData.Datasets != null)
+            {
+                dayCount = "Days: " + chartData.Labels.Count.ToString();
+            }
+            StateHasChanged();
+            var options = new BarChartOptions();
+            options.Interaction.Mode = InteractionMode.Index;
+
+            options.Plugins.Title!.Text = "Click Stats By Day";
+            options.Plugins.Title.Display = true;
+            options.Plugins.Title.Font = new ChartFont { Size = 20 };
+
+            options.Responsive = true;
+
+            options.Scales.X!.Title = new ChartAxesTitle { Text = "Date Clicked", Display = true };
+            options.Scales.Y!.Title = new ChartAxesTitle { Text = "Count", Display = true };
+
+            await barChart.InitializeAsync(chartData, options);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to render statistics chart.");
+            statisticsError = "Could not render statistics chart. Please refresh the page.";
+            chartData = CreateEmptyChartData();
+            dayCount = "Days: 0";
             StateHasChanged();
         }
-
-        var options = new BarChartOptions();
-        options.Interaction.Mode = InteractionMode.Index;
-
-        options.Plugins.Title!.Text = "Click Stats By Day";
-        options.Plugins.Title.Display = true;
-        options.Plugins.Title.Font = new ChartFont { Size = 20 };
-
-        options.Responsive = true;
-
-        options.Scales.X!.Title = new ChartAxesTitle { Text = "Date Clicked", Display = true };
-        options.Scales.Y!.Title = new ChartAxesTitle { Text = "Count", Display = true };
-
-        await barChart.InitializeAsync(chartData, options);
     }
 
     private async Task OnTimeRangeChanged(ChangeEventArgs e)
     {
-        selectedTimeRange = e.Value?.ToString() ?? "Last90Days";
-        chartKey = Guid.NewGuid().ToString();
-        await RenderChartAsync(); 
+        try
+        {
+            selectedTimeRange = e.Value?.ToString() ?? "Last90Days";
+            chartKey = Guid.NewGuid().ToString();
+            await RenderChartAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to change statistics time range.");
+            statisticsError = "Could not update time range at this moment.";
+            StateHasChanged();
+        }
+    }
+
+    private ChartData CreateEmptyChartData()
+    {
+        return new ChartData
+        {
+            Labels = new List<string> { DateTimeOffset.Now.ToString("yyyy-MM-dd") },
+            Datasets = new List<IChartDataset>
+            {
+                new BarChartDataset
+                {
+                    Label = "Clicks by Day",
+                    Data = new List<double?> { 0 },
+                    BackgroundColor = new List<string> { "rgb(150, 91, 227)" },
+                },
+            },
+        };
     }
 
     private List<string> GetDateRange(DateTimeOffset startDate)

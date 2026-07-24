@@ -29,34 +29,50 @@
 
 <FluentLayout>
     <FluentHeader>
-        <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10" Style="align-items: center">
-            <a href="/" style="display: inline-flex; align-items: center; text-decoration: none; color: inherit; cursor: pointer; font-size: x-large">
+        <div class="shui-header-shell">
+            <a href="/" class="shui-brand-link" aria-label="URL Shortener home">
                 @if (!string.IsNullOrEmpty(logoUrl))
                 {
-                    <img src="@logoUrl" alt="Vendor Logo" style="max-height: 40px; margin-right: 10px;" />
+                    <span class="shui-brand-logo-tile">
+                        @if (hasThemeSpecificLogos)
+                        {
+                            <img src="@logoUrlLight" alt="Vendor Logo" class="shui-brand-logo shui-brand-logo-light" />
+                            <img src="@logoUrlDark" alt="Vendor Logo" class="shui-brand-logo shui-brand-logo-dark" />
+                        }
+                        else
+                        {
+                            <img src="@logoUrl" alt="Vendor Logo" class="shui-brand-logo shui-brand-logo-single" />
+                        }
+                    </span>
                 }
-                <span>URL Shortener</span>
+                else
+                {
+                    <span class="shui-brand-logo-fallback">SIEMENS Healthineers</span>
+                }
+                <span class="shui-brand-title">URL Shortener</span>
             </a>
-            <div style="flex-grow: 1"></div>
-            <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Toggle dark/light mode">
-                <svg id="moon-icon" class="theme-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-                    <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z" />
-                </svg>
-                <svg id="sun-icon" class="theme-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-                    <path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm-9 5a1 1 0 0 0 1 1h2a1 1 0 0 0 0-2H4a1 1 0 0 0-1 1zm16 0a1 1 0 0 0 1 1h2a1 1 0 0 0 0-2h-2a1 1 0 0 0-1 1zM12 1a1 1 0 0 0-1 1v2a1 1 0 0 0 2 0V2a1 1 0 0 0-1-1zm0 16a1 1 0 0 0-1 1v2a1 1 0 0 0 2 0v-2a1 1 0 0 0-1-1zM5.99 4.58a1 1 0 0 0-1.42 1.42l1.06 1.06a1 1 0 1 0 1.42-1.42L5.99 4.58zm12.37 12.37a1 1 0 0 0-1.42 1.42l1.06 1.06a1 1 0 1 0 1.42-1.42l-1.06-1.06zm1.42-10.95a1 1 0 0 0-1.42-1.42l-1.06 1.06a1 1 0 0 0 1.42 1.42l1.06-1.06zM7.05 18.36a1 1 0 0 0-1.42-1.42l-1.06 1.06a1 1 0 1 0 1.42 1.42l1.06-1.06z" />
-                </svg>
-            </button>
 
-            <div Class="user-profile-elements">
-                <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10" Style="align-items: center">
-                    <FluentIcon Value="@(new Icons.Regular.Size20.Person())" Color="Color.Fill" />
-                    <FluentLabel Color="Color.Fill" class="me-2">
-                        @(username + (isAdmin ? " (Admin)" : ""))
-                    </FluentLabel>
-                    <SwitchAccountButton />
-                </FluentStack>
+            <div class="shui-header-tools">
+                <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Toggle dark/light mode">
+                    <svg id="moon-icon" class="theme-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                        <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z" />
+                    </svg>
+                    <svg id="sun-icon" class="theme-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                        <path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm-9 5a1 1 0 0 0 1 1h2a1 1 0 0 0 0-2H4a1 1 0 0 0-1 1zm16 0a1 1 0 0 0 1 1h2a1 1 0 0 0 0-2h-2a1 1 0 0 0-1 1zM12 1a1 1 0 0 0-1 1v2a1 1 0 0 0 2 0V2a1 1 0 0 0-1-1zm0 16a1 1 0 0 0-1 1v2a1 1 0 0 0 2 0v-2a1 1 0 0 0-1-1zM5.99 4.58a1 1 0 0 0-1.42 1.42l1.06 1.06a1 1 0 1 0 1.42-1.42L5.99 4.58zm12.37 12.37a1 1 0 0 0-1.42 1.42l1.06 1.06a1 1 0 1 0 1.42-1.42l-1.06-1.06zm1.42-10.95a1 1 0 0 0-1.42-1.42l-1.06 1.06a1 1 0 0 0 1.42 1.42l1.06-1.06zM7.05 18.36a1 1 0 0 0-1.42-1.42l-1.06 1.06a1 1 0 1 0 1.42 1.42l1.06-1.06z" />
+                    </svg>
+                </button>
+
+                <div Class="user-profile-elements">
+                    <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10" Style="align-items: center">
+                        <FluentIcon Value="@(new Icons.Regular.Size20.Person())" Color="Color.Fill" />
+                        <FluentLabel Color="Color.Fill" class="me-2">
+                            @(username + (isAdmin ? " (Admin)" : ""))
+                        </FluentLabel>
+                        <SwitchAccountButton />
+                    </FluentStack>
+                </div>
             </div>
-        </FluentStack>
+        </div>
     </FluentHeader>
     <FluentStack Class="main" Orientation="Orientation.Horizontal" Width="100%">
         <NavMenu />
@@ -87,13 +103,16 @@
     <a class="dismiss">🗙</a>
 </div>
 
-<script src="/js/themeModeToggle.js"></script>
+<script src="/js/ThemeModeToggle.js"></script>
 <script src="/js/helpers.js"></script>
 
 @code {
     private bool isAdmin;
     private string username = "Unknown";
     private string logoUrl = "";
+    private string logoUrlLight = "";
+    private string logoUrlDark = "";
+    private bool hasThemeSpecificLogos;
     private string footerLeftHtml = "";
     private string footerCenterHtml = "";
     private string footerRightHtml = "";
@@ -106,6 +125,9 @@
 
         // Get configuration values
         logoUrl = Configuration["LogoUrl"] ?? "";
+        logoUrlLight = Configuration["LogoUrlLight"] ?? logoUrl;
+        logoUrlDark = Configuration["LogoUrlDark"] ?? logoUrl;
+        hasThemeSpecificLogos = !string.IsNullOrWhiteSpace(Configuration["LogoUrlLight"]) || !string.IsNullOrWhiteSpace(Configuration["LogoUrlDark"]);
         footerLeftHtml = Configuration["FooterLeftHtml"] ?? "<a href=\"https://github.com/thgossler/MyAzUrlShortener\">GitHub</a>";
         footerCenterHtml = Configuration["FooterCenterHtml"] ?? "";
         footerRightHtml = Configuration["FooterRightHtml"] ?? "MIT License";

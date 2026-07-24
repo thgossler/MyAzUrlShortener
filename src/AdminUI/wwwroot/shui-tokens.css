@@ -1,0 +1,199 @@
+/*
+ * SHUI tokens — styles-only drop-in (approach B)
+ * ------------------------------------------------------------------
+ * Applies the SHUI (Siemens Healthineers UI) design language to an
+ * existing app without any SHUI npm dependency or feed access.
+ *
+ * Usage:
+ *   1. Import this file ONCE, globally, before your own styles.
+ *   2. Set the theme on the root element:
+ *        <html sh-color="light">   (or "dark"; legacy: theme="light|dark")
+ *   3. Style your components with the tokens, e.g.
+ *        background: rgb(var(--ui-0));            // petrol
+ *        color: var(--text-primary);
+ *        border-radius: var(--sh-radius-full);
+ *
+ * NOTE on color tokens: --ui-* and --base-* are RGB TUPLES, so wrap them:
+ *        rgb(var(--ui-0))  or  rgba(var(--ui-0), var(--opacity-600))
+ *
+ * NOTE on fonts: the real Siemens fonts are proprietary and are NOT bundled
+ * here. The font stacks below fall back to system fonts. Only add @font-face
+ * rules pointing at the licensed .woff files if your project already ships
+ * them legitimately.
+ * ------------------------------------------------------------------ */
+
+/* ----- Light theme (default) ----- */
+:root,
+[sh-color="light"],
+[theme="light"] {
+  /* Base (surface) colors — RGB tuples */
+  --base-0: 255, 255, 255;   /* access bar */
+  --base-1: 235, 235, 235;   /* page / pane background */
+  --base-2: 247, 247, 247;   /* secondary nav */
+  --base-3: 255, 255, 255;   /* main content, modal */
+  --base-4: 255, 255, 255;   /* notification, popover */
+
+  /* UI (brand) colors — RGB tuples.
+   * Color semantics (apply by MEANING, keep the UI mostly neutral):
+   *   - PRIMARY ACTION / CTA = orange: --ui-3 idle, --ui-2 hover, --ui-4 pressed
+   *     (text/icon on orange = var(--text-white)). Reserve for the one key action.
+   *   - NEUTRAL = --ui-1 for text, borders, and most buttons/controls.
+   *   - PETROL --ui-0 = sparse secondary accent only (badges, sliders, worklines,
+   *     status segments). NOT a default button or app-bar color.
+   *   - Surfaces/chrome (incl. app bars) = --base-0..4. Status = --functional-*.
+   */
+  --ui-0: 0, 153, 153;       /* petrol — sparse secondary accent, NOT primary */
+  --ui-1: 0, 0, 0;           /* text / neutral UI (most buttons & borders) */
+  --ui-2: 236, 102, 2;       /* orange — primary action hover (brighter) */
+  --ui-3: 207, 75, 0;        /* orange — primary action idle/resting */
+  --ui-4: 216, 88, 8;        /* orange — primary action pressed/active */
+  --ui-5: 102, 102, 102;     /* slider handle */
+  --ui-6: 200, 200, 200;     /* slider disabled */
+  --ui-7: 255, 255, 255;     /* backgrounds / overlays */
+  --ui-8: 255, 255, 255;     /* dropdown / datepicker bg */
+  --ui-9: 224, 224, 224;     /* badge neutral bg */
+
+  /* Opacity scale (theme-independent) */
+  --opacity-1000: 1;
+  --opacity-950: 0.96;
+  --opacity-900: 0.9;
+  --opacity-850: 0.85;
+  --opacity-800: 0.8;
+  --opacity-700: 0.7;
+  --opacity-600: 0.6;
+  --opacity-500: 0.5;
+  --opacity-400: 0.4;
+  --opacity-300: 0.3;
+  --opacity-200: 0.2;
+  --opacity-150: 0.15;
+  --opacity-100: 0.12;
+  --opacity-75: 0.1;
+  --opacity-50: 0.06;
+  --opacity-0: 0;
+
+  /* Text colors */
+  --text-primary: rgba(var(--ui-1), var(--opacity-900));
+  --text-secondary: rgba(var(--ui-1), var(--opacity-600));
+  --text-disabled: rgba(var(--ui-1), var(--opacity-300));
+  --text-highlight: rgba(var(--ui-3), var(--opacity-900));
+
+  /* Functional colors */
+  --functional-red: rgb(170, 40, 31);
+  --functional-green: rgb(34, 133, 59);
+  --functional-yellow: rgb(251, 191, 40);
+  --functional-blue: rgb(110, 123, 159);
+
+  /* Tints */
+  --tint-error-150: rgba(170, 40, 31, 0.07);
+  --tint-error-1000: rgba(170, 40, 31, 1);
+  --tint-success-150: rgba(34, 133, 59, 0.08);
+  --tint-success-1000: rgba(34, 133, 59, 1);
+  --tint-warning-150: rgba(160, 113, 21, 0.1);
+  --tint-warning-1000: rgba(160, 113, 21, 1);
+
+  /* Typography */
+  --font-size: 1rem;
+  --font-size-super-header: 1.25rem;
+  --font-size-header-1: 1rem;
+  --font-size-title-1: 0.875rem;
+  --font-size-body-1: 0.875rem;
+  --font-size-body-2: 0.75rem;
+  --text-font-size-display-500: 2rem;
+  --text-font-size-display-400: 1.375rem;
+  --text-font-size-title-300: 1rem;
+  --text-font-size-body-300: 1rem;
+  --text-line-height-display-500: 2.5rem;
+  --text-line-height-body-300: 1.5rem;
+  --text-line-height-body-200: 1.25rem;
+  --text-font-weight-normal: 400;
+  --text-font-weight-bold: 700;
+
+  /* Font stacks (system fallbacks; proprietary fonts not bundled) */
+  --shui-font-body: "siemens sans", system-ui, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --shui-font-display: "bree-headline", "siemens sans", system-ui, sans-serif;
+
+  /* Shadows / elevation */
+  --shadow-s-subtle: 0 0.125rem 0.25rem 0 rgba(0, 0, 0, 0.04),
+    0 0.125rem 0.5rem 0 rgba(0, 0, 0, 0.1);
+  --shadow-m-subtle: 0 0.25rem 0.625rem 0 rgba(0, 0, 0, 0.07);
+  --shadow-m-strong: 0 0.125rem 0.25rem 0 rgba(0, 0, 0, 0.2),
+    0 0.188rem 0.563rem 0 rgba(0, 0, 0, 0.25);
+  --shadow-l-strong: 0 0 0.125rem 0 rgba(0, 0, 0, 0.15),
+    0 0.75rem 2.5rem 0 rgba(0, 0, 0, 0.16);
+  --shadow-xl-moderate: 0 1.25rem 2.5rem 0 rgba(0, 0, 0, 0.2);
+  --shadow-overlay: 0 0.75rem 2.5rem 0 rgba(0, 0, 0, 0.16);
+
+  /* Border radius — numeric scale */
+  --sh-radius-none: 0rem;
+  --sh-radius-50: 0.125rem;   /* 2px */
+  --sh-radius-100: 0.25rem;   /* 4px */
+  --sh-radius-200: 0.5rem;    /* 8px */
+  --sh-radius-400: 1rem;      /* 16px */
+  --sh-radius-600: 1.5rem;    /* 24px */
+  --sh-radius-full: 999rem;   /* fully rounded / pill */
+
+  /* Border radius — semantic aliases (use these to match SHUI component shapes) */
+  --sh-radius-pill: var(--sh-radius-full);        /* buttons (default) */
+  --sh-radius-control: var(--sh-radius-100);       /* inputs, dropdowns, controls (4px) */
+  --sh-radius-small-control: var(--sh-radius-50);  /* checkboxes, small controls (2px) */
+  --sh-radius-container: var(--sh-radius-200);      /* cards, panels, containers (8px) */
+  --sh-radius-small-container: var(--sh-radius-100);/* small containers (4px) */
+
+  /* Focus */
+  --focus-color: rgb(18, 132, 255);
+  --focus-outline: 0.125rem solid var(--focus-color);
+}
+
+/* ----- Dark theme ----- */
+[sh-color="dark"],
+[theme="dark"] {
+  --base-0: 8, 8, 8;
+  --base-1: 20, 20, 20;
+  --base-2: 28, 28, 28;
+  --base-3: 38, 38, 38;
+  --base-4: 60, 60, 60;
+
+  --ui-1: 255, 255, 255;     /* text becomes white */
+  --ui-5: 153, 153, 153;
+  --ui-6: 60, 60, 60;
+  --ui-7: 0, 0, 0;
+  --ui-8: 60, 60, 60;
+  --ui-9: 71, 71, 71;
+
+  --opacity-100: 0.16;
+  --opacity-50: 0.08;
+
+  --shadow-m-subtle: 0 0.25rem 0.625rem 0 rgba(0, 0, 0, 0.2);
+  --shadow-overlay: 0 0.75rem 2.5rem 0 rgba(0, 0, 0, 0.3);
+}
+
+/* ----- Base element styles ----- */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--shui-font-body);
+  font-weight: var(--text-font-weight-normal);
+  font-size: var(--font-size);
+  color: var(--text-primary);
+  background-color: rgb(var(--base-1));
+  -webkit-text-size-adjust: 100%;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--shui-font-display);
+}
+
+::selection {
+  background-color: rgba(var(--ui-3), var(--opacity-300));
+  color: var(--text-primary);
+}
+
+:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
+}

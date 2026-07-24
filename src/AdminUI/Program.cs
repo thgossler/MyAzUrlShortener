@@ -123,7 +123,10 @@ builder.Services.AddSingleton<SharedStateService>();
 builder.Services.AddScoped<UserService>();
 
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+    .AddInteractiveServerComponents(options =>
+    {
+        options.DetailedErrors = builder.Environment.IsDevelopment();
+    });
 builder.Services.AddFluentUIComponents();
 builder.Services.AddScoped<ITooltipService, TooltipService>();
 

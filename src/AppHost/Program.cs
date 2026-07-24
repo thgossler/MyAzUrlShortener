@@ -44,6 +44,8 @@ var allowRegularUsersToViewAllStatistics = processParameterInput("AllowRegularUs
 var allowRegularUsersToDeleteRecords = processParameterInput("AllowRegularUsersToDeleteRecords", true, "false");
 var primaryColor = processParameterInput("PrimaryColor", true, "");
 var headerLogoUrl = processParameterInput("LogoUrl", true, "");
+var headerLogoUrlLight = processParameterInput("LogoUrlLight", true, "");
+var headerLogoUrlDark = processParameterInput("LogoUrlDark", true, "");
 var topDisclaimerHtml = processParameterInput("TopDisclaimerHtml", true, "");
 var footerLeftHtml = processParameterInput("FooterLeftHtml", true, "");
 var footerCenterHtml = processParameterInput("FooterCenterHtml", true, "");
@@ -86,6 +88,8 @@ builder.AddProject<Projects.AzUrlShortener_AdminUI>("admin-ui")
         .WithEnvironment("UserAuthEntraClientAppSecret", entraClientAppSecret)
         .WithEnvironment("PrimaryColor", primaryColor)
         .WithEnvironment("LogoUrl", headerLogoUrl)
+        .WithEnvironment("LogoUrlLight", headerLogoUrlLight)
+        .WithEnvironment("LogoUrlDark", headerLogoUrlDark)
         .WithEnvironment("TopDisclaimerHtml", topDisclaimerHtml)
         .WithEnvironment("FooterLeftHtml", footerLeftHtml)
         .WithEnvironment("FooterCenterHtml", footerCenterHtml)

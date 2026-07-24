@@ -1,6 +1,38 @@
 ﻿// Theme toggle functionality
 (function () {
     const THEME_STORAGE_KEY = 'theme';
+    const STYLE_OVERRIDE_ID = 'shui-fluent-runtime-overrides';
+
+    function ensureRuntimeStyleOverrides() {
+        if (document.getElementById(STYLE_OVERRIDE_ID)) {
+            return;
+        }
+
+        const style = document.createElement('style');
+        style.id = STYLE_OVERRIDE_ID;
+        style.textContent = `
+fluent-button[appearance="accent"]::part(control) {
+    background: rgb(var(--ui-3)) !important;
+    border: 1px solid rgb(var(--ui-3)) !important;
+    color: #ffffff !important;
+}
+fluent-button[appearance="accent"]:hover::part(control) {
+    background: rgb(var(--ui-2)) !important;
+    border-color: rgb(var(--ui-2)) !important;
+}
+fluent-button[appearance="accent"]:active::part(control) {
+    background: rgb(var(--ui-4)) !important;
+    border-color: rgb(var(--ui-4)) !important;
+}
+fluent-button[appearance="accent"]::part(control):disabled {
+    background: rgba(var(--ui-1), var(--opacity-200)) !important;
+    border-color: rgba(var(--ui-1), var(--opacity-200)) !important;
+    color: rgba(var(--ui-1), var(--opacity-500)) !important;
+}
+`;
+
+        document.head.appendChild(style);
+    }
 
     function getCurrentTheme() {
         return localStorage.getItem(THEME_STORAGE_KEY);
@@ -18,8 +50,9 @@
             localStorage.setItem(THEME_STORAGE_KEY, theme);
         }
 
-        // Set data-theme attribute on document for CSS selectors
+        // Keep both attributes in sync so Fluent and SHUI-style tokens switch together.
         document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.setAttribute('sh-color', theme);
 
         // Find and update the fluent-design-theme element if it exists
         const fluentThemeElement = document.querySelector('fluent-design-theme');
@@ -89,6 +122,8 @@
 
     // Main initialization function
     function initializeTheme() {
+        ensureRuntimeStyleOverrides();
+
         // Check if user has a saved preference
         const savedTheme = getCurrentTheme();
         const systemTheme = getSystemTheme();
