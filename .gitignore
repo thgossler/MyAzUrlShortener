@@ -4,6 +4,7 @@
 .DS_Store
 .github/skills/
 .agents/skills/
+tmp/
 
 # Azure Functions localsettings file
 **/local.settings.json
@@ -266,7 +267,6 @@ __pycache__/
 #Admin tools Development Settings
 
 **/appsettings.[Dd]evelopment.json
-
 
 src/adminTools/adminBlazorWebsite/appsettings.Development.json
 
