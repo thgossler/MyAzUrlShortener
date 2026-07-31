@@ -3,6 +3,7 @@
 
 .DS_Store
 .github/skills/
+.agents/skills/
 
 # Azure Functions localsettings file
 **/local.settings.json
