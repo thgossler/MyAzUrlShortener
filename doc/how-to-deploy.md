@@ -78,19 +78,13 @@ After a few seconds, you should now be in your version of the AzUrlShortener pro
 1. Provision all required Azure resources and deploy the application with the following command:
 
 	```bash
-	azd env select <environmentName>
-	azd env set AZURE_SUBSCRIPTION_ID '<subscriptionId>'
-	azd env set AZURE_LOCATION '<location>'
-	AZURE_TENANT_ID='<entraTenantId>' AZURE_SUBSCRIPTION_ID='<subscriptionId>' azd up -e <environmentName>
+	AZURE_TENANT_ID='<entraTenantId>' AZURE_SUBSCRIPTION_ID='<subscriptionId>' AZURE_LOCATION='<location>' azd up -e <environmentName>
 	```
 
 	Example:
 
 	```bash
-	azd env select prod
-	azd env set AZURE_SUBSCRIPTION_ID '693b4f92-8e56-....-b7f2-74770ba7842a'
-	azd env set AZURE_LOCATION 'westeurope'
-	AZURE_TENANT_ID='cfd26b50-fb8f-44cf-87b2-d5df3d15d884' AZURE_SUBSCRIPTION_ID='693b4f92-8e56-....-b7f2-74770ba7842a' azd up -e prod
+	AZURE_TENANT_ID='cfd26b50-fb8f-...-...-d5df3d15d884' AZURE_SUBSCRIPTION_ID='693b4f92-8e56-...-...-74770ba7842a' AZURE_LOCATION='westeurope' azd up -e urlshortener-prod
 	```
 
 	You will be asked where to deploy (Azure subscription and location). You will also be asked for more information. If provided, defaults are taken from appsettings.json, for example:
