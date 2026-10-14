@@ -102,6 +102,7 @@ public class AzStorageTableService(TableServiceClient client) : IAzStorageTableS
         {
             [nameof(ShortUrlEntity.Url)] = urlEntity.Url,
             [nameof(ShortUrlEntity.Title)] = urlEntity.Title,
+            [nameof(ShortUrlEntity.PassThroughQueryParameters)] = urlEntity.PassThroughQueryParameters,
             [nameof(ShortUrlEntity.SchedulesPropertyRaw)] = JsonSerializer.Serialize(urlEntity.Schedules),
             [nameof(ShortUrlEntity.OwnerUpn)] = urlEntity.OwnerUpn,
         };
@@ -303,6 +304,7 @@ public class AzStorageTableService(TableServiceClient client) : IAzStorageTableS
             return null;
         var clone = ShortUrlEntity.GetNewEntity(source.Url, newVanity, source.Title, source.Schedules?.ToArray(), source.OwnerUpn);
         clone.Clicks = source.Clicks;
+        clone.PassThroughQueryParameters = source.PassThroughQueryParameters;
         clone.IsArchived = false;
         await SaveShortUrlEntity(clone);
         return clone;

@@ -10,6 +10,11 @@ namespace AzUrlShortener.Core.Domain
     {
         public string Url { get; set; }
 
+        /// <summary>
+        /// Enables forwarding short URL query parameters to the resolved target.
+        /// </summary>
+        public bool PassThroughQueryParameters { get; set; }
+
         public string ActiveUrl
         {
             get

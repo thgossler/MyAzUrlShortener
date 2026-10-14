@@ -7,6 +7,7 @@
   <ItemGroup>
     <PackageReference Include="Aspire.Azure.Data.Tables" Version="13.4.6" />
     <PackageReference Include="cronos" Version="0.13.0" />
+    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="10.0.10" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.10" />
     <PackageReference Include="System.Memory.Data" Version="10.0.10" />
   </ItemGroup>

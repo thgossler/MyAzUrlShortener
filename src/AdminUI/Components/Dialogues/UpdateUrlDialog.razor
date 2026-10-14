@@ -39,6 +39,8 @@
                 <FluentValidationMessage For="@(() => _shortUrl.Url)" />
             </div>
 
+            <FluentCheckbox @bind-Value="_shortUrl.PassThroughQueryParameters" Label="Pass through query parameters" />
+
             <div style="width: 100%;">
                 <FluentTextField Id="Vanity" Name="Vanity" Label="Vanity" @bind-Value="_shortUrl.Vanity" ReadOnly="true" Disabled="true" style="width: 100%;" />
                 <FluentTooltip Anchor="Vanity">
@@ -128,6 +130,7 @@
         _shortUrl = new ShortUrlEntity
         {
             Url = Content.Url,
+            PassThroughQueryParameters = Content.PassThroughQueryParameters,
             Title = Content.Title,
             Vanity = Content.Vanity,
             ShortUrl = Content.ShortUrl,

@@ -34,6 +34,8 @@
                 <FluentValidationMessage For="@(() => _shortUrl.Url)" />
             </div>
 
+            <FluentCheckbox @bind-Value="_shortUrl.PassThroughQueryParameters" Label="Pass through query parameters" />
+
             <div style="width: 100%;">
                 <FluentTextField Name="Vanity" Label="Vanity" @bind-Value="_shortUrl.Vanity" Immediate="true" ImmediateDelay="@delay" Required="true" style="width: 100%;" />
                 <FluentValidationMessage For="@(() => _shortUrl.Vanity)" />

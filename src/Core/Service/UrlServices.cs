@@ -2,6 +2,7 @@ using Azure;
 using AzUrlShortener.Core.Domain;
 using AzUrlShortener.Core.Messages;
 using AzUrlShortener.Core.Service;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Net;
@@ -159,7 +160,12 @@ public class UrlServices
         return result;
     }
 
-    public async Task<string> Redirect(string shortUrl)
+    /// <summary>
+    /// Resolves the active target and forwards query parameters only for opted-in records.
+    /// </summary>
+    /// <param name="shortUrl">The vanity to resolve.</param>
+    /// <param name="query">The incoming short URL query string.</param>
+    public async Task<string> Redirect(string shortUrl, string query = null)
     {
         string defaultUrl = "https://azure.com";
 
@@ -192,7 +198,23 @@ public class UrlServices
                     _logger.LogWarning(ex, "Failed to record click for short URL '{ShortUrl}'", shortUrl);
                 }
 
-                return WebUtility.UrlDecode(newUrl.ActiveUrl);
+                string redirectUrl = new Uri(newUrl.ActiveUrl, UriKind.Absolute).AbsoluteUri;
+                if (newUrl.PassThroughQueryParameters && !string.IsNullOrEmpty(query))
+                {
+                    var incomingQuery = QueryHelpers.ParseQuery(query);
+                    if (incomingQuery.Count > 0)
+                    {
+                        var targetUri = new UriBuilder(redirectUrl);
+                        var mergedQuery = QueryHelpers.ParseQuery(targetUri.Query);
+                        foreach (var parameter in incomingQuery)
+                        {
+                            mergedQuery[parameter.Key] = parameter.Value;
+                        }
+                        targetUri.Query = string.Empty;
+                        redirectUrl = QueryHelpers.AddQueryString(targetUri.Uri.AbsoluteUri, mergedQuery);
+                    }
+                }
+                return redirectUrl;
             }
             catch (RequestFailedException rfex) {
                 if (rfex.Message.Contains("does not exist")) {
@@ -342,6 +364,7 @@ public class UrlServices
             }
 
             newRow.Clicks = clicks;
+            newRow.PassThroughQueryParameters = input.PassThroughQueryParameters;
 
             await _tableService.SaveShortUrlEntity(newRow);
 

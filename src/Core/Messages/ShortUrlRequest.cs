@@ -24,6 +24,8 @@ namespace AzUrlShortener.Core.Messages
         [Required]
         public string Url { get; set; } = string.Empty;
 
+        public bool PassThroughQueryParameters { get; set; }
+
         private List<Schedule> _schedules;
 
         public List<Schedule> Schedules

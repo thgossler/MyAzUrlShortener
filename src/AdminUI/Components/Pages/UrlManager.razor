@@ -611,7 +611,8 @@
                     Title = dialogData.Title ?? string.Empty,
                     Url = dialogData.Url,
                     Vanity = dialogData.Vanity,
-                    Schedules = dialogData.Schedules.ToArray()
+                    PassThroughQueryParameters = dialogData.PassThroughQueryParameters,
+                    Schedules = dialogData.Schedules.ToArray(),
                 };
 
             try

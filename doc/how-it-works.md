@@ -15,6 +15,10 @@ This function returns a HTTP Redirect to the URL. You can call it directly doing
 
 For example, if the domain is *c5m.ca* and the vanity is "project", the request `c5m.ca/2w` will call "UrlRedirect/{shortUrl}" where `shortUrl` is equal to "project". end the result will be a redirect to the long URL save in the storage.
 
+Query parameter pass-through is disabled by default, including for existing records. Select **Pass through query parameters** when creating or editing a record to enable it. API clients can opt in by setting `passThroughQueryParameters` to `true`. Without this opt-in, query parameters on the short URL are dropped, while the target URL's own parameters remain unchanged. The default redirect URL also drops incoming query parameters.
+
+For opted-in records, short URL query parameters are merged into the resolved target URL, preserving unrelated target parameters and its fragment. For example, `https://myurlshortener.com/my-Vanity?docid=2874` with target `https://example.com/documents?view=details&docid=100#content` redirects to `https://example.com/documents?view=details&docid=2874#content`. This also applies to scheduled targets. If a parameter name appears in both URLs, the short URL's values replace all existing target values for that name. Parameter names are matched case-insensitively. Repeated parameters supplied by the short URL, empty values, and encoded characters are preserved.
+
 Every time the Azure Function is called it will increment the click count and save the timestamp when this call appends.
 
 ## Azure Table Storage

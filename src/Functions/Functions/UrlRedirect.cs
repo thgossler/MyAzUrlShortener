@@ -111,7 +111,7 @@ namespace AzUrlShortener.Functions
 #if DEBUG
             _logger.LogDebug($"Resolving short URL '{shortUrl}'...");
 #endif
-            var redirectUrl = await UrlServices.Redirect(shortUrl);
+            var redirectUrl = await UrlServices.Redirect(shortUrl, req.Url.Query);
 
             HttpResponseData result;
             if (string.IsNullOrWhiteSpace(redirectUrl))
