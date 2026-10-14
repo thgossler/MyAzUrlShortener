@@ -7,6 +7,10 @@ public interface IAzStorageTableService
     Task<int> GetNextTableId();
     Task<List<ShortUrlEntity>> GetAllShortUrlEntities(string ownerUpn = null);
     Task<ShortUrlEntity> SaveShortUrlEntity(ShortUrlEntity newRow2);
+    /// <summary>
+    /// Increments the click count without changing the URL's editable fields.
+    /// </summary>
+    Task IncrementShortUrlClicks(ShortUrlEntity urlEntity);
     Task<ShortUrlEntity> GetShortUrlEntity(ShortUrlEntity row, string ownerUpn = null);
     Task<bool> IfShortUrlEntityExist(ShortUrlEntity row, string ownerUpn = null);
     Task<ShortUrlEntity> UpdateShortUrlEntity(ShortUrlEntity urlEntity);

@@ -93,15 +93,48 @@ public class AzStorageTableService(TableServiceClient client) : IAzStorageTableS
         return newShortUrl;
     }
 
+    /// <summary>
+    /// Updates editable fields without overwriting click counts or recreating deleted records.
+    /// </summary>
     public async Task<ShortUrlEntity> UpdateShortUrlEntity(ShortUrlEntity urlEntity)
     {
-        ShortUrlEntity originalUrl = await GetShortUrlEntity(urlEntity);
-        originalUrl.Url = urlEntity.Url;
-        originalUrl.Title = urlEntity.Title;
-        originalUrl.SchedulesPropertyRaw = JsonSerializer.Serialize<List<Schedule>>(urlEntity.Schedules);
-        originalUrl.OwnerUpn = urlEntity.OwnerUpn;
+        var changes = new TableEntity(urlEntity.PartitionKey, urlEntity.RowKey)
+        {
+            [nameof(ShortUrlEntity.Url)] = urlEntity.Url,
+            [nameof(ShortUrlEntity.Title)] = urlEntity.Title,
+            [nameof(ShortUrlEntity.SchedulesPropertyRaw)] = JsonSerializer.Serialize(urlEntity.Schedules),
+            [nameof(ShortUrlEntity.OwnerUpn)] = urlEntity.OwnerUpn,
+        };
 
-        return await SaveShortUrlEntity(originalUrl);
+        TableClient tblUrls = GetUrlsTable();
+        await tblUrls.UpdateEntityAsync(changes, ETag.All, TableUpdateMode.Merge);
+        return await GetShortUrlEntity(urlEntity);
+    }
+
+    /// <summary>
+    /// Increments the click count without overwriting concurrent URL edits.
+    /// </summary>
+    public async Task IncrementShortUrlClicks(ShortUrlEntity urlEntity)
+    {
+        TableClient tblUrls = GetUrlsTable();
+        for (int attempt = 0; ; attempt++)
+        {
+            var response = await tblUrls.GetEntityAsync<ShortUrlEntity>(urlEntity.PartitionKey, urlEntity.RowKey);
+            var changes = new TableEntity(urlEntity.PartitionKey, urlEntity.RowKey)
+            {
+                [nameof(ShortUrlEntity.Clicks)] = response.Value.Clicks + 1,
+            };
+
+            try
+            {
+                await tblUrls.UpdateEntityAsync(changes, response.Value.ETag, TableUpdateMode.Merge);
+                return;
+            }
+            catch (RequestFailedException ex) when (ex.Status == 412 && attempt < 4)
+            {
+                continue;
+            }
+        }
     }
 
     /// <summary>

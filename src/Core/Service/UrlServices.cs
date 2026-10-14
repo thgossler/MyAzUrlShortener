@@ -180,14 +180,17 @@ public class UrlServices
                 }
 
                 _logger.LogInformation($"Found short URL '{newUrl.Url}'");
-                newUrl.Clicks++;
 
-                // Run both operations in parallel
                 var clickTask = _tableService.SaveClickStatsEntity(new ClickStatsEntity(newUrl.Vanity));
-                var updateTask = _tableService.SaveShortUrlEntity(newUrl);
-
-                // Only wait for tasks to complete if needed for error handling
-                //await Task.WhenAll(clickTask, updateTask);
+                var updateTask = _tableService.IncrementShortUrlClicks(newUrl);
+                try
+                {
+                    await Task.WhenAll(clickTask, updateTask);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to record click for short URL '{ShortUrl}'", shortUrl);
+                }
 
                 return WebUtility.UrlDecode(newUrl.ActiveUrl);
             }
