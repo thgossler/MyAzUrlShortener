@@ -130,6 +130,7 @@ public static class ShortenerEnpoints
 
     private static async Task<Results<
                                     Ok<ShortUrlEntity>,
+                                    BadRequest<DetailedBadRequest>,
                                     InternalServerError<DetailedBadRequest>>>
                                     UrlUpdate(ShortUrlEntity shortUrl,
                                                 TableServiceClient tblClient,
@@ -144,9 +145,14 @@ public static class ShortenerEnpoints
             var result = await urlServices.Update(shortUrl, host);
             return TypedResults.Ok(result);
         }
+        catch (AzUrlShortenerException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
+        {
+            logger.LogWarning(ex, "Invalid short URL update");
+            return TypedResults.BadRequest(new DetailedBadRequest { Message = ex.Message });
+        }
         catch (Exception ex)
         {
-            logger.LogError(ex.Message);
+            logger.LogError(ex, "Failed to update short URL");
             return TypedResults.InternalServerError<DetailedBadRequest>(new DetailedBadRequest { Message = ex.Message });
         }
     }

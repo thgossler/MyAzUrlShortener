@@ -8,11 +8,16 @@ public class UrlManagerClient
 {
     private readonly HttpClient _httpClient;
     private readonly UserService _userService;
+    private readonly ILogger<UrlManagerClient> _logger;
 
-    public UrlManagerClient(HttpClient httpClient, UserService userService)
+    /// <summary>
+    /// Creates a client for URL management requests.
+    /// </summary>
+    public UrlManagerClient(HttpClient httpClient, UserService userService, ILogger<UrlManagerClient> logger)
     {
         _httpClient = httpClient;
         _userService = userService;
+        _logger = logger;
     }
 
     public async Task<IQueryable<ShortUrlEntity>> GetUrls()
@@ -140,6 +145,9 @@ public class UrlManagerClient
         return false;
     }
 
+    /// <summary>
+    /// Updates a short URL and reports backend failures to the caller.
+    /// </summary>
     public async Task<ShortUrlEntity> UrlUpdate(ShortUrlEntity shortUrl)
     {
         try
@@ -150,22 +158,28 @@ public class UrlManagerClient
 
             if (!isAdmin && !string.Equals(shortUrl.OwnerUpn, currentUpn, StringComparison.OrdinalIgnoreCase))
             {
-                return null;
+                throw new UnauthorizedAccessException("You are not authorized to edit this URL");
             }
 
             using var response = await _httpClient.PostAsJsonAsync("/api/UrlUpdate", shortUrl);
-            if (response.IsSuccessStatusCode)
+            if (!response.IsSuccessStatusCode)
             {
-                var updatedUrl = await response.Content.ReadFromJsonAsync<ShortUrlEntity>();
-                return updatedUrl;
+                DetailedBadRequest errorDetails = null;
+                if (response.Content.Headers.ContentType?.MediaType == "application/json")
+                {
+                    errorDetails = await response.Content.ReadFromJsonAsync<DetailedBadRequest>();
+                }
+                throw new HttpRequestException(errorDetails?.Message ?? $"Failed to update the short URL (HTTP {(int)response.StatusCode})", null, response.StatusCode);
             }
+
+            return await response.Content.ReadFromJsonAsync<ShortUrlEntity>()
+                ?? throw new InvalidOperationException("The backend returned an empty update response");
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            _logger.LogWarning(ex, "Failed to update short URL '{Vanity}'", shortUrl.Vanity);
+            throw;
         }
-
-        return null;
     }
 
     public async Task<ClickDateList> UrlClickStatsByDay(UrlClickStatsRequest statsRequest)

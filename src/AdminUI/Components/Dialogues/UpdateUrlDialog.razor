@@ -35,7 +35,7 @@
             </div>
 
             <div style="width: 100%;">
-                <FluentTextField Name="Url" Label="Url" @bind-Value="_shortUrl.Url" Immediate="true" ImmediateDelay="350" Required="true" style="width: 100%;" />
+                <FluentTextField Name="Url" Label="Url" @bind-Value="_shortUrl.Url" Immediate="true" Required="true" style="width: 100%;" />
                 <FluentValidationMessage For="@(() => _shortUrl.Url)" />
             </div>
 
@@ -125,7 +125,22 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _shortUrl = Content;
+        _shortUrl = new ShortUrlEntity
+        {
+            Url = Content.Url,
+            Title = Content.Title,
+            Vanity = Content.Vanity,
+            ShortUrl = Content.ShortUrl,
+            OwnerUpn = Content.OwnerUpn,
+            Clicks = Content.Clicks,
+            IsArchived = Content.IsArchived,
+            PartitionKey = Content.PartitionKey,
+            RowKey = Content.RowKey,
+            Timestamp = Content.Timestamp,
+            ETag = Content.ETag,
+            SchedulesPropertyRaw = Content.SchedulesPropertyRaw,
+            Schedules = Content.Schedules.Select(DeepCopySchedule).ToList(),
+        };
 
         // Store original schedules in _originalSchedules with deep copy
         _originalSchedules = _shortUrl.Schedules?.Select(DeepCopySchedule).ToList() ?? new List<Schedule>();

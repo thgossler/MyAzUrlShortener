@@ -673,15 +673,15 @@
         {
             if (result.Data is ShortUrlEntity dialogData)
             {
-                var response = await urlManager.UrlUpdate(dialogData);
-                if (response != null)
+                try
                 {
+                    await urlManager.UrlUpdate(dialogData);
                     await UpdateUIList();
                     toastService.ShowSuccess("Short URL updated successfully");
                 }
-                else
+                catch (Exception ex)
                 {
-                    toastService.ShowError("Failed to update the short URL");
+                    toastService.ShowError(ex.Message);
                 }
             }
             else if (result.Data is UpdateUrlDialog.RenameResult renameResult)

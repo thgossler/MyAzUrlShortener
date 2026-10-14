@@ -370,12 +370,14 @@ public class UrlServices
                 throw new AzUrlShortenerException(HttpStatusCode.BadRequest, "The url parameter can not be empty.");
             }
 
-            // Validates if input.url is a valid absolute url, aka is a complete refrence to the resource, ex: http(s)://google.com
-            if (!Uri.IsWellFormedUriString(input.Url, UriKind.Absolute))
+            if (!Regex.IsMatch(input.Url.Trim(), "^https?://", RegexOptions.IgnoreCase)
+                || !Uri.TryCreate(input.Url.Trim(), UriKind.Absolute, out Uri targetUrl)
+                || (targetUrl.Scheme != Uri.UriSchemeHttp && targetUrl.Scheme != Uri.UriSchemeHttps))
             {
-                throw new AzUrlShortenerException(HttpStatusCode.BadRequest, $"{input.Url} is not a valid absolute Url. The Url parameter must start with 'http://' or 'http://'.");
+                throw new AzUrlShortenerException(HttpStatusCode.BadRequest, "The URL must be an absolute HTTP or HTTPS URL.");
             }
 
+            input.Url = targetUrl.AbsoluteUri;
             result = await _tableService.UpdateShortUrlEntity(input);
             result.ShortUrl = Utility.GetShortUrl(host, result.Vanity);
         }
