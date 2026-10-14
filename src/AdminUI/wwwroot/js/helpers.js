@@ -34,6 +34,16 @@ window.setDataGridScrollTop = function (gridId, scrollTop) {
     if (tbody) tbody.scrollTop = scrollTop;
 };
 
+window.updateUrlFilter = function (filter) {
+    const url = new URL(window.location.href);
+    if (filter) {
+        url.searchParams.set('filter', filter);
+    } else {
+        url.searchParams.delete('filter');
+    }
+    window.history.replaceState(window.history.state, '', url.href);
+};
+
 // Listen for ESC keydown anywhere on the page and call a .NET method
 window.registerEscKeyHandler = function (dotNetHelper) {
     function handler(e) {

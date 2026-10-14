@@ -316,6 +316,9 @@
     private bool isAdmin = false;
     private bool importTriggeredAndNotFailed = false;
     private string searchText = string.Empty;
+    [SupplyParameterFromQuery(Name = "filter")]
+    private string FilterQuery { get; set; }
+
     private string currentUserUpn = string.Empty;
     private bool canRegularUsersViewAllRecords;
     private bool canRegularUsersViewAllStatistics;
@@ -363,8 +366,11 @@
     GridSort<ShortUrlEntity> sortByTitle = GridSort<ShortUrlEntity>.ByAscending(p => p.Title);
     GridSort<ShortUrlEntity> sortByUrl = GridSort<ShortUrlEntity>.ByAscending(p => p.Url);
 
+    /// <summary>
+    /// Clears the filter and its query parameter when no dialog is open.
+    /// </summary>
     [JSInvokable]
-    public void OnEscPressed()
+    public async Task OnEscPressed()
     {
         if (_suppressNextEsc)
         {
@@ -374,13 +380,14 @@
         if (!_dialogOpen && !string.IsNullOrEmpty(searchText))
         {
             searchText = string.Empty;
-            FilterUrls();
+            await OnSearchInput();
             StateHasChanged();
         }
     }
 
     protected override async Task OnInitializedAsync()
     {
+        searchText = FilterQuery ?? string.Empty;
         isAdmin = await userService.IsAdminAsync();
         currentUserUpn = await userService.GetUserPrincipalNameAsync();
         canRegularUsersViewAllRecords = userService.CanRegularUsersViewAllRecords();
@@ -409,6 +416,16 @@
         else
         {
             urlList = cachedUrlList.AsQueryable();
+            FilterUrls();
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        string filter = FilterQuery ?? string.Empty;
+        if (searchText != filter)
+        {
+            searchText = filter;
             FilterUrls();
         }
     }
@@ -462,9 +479,10 @@
         FilterUrls(); 
     }
 
-    private void OnSearchInput()
+    private async Task OnSearchInput()
     {
         FilterUrls();
+        await JSRuntime.InvokeVoidAsync("updateUrlFilter", searchText);
     }
 
     private async Task RefreshGrid(bool preservePage = false)
