@@ -66,11 +66,30 @@ After a few seconds, you should now be in your version of the AzUrlShortener pro
 	 - The tenant is selected during `azd auth login`.
 	 - The subscription and location used by `azd up` come from your azd environment (`.azure/<environmentName>/.env`).
 
-1. To avoid affecting custom domains when deploying Azure Container Apps use the following command. This mostly useful if you are re-deploying, or updating an existing application. If you don't have any custom domain assign to the Azure Container Apps, you can still execute the command, but it's optional.
-   
-	```bash
-	azd config set alpha.aca.persistDomains on
-	```
+1. Before redeploying an application with custom domains, declare every existing hostname and certificate binding in `src/AppHost/appsettings.local.json`. The AppHost emits these bindings into the Container App deployment templates:
+
+		```json
+		"ContainerAppCustomDomains": {
+			"admin-ui": [
+				{
+					"Name": "admin.example.com",
+					"CertificateId": "<existing certificate resource ID>"
+				}
+			],
+			"functions": [
+				{
+					"Name": "short.example.com",
+					"CertificateId": "<existing certificate resource ID>"
+				}
+			]
+		}
+		```
+
+		Use the complete Azure resource ID of an existing certificate in the same Container Apps environment, including `/managedCertificates/<name>` for a managed certificate. Multiple entries are supported for each app; omit apps that have no custom domains. These entries configure Azure bindings. The first `functions` entry also supplies the short-link base URL automatically as `https://<Name>`; put your preferred short-link domain first. No separate `CustomDomain` setting is needed. Without a Functions custom domain, short links use the Functions endpoint. Local development continues to use localhost.
+
+		**Important:** `WithAzdResourceNaming()` preserves resource names, not domain bindings. `azd config set alpha.aca.persistDomains on` does not preserve manually configured bindings when Aspire publishes the Container App infrastructure. Omitting existing bindings can remove them on redeployment. Since `appsettings.local.json` is gitignored, supply the same configuration in CI/CD, for example through `ContainerAppCustomDomains__admin-ui__0__Name` and `ContainerAppCustomDomains__admin-ui__0__CertificateId` environment variables.
+
+		Keep the domain ownership DNS records in place. An apex domain using an A record requires an `asuid.<domain>` TXT record containing the Container App's `customDomainVerificationId`; an issued certificate alone does not bypass this ownership check when restoring a removed binding.
 
 1. To ensure that the following command is deploying the application in Release mode, execute:
 
@@ -87,7 +106,6 @@ After a few seconds, you should now be in your version of the AzUrlShortener pro
 	```
 
 	You will be asked where to deploy (Azure subscription and location). You will also be asked for more information. If provided, defaults are taken from appsettings.json, for example:
-	- **The Custom domain**: This should be the complete (including the https part) domain name for your short URLs ex: https://c5m.ca.
 	- **Default Redirect Url**: This is the URL used if the vanity doesn't exist, or if no vanity is used. It must include the https part.
 	- **Entra ID application registration** details
 	- Other optional parameter for influencing the Admin UI behavior

@@ -1,3 +1,5 @@
+using Azure.Core;
+using Azure.Provisioning.AppContainers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using System.Text.RegularExpressions;
@@ -15,6 +17,26 @@ builder.Configuration.AddJsonFile("appsettings.json", optional: false)
 builder.AddAzureContainerAppEnvironment("aca-env")
     .WithAzdResourceNaming();
 
+void ConfigureCustomDomains(ContainerApp containerApp, string resourceName)
+{
+    foreach (var domain in builder.Configuration.GetSection($"ContainerAppCustomDomains:{resourceName}").GetChildren())
+    {
+        string hostname = domain["Name"];
+        string certificateId = domain["CertificateId"];
+        if (string.IsNullOrWhiteSpace(hostname) || string.IsNullOrWhiteSpace(certificateId))
+        {
+            throw new InvalidOperationException($"Custom domain configuration for '{resourceName}' requires Name and CertificateId.");
+        }
+
+        containerApp.Configuration.Ingress.CustomDomains.Add(new ContainerAppCustomDomain
+        {
+            Name = hostname,
+            CertificateId = new ResourceIdentifier(certificateId),
+            BindingType = ContainerAppCustomDomainBindingType.SniEnabled,
+        });
+    }
+}
+
 // Read parameter defaults from configuration and request missing values
 var processParameterInput = (string name, bool mayBeEmpty = false, string defaultValue = null) =>
 {
@@ -29,7 +51,9 @@ var processParameterInput = (string name, bool mayBeEmpty = false, string defaul
     }
 };
 var defaultRedirectUrl = processParameterInput("DefaultRedirectUrl");
-var customDomain = processParameterInput("CustomDomain", true, "");
+string functionsCustomDomain = builder.Configuration.GetSection("ContainerAppCustomDomains:functions")
+    .GetChildren().FirstOrDefault()?["Name"];
+string customDomain = string.IsNullOrWhiteSpace(functionsCustomDomain) ? string.Empty : $"https://{functionsCustomDomain.Trim()}";
 var entraTenantId = processParameterInput("UserAuthEntraTenantId");
 var entraClientAppId = processParameterInput("UserAuthEntraClientAppId");
 
@@ -69,7 +93,8 @@ var functionApp = builder.AddAzureFunctionsProject<Projects.AzUrlShortener_Funct
                             .WithEnvironment("DefaultRedirectUrl", defaultRedirectUrl)
                             .WithEnvironment("BackupSchedule", backupSchedule)
                             .WithEnvironment("BackupBlobStorageConnectionString", backupBlobStorageConnectionString)
-                            .WithExternalHttpEndpoints();
+                            .WithExternalHttpEndpoints()
+                            .PublishAsAzureContainerApp((infrastructure, containerApp) => ConfigureCustomDomains(containerApp, "functions"));
 
 // API Web Service
 var apiService = builder.AddProject<Projects.AzUrlShortener_Api>("api")
@@ -80,7 +105,8 @@ var apiService = builder.AddProject<Projects.AzUrlShortener_Api>("api")
                         .WithEnvironment("DefaultRedirectUrl", defaultRedirectUrl)
                         .WithEnvironment("CustomDomain", customDomain)
                         .WithEnvironment("AllowRegularUsersToViewAllStatistics", allowRegularUsersToViewAllStatistics)
-                        .WithExternalHttpEndpoints();
+                        .WithExternalHttpEndpoints()
+                        .PublishAsAzureContainerApp((infrastructure, containerApp) => ConfigureCustomDomains(containerApp, "api"));
 
 // Admin UI Web App
 builder.AddProject<Projects.AzUrlShortener_AdminUI>("admin-ui")
@@ -101,7 +127,8 @@ builder.AddProject<Projects.AzUrlShortener_AdminUI>("admin-ui")
         .WithEnvironment("AllowRegularUsersToViewAllStatistics", allowRegularUsersToViewAllStatistics)
         .WithEnvironment("AllowRegularUsersToArchiveRecords", allowRegularUsersToArchiveRecords)
         .WithEnvironment("AllowRegularUsersToDeleteRecords", allowRegularUsersToDeleteRecords)
-        .WithEnvironment("ImportTableStorageConnectionString", importTableStorageConnectionString);
+        .WithEnvironment("ImportTableStorageConnectionString", importTableStorageConnectionString)
+        .PublishAsAzureContainerApp((infrastructure, containerApp) => ConfigureCustomDomains(containerApp, "admin-ui"));
 
 // Build and run the application
 builder.Build().Run();
