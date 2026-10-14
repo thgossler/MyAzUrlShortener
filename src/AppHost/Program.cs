@@ -12,6 +12,9 @@ builder.Configuration.AddJsonFile("appsettings.json", optional: false)
                      .AddJsonFile("appsettings.local.json", optional: true)
                      .AddEnvironmentVariables();
 
+builder.AddAzureContainerAppEnvironment("aca-env")
+    .WithAzdResourceNaming();
+
 // Read parameter defaults from configuration and request missing values
 var processParameterInput = (string name, bool mayBeEmpty = false, string defaultValue = null) =>
 {

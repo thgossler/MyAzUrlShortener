@@ -27,6 +27,11 @@ After a few seconds, you should now be in your version of the AzUrlShortener pro
 
 ## Deploying to Azure
 
+> **NOTE**  
+> The AppHost explicitly configures the Azure Container Apps environment with `AddAzureContainerAppEnvironment("aca-env").WithAzdResourceNaming()`. This lets Aspire manage the hosting infrastructure instead of delegating it to azd's limited mode. The azd-compatible naming preserves the resource naming scheme used by existing deployments; do not remove `WithAzdResourceNaming()` when updating an existing environment.
+
+**IMPORTANT:** The following commands need to be executed in the same shell.
+
 1. Make sure Docker (or Podman) is currently started. It will be used to package the Apps into containers before being 
 1. In a terminal, navigate to the `src` directory of your project.
 
@@ -78,13 +83,7 @@ After a few seconds, you should now be in your version of the AzUrlShortener pro
 1. Provision all required Azure resources and deploy the application with the following command:
 
 	```bash
-	AZURE_TENANT_ID='<entraTenantId>' AZURE_SUBSCRIPTION_ID='<subscriptionId>' AZURE_LOCATION='<location>' azd up -e <environmentName>
-	```
-
-	Example:
-
-	```bash
-	AZURE_TENANT_ID='cfd26b50-fb8f-...-...-d5df3d15d884' AZURE_SUBSCRIPTION_ID='693b4f92-8e56-...-...-74770ba7842a' AZURE_LOCATION='westeurope' azd up -e urlshortener-prod
+	azd up
 	```
 
 	You will be asked where to deploy (Azure subscription and location). You will also be asked for more information. If provided, defaults are taken from appsettings.json, for example:
